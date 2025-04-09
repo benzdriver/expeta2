@@ -526,19 +526,109 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const extractSubExpectations = (examples: string): Partial<Expectation>[] => {
     const subExpectations: Partial<Expectation>[] = [];
     
-    const sentences = examples.split(/[.!?。！？]+/).filter(Boolean);
+    const paragraphs = examples.split(/\n+/).filter(Boolean);
     
-    for (const sentence of sentences) {
-      if (sentence.length < 10) continue; // 忽略过短的句子
+    const expectationPatterns = [
+      { pattern: /(系统应该|系统需要|平台必须|应用应该|应用需要|软件应该|软件需要)([^。！？.!?]+)[。！？.!?]/g, type: 'functional' },
+      { pattern: /(该功能|此特性|这个模块|该模块|此功能|这个功能)([^。！？.!?]+)[。！？.!?]/g, type: 'feature' },
+      { pattern: /(用户可以|用户能够|用户应该能够|用户需要|客户可以|客户能够)([^。！？.!?]+)[。！？.!?]/g, type: 'user_scenario' },
+      { pattern: /(业务规则|业务逻辑|处理流程|处理逻辑|验证规则)([^。！？.!?]+)[。！？.!?]/g, type: 'business_rule' },
+      { pattern: /(性能要求|性能指标|响应时间|并发处理|吞吐量)([^。！？.!?]+)[。！？.!?]/g, type: 'performance' },
+      { pattern: /(安全要求|安全机制|认证方式|授权规则|数据保护)([^。！？.!?]+)[。！？.!?]/g, type: 'security' },
+      { pattern: /(用户体验|交互方式|界面设计|操作流程|易用性)([^。！？.!?]+)[。！？.!?]/g, type: 'ux' },
+      { pattern: /(功能|特性|需要|应该|必须|可以|能够)([^。！？.!?]+)[。！？.!?]/g, type: 'general' }
+    ];
+    
+    for (const paragraph of paragraphs) {
+      if (paragraph.length < 15) continue;
       
-      if (sentence.includes('功能') || sentence.includes('特性') || 
-          sentence.includes('需要') || sentence.includes('应该')) {
+      let foundExpectation = false;
+      
+      for (const { pattern, type } of expectationPatterns) {
+        const matches = [...paragraph.matchAll(pattern)];
+        
+        for (const match of matches) {
+          if (match[2] && match[2].trim().length > 10) {
+            const fullMatch = match[0];
+            const content = match[2].trim();
+            
+            const keywords = content.split(/\s+/).filter(word => 
+              word.length >= 2 && 
+              !['的', '了', '和', '与', '或', '在', '是', '有'].includes(word)
+            );
+            
+            const title = keywords.length > 0 
+              ? keywords.slice(0, 3).join(' ') 
+              : content.substring(0, 20);
+            
+            let priority: 'low' | 'medium' | 'high' = 'medium';
+            if (['security', 'performance', 'business_rule'].includes(type)) {
+              priority = 'high';
+            } else if (['ux', 'general'].includes(type)) {
+              priority = 'low';
+            }
+            
+            const criteriaPatterns = [
+              /(必须|应该|需要)([^，。；！？,.;!?]+)/g,
+              /(支持|实现|满足|符合)([^，。；！？,.;!?]+)/g
+            ];
+            
+            const criteria: string[] = [];
+            for (const criteriaPattern of criteriaPatterns) {
+              const criteriaMatches = [...content.matchAll(criteriaPattern)];
+              for (const criteriaMatch of criteriaMatches) {
+                if (criteriaMatch[2] && criteriaMatch[2].trim().length > 5) {
+                  criteria.push(criteriaMatch[0].trim());
+                }
+              }
+            }
+            
+            subExpectations.push({
+              id: `sub-exp-${Date.now()}-${subExpectations.length}`,
+              title: title,
+              description: fullMatch.trim(),
+              criteria: criteria,
+              priority: priority
+            });
+            
+            foundExpectation = true;
+          }
+        }
+      }
+      
+      if (!foundExpectation && paragraph.length > 30 && 
+          (paragraph.includes('功能') || paragraph.includes('特性') || 
+           paragraph.includes('需要') || paragraph.includes('应该') || 
+           paragraph.includes('用户') || paragraph.includes('系统'))) {
+        
+        const sentences = paragraph.split(/[.!?。！？]+/).filter(Boolean);
+        const firstSentence = sentences[0]?.trim() || '';
+        
         subExpectations.push({
           id: `sub-exp-${Date.now()}-${subExpectations.length}`,
-          title: sentence.trim().substring(0, 30),
-          description: sentence.trim(),
+          title: firstSentence.substring(0, 30),
+          description: paragraph.trim(),
           criteria: []
         });
+      }
+    }
+    
+    if (subExpectations.length === 0) {
+      const sentences = examples.split(/[.!?。！？]+/).filter(Boolean);
+      
+      for (const sentence of sentences) {
+        if (sentence.length < 15) continue;
+        
+        if (sentence.includes('功能') || sentence.includes('特性') || 
+            sentence.includes('需要') || sentence.includes('应该') ||
+            sentence.includes('用户') || sentence.includes('系统')) {
+          subExpectations.push({
+            id: `sub-exp-${Date.now()}-${subExpectations.length}`,
+            title: sentence.trim().substring(0, 30),
+            description: sentence.trim(),
+            criteria: []
+          });
+        }
       }
     }
     
@@ -881,12 +971,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       const phrasePatterns = [
         { pattern: /(实时|在线|即时).*?(监控|分析|处理|通知)/g, tag: '实时处理' },
+        { pattern: /(流式|流处理|流计算|流分析)/g, tag: '流处理' },
+        { pattern: /(低延迟|毫秒级|秒级).*?(响应|处理|反馈)/g, tag: '低延迟处理' },
+        
         { pattern: /(高|强).*?(安全性|安全要求|安全标准)/g, tag: '高安全性' },
+        { pattern: /(数据加密|端到端加密|传输加密|存储加密)/g, tag: '数据加密' },
+        { pattern: /(身份验证|多因素认证|生物识别|安全令牌)/g, tag: '安全认证' },
+        { pattern: /(访问控制|权限管理|最小权限|权限分级)/g, tag: '访问控制' },
+        { pattern: /(安全审计|日志记录|操作追踪|行为分析)/g, tag: '安全审计' },
+        { pattern: /(数据脱敏|隐私保护|匿名化|数据保护)/g, tag: '数据隐私' },
+        { pattern: /(合规|法规|标准|GDPR|ISO27001|等保)/g, tag: '合规要求' },
+        
         { pattern: /(高|大).*?(并发|流量|访问量|用户数)/g, tag: '高并发处理' },
         { pattern: /(高|强).*?(可用性|稳定性|可靠性)/g, tag: '高可用架构' },
         { pattern: /(快速|高效|低延迟).*?(响应|处理|加载)/g, tag: '高性能系统' },
         { pattern: /(水平|垂直|弹性).*?(扩展|扩容|伸缩)/g, tag: '可扩展架构' },
         { pattern: /(容错|故障恢复|灾备).*?(机制|能力|方案)/g, tag: '容错系统' },
+        { pattern: /(负载均衡|流量分发|请求分配)/g, tag: '负载均衡' },
+        { pattern: /(缓存|加速|预热|热点数据)/g, tag: '缓存策略' },
+        { pattern: /(性能监控|性能分析|性能优化|性能调优)/g, tag: '性能优化' },
         
         { pattern: /(多|不同).*?(角色|用户类型|权限级别)/g, tag: '多角色权限' },
         { pattern: /(第三方|外部|社交).*?(登录|认证|授权)/g, tag: '第三方认证' },
@@ -894,30 +997,72 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         { pattern: /(单点登录|SSO|统一认证)/g, tag: '单点登录' },
         { pattern: /(用户友好|易用|直观).*?(界面|交互|操作)/g, tag: '用户友好设计' },
         { pattern: /(个性化|定制|智能).*?(推荐|体验|设置)/g, tag: '个性化体验' },
+        { pattern: /(无障碍|可访问性|辅助功能|适老化)/g, tag: '无障碍设计' },
+        { pattern: /(多语言|国际化|本地化|多区域)/g, tag: '国际化支持' },
         
         { pattern: /(云原生|云服务|云平台)/g, tag: '云原生架构' },
         { pattern: /(微服务|分布式).*?(架构|系统|设计)/g, tag: '微服务架构' },
+        { pattern: /(服务网格|Service Mesh|Istio|Linkerd)/g, tag: '服务网格' },
+        { pattern: /(API网关|Gateway|API管理|接口管理)/g, tag: 'API网关' },
+        { pattern: /(容器化|Docker|Kubernetes|K8s|编排)/g, tag: '容器化部署' },
+        { pattern: /(无服务器|Serverless|函数计算|FaaS)/g, tag: '无服务器架构' },
         { pattern: /(移动|手机|平板).*?(应用|客户端|界面)/g, tag: '移动应用' },
         { pattern: /(多租户|租户隔离|SaaS)/g, tag: '多租户架构' },
         { pattern: /(事件驱动|消息队列|发布订阅)/g, tag: '事件驱动架构' },
-        { pattern: /(机器学习|人工智能|智能算法)/g, tag: 'AI功能' },
+        { pattern: /(领域驱动|DDD|界限上下文|聚合根)/g, tag: '领域驱动设计' },
+        
+        { pattern: /(机器学习|人工智能|智能算法|深度学习|神经网络)/g, tag: 'AI功能' },
+        { pattern: /(自然语言处理|NLP|语义分析|文本理解)/g, tag: '自然语言处理' },
+        { pattern: /(计算机视觉|图像识别|视频分析|目标检测)/g, tag: '计算机视觉' },
+        { pattern: /(大数据|数据湖|数据仓库|数据分析)/g, tag: '大数据处理' },
+        { pattern: /(区块链|分布式账本|智能合约|共识机制)/g, tag: '区块链技术' },
+        { pattern: /(物联网|IoT|传感器|设备互联)/g, tag: '物联网' },
         { pattern: /(离线工作|断网操作|本地优先)/g, tag: '离线优先' },
         { pattern: /(大规模|海量).*?(数据|用户|请求)/g, tag: '大规模处理' },
         { pattern: /(自动化|智能).*?(测试|部署|流程)/g, tag: '自动化流程' },
+        { pattern: /(持续集成|持续部署|CI\/CD|DevOps)/g, tag: 'CI/CD' },
         
         { pattern: /(支付|交易|结算).*?(系统|平台|功能)/g, tag: '支付系统' },
-        { pattern: /(电子商务|网上商城|购物平台)/g, tag: '电商平台' },
+        { pattern: /(电子商务|网上商城|购物平台|电商)/g, tag: '电商平台' },
         { pattern: /(医疗|健康|患者).*?(系统|管理|记录)/g, tag: '医疗系统' },
         { pattern: /(教育|学习|培训).*?(平台|系统|工具)/g, tag: '教育平台' },
         { pattern: /(金融|银行|投资).*?(系统|服务|管理)/g, tag: '金融系统' },
-        { pattern: /(社交|社区|互动).*?(平台|功能|网络)/g, tag: '社交平台' }
+        { pattern: /(社交|社区|互动).*?(平台|功能|网络)/g, tag: '社交平台' },
+        { pattern: /(内容管理|CMS|内容发布|内容编辑)/g, tag: '内容管理' },
+        { pattern: /(客户关系|CRM|客户管理|客户服务)/g, tag: '客户关系管理' },
+        { pattern: /(企业资源|ERP|资源规划|业务管理)/g, tag: '企业资源规划' },
+        { pattern: /(供应链|物流|仓储|配送)/g, tag: '供应链管理' }
       ];
       
       phrasePatterns.forEach(({ pattern, tag }) => {
+        pattern.lastIndex = 0;
+        
         if (pattern.test(text)) {
-          keyPhrases.push(tag);
+          if (!keyPhrases.includes(tag)) {
+            keyPhrases.push(tag);
+          }
+          
+          if (tag === '高安全性' && !keyPhrases.includes('安全要求')) {
+            keyPhrases.push('安全要求');
+          } else if (tag === '高性能系统' && !keyPhrases.includes('性能优化')) {
+            keyPhrases.push('性能优化');
+          } else if (tag === '微服务架构' && !keyPhrases.includes('分布式系统')) {
+            keyPhrases.push('分布式系统');
+          }
         }
       });
+      
+      if (keyPhrases.includes('高并发处理') && keyPhrases.includes('高性能系统')) {
+        if (!keyPhrases.includes('可扩展架构')) {
+          keyPhrases.push('可扩展架构');
+        }
+      }
+      
+      if (keyPhrases.includes('数据加密') && keyPhrases.includes('安全认证')) {
+        if (!keyPhrases.includes('高安全性')) {
+          keyPhrases.push('高安全性');
+        }
+      }
       
       return keyPhrases;
     };
@@ -1118,25 +1263,100 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
   
   const generateSummary = (): string => {
-    const { title, description, criteria, semanticTags, priority } = currentExpectation;
+    const { title, description, criteria, semanticTags, priority, subExpectations, industryExamples } = currentExpectation;
     
     let summaryText = `## 需求总结：${title}\n\n`;
     summaryText += `**基本描述**：${description}\n\n`;
-    summaryText += "**关键标准**：\n";
     
-    criteria?.forEach((criterion, index) => {
-      summaryText += `${index + 1}. ${criterion}\n`;
-    });
+    if (industryExamples) {
+      summaryText += `**行业参考**：${industryExamples}\n\n`;
+    }
+    
+    if (conversationContext.industry || conversationContext.domain || conversationContext.complexity) {
+      summaryText += "**上下文信息**：\n";
+      
+      if (conversationContext.industry) {
+        summaryText += `- 行业领域：${conversationContext.industry}\n`;
+      }
+      
+      if (conversationContext.domain) {
+        summaryText += `- 技术领域：${conversationContext.domain}\n`;
+      }
+      
+      if (conversationContext.complexity) {
+        const complexityText = 
+          conversationContext.complexity === 'complex' ? '复杂' : 
+          conversationContext.complexity === 'medium' ? '中等' : '简单';
+        summaryText += `- 复杂度：${complexityText}\n`;
+      }
+      
+      summaryText += "\n";
+    }
+    
+    if (criteria && criteria.length > 0) {
+      summaryText += "**关键标准**：\n";
+      criteria.forEach((criterion, index) => {
+        summaryText += `${index + 1}. ${criterion}\n`;
+      });
+      summaryText += "\n";
+    }
+    
+    if (subExpectations && subExpectations.length > 0) {
+      summaryText += "**子期望**：\n";
+      subExpectations.forEach((subExp, index) => {
+        const subPriority = subExp.priority === 'high' ? '高' : 
+                           subExp.priority === 'medium' ? '中' : 
+                           subExp.priority === 'low' ? '低' : '中';
+        
+        summaryText += `${index + 1}. ${subExp.title} (优先级: ${subPriority})\n`;
+        if (subExp.criteria && subExp.criteria.length > 0) {
+          summaryText += `   标准: ${subExp.criteria.join('; ')}\n`;
+        }
+      });
+      summaryText += "\n";
+    }
+    
+    if (Object.keys(conversationContext.userPreferences).length > 0) {
+      summaryText += "**用户偏好**：\n";
+      Object.entries(conversationContext.userPreferences).forEach(([key, value], index) => {
+        summaryText += `- ${key}: ${value}\n`;
+      });
+      summaryText += "\n";
+    }
     
     if (semanticTags && semanticTags.length > 0) {
-      summaryText += `\n**语义标签**：${semanticTags.join('、')}\n`;
+      summaryText += `**语义标签**：${semanticTags.join('、')}\n\n`;
     }
     
     if (priority) {
-      summaryText += `\n**优先级**：${
-        priority === 'high' ? '高' : 
-        priority === 'medium' ? '中' : '低'
-      }\n`;
+      const priorityText = priority === 'high' ? '高' : 
+                          priority === 'medium' ? '中' : '低';
+      
+      summaryText += `**整体优先级**：${priorityText}\n`;
+      
+      const priorityReasons = [];
+      if (priority === 'high') {
+        if (semanticTags?.some(tag => ['安全', '核心功能', '关键业务'].includes(tag))) {
+          priorityReasons.push('包含关键业务功能');
+        }
+        if (criteria && criteria.length > 3) {
+          priorityReasons.push('具有多项明确标准');
+        }
+        if (conversationContext.complexity === 'complex') {
+          priorityReasons.push('需求复杂度高');
+        }
+      } else if (priority === 'low') {
+        if (semanticTags?.some(tag => ['增强功能', '辅助功能', '用户体验'].includes(tag))) {
+          priorityReasons.push('属于增强型功能');
+        }
+        if (description?.includes('未来') || description?.includes('后续')) {
+          priorityReasons.push('可延后实现');
+        }
+      }
+      
+      if (priorityReasons.length > 0) {
+        summaryText += `原因：${priorityReasons.join('，')}\n`;
+      }
     }
     
     return summaryText;
