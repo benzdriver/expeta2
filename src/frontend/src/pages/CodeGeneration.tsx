@@ -10,6 +10,7 @@ interface Framework {
   id: string;
   label: string;
   description: string;
+  compatibleWith?: string[]; // 兼容的语言
 }
 
 interface Architecture {
@@ -18,20 +19,33 @@ interface Architecture {
   description: string;
 }
 
+interface CodeTemplate {
+  id: string;
+  label: string;
+  description: string;
+  compatibleWith?: {
+    languages?: string[];
+    architectures?: string[];
+  };
+}
+
 interface GeneratedCode {
   id: string;
   expectationId: string;
   language: string;
   frameworks: string[];
   architecture: string[];
+  template?: string;
   code: string;
   createdAt: Date;
+  semanticTags?: string[];
 }
 
 interface ExpectationDetail {
   id: string;
   title: string;
   description?: string;
+  semanticTags?: string[];
 }
 
 const CodeGeneration: React.FC = () => {
@@ -39,9 +53,13 @@ const CodeGeneration: React.FC = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<string>('typescript');
   const [selectedFrameworks, setSelectedFrameworks] = useState<string[]>([]);
   const [selectedArchitecture, setSelectedArchitecture] = useState<string[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('standard');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generatedCode, setGeneratedCode] = useState<GeneratedCode | null>(null);
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState<boolean>(false);
+  const [codeQuality, setCodeQuality] = useState<number>(80);
+  const [codeComments, setCodeComments] = useState<boolean>(true);
   const codeRef = useRef<HTMLPreElement>(null);
   
   const expectations: ExpectationDetail[] = [
@@ -95,7 +113,38 @@ const CodeGeneration: React.FC = () => {
     { id: 'hexagonal', label: '六边形架构', description: '也称为端口和适配器架构，关注业务逻辑与外部系统的分离' },
     { id: 'cqrs', label: 'CQRS', description: '命令查询责任分离，将读取和更新操作分开' },
     { id: 'event_sourcing', label: '事件溯源', description: '通过事件序列捕获所有状态变化，而不是存储当前状态' },
-    { id: 'clean', label: '清洁架构', description: '强调关注点分离和依赖规则，使系统更易于测试和维护' }
+    { id: 'clean', label: '清洁架构', description: '强调关注点分离和依赖规则，使系统更易于测试和维护' },
+    { id: 'ddd', label: '领域驱动设计', description: '围绕业务领域概念和逻辑构建软件，强调领域模型和通用语言' },
+    { id: 'onion', label: '洋葱架构', description: '类似于清洁架构，强调依赖指向核心领域，外层依赖内层' }
+  ];
+  
+  const templateOptions: CodeTemplate[] = [
+    { 
+      id: 'standard', 
+      label: '标准模板', 
+      description: '基础代码结构，适用于大多数项目' 
+    },
+    { 
+      id: 'enterprise', 
+      label: '企业级模板', 
+      description: '包含完整的错误处理、日志记录和性能优化',
+      compatibleWith: {
+        architectures: ['clean', 'hexagonal', 'ddd']
+      }
+    },
+    { 
+      id: 'minimal', 
+      label: '最小化模板', 
+      description: '简洁的代码结构，适用于原型开发和概念验证' 
+    },
+    { 
+      id: 'security_focused', 
+      label: '安全强化模板', 
+      description: '包含额外的安全措施和最佳实践',
+      compatibleWith: {
+        languages: ['typescript', 'java', 'csharp']
+      }
+    }
   ];
   
   useEffect(() => {
@@ -155,6 +204,9 @@ const CodeGeneration: React.FC = () => {
   const handleGenerateCode = () => {
     setIsGenerating(true);
     
+    const currentExpectation = expectations.find(exp => exp.id === selectedExpectationId);
+    const semanticTags = currentExpectation?.semanticTags || [];
+    
     setTimeout(() => {
       const newGeneratedCode: GeneratedCode = {
         id: `code-${Date.now()}`,
@@ -162,12 +214,17 @@ const CodeGeneration: React.FC = () => {
         language: selectedLanguage,
         frameworks: selectedFrameworks,
         architecture: selectedArchitecture,
+        template: selectedTemplate,
         code: generateSampleCode(
           selectedExpectationId, 
           selectedLanguage, 
           selectedFrameworks, 
-          selectedArchitecture
+          selectedArchitecture,
+          selectedTemplate,
+          codeQuality,
+          codeComments
         ),
+        semanticTags: semanticTags,
         createdAt: new Date()
       };
       
@@ -180,7 +237,10 @@ const CodeGeneration: React.FC = () => {
     expectationId: string, 
     language: string,
     frameworks: string[],
-    architectures: string[]
+    architectures: string[],
+    template?: string,
+    codeQuality?: number,
+    includeComments?: boolean
   ): string => {
     const getArchitectureComments = (architectures: string[], language: string): string => {
       let comments = '';
@@ -237,12 +297,80 @@ const CodeGeneration: React.FC = () => {
       return comments;
     };
     
+    const getTemplateCode = (
+      baseCode: string, 
+      template: string = 'standard', 
+      quality: number = 80,
+      includeComments: boolean = true
+    ): string => {
+      if (!includeComments) {
+        baseCode = baseCode.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+      }
+      
+      switch (template) {
+        case 'enterprise':
+          return baseCode.replace(
+            /async\s+(\w+)\([^)]*\)\s*{/g, 
+            `async $1($&) {
+    try {
+      console.log('[INFO] Entering $1 method');
+      const startTime = performance.now();`
+          ).replace(
+            /return\s+([^;]+);(?!\s*})/g,
+            `const result = $1;
+      const endTime = performance.now();
+      console.log(\`[INFO] Exiting $1 method. Execution time: \${endTime - startTime}ms\`);
+      return result;`
+          ).replace(
+            /}\s*$/g,
+            `    } catch (error) {
+      console.error(\`[ERROR] Error in $1 method: \${error.message}\`);
+      throw error;
+    }
+  }`
+          );
+          
+        case 'security_focused':
+          return baseCode.replace(
+            /async\s+(\w+)\(([^)]*)\)\s*{/g,
+            `async $1($2) {
+    this.validateInput($2);
+    await this.checkPermissions(context, '$1');`
+          );
+          
+        case 'minimal':
+          return baseCode
+            .replace(/\/\/.*$/gm, '')
+            .replace(/\/\*[\s\S]*?\*\//g, '')
+            .replace(/\s{2,}/g, ' ')
+            .replace(/\n\s*\n/g, '\n');
+            
+        default:
+          if (quality >= 90) {
+            return baseCode.replace(
+              /async\s+(\w+)\(([^)]*)\)\s*{/g,
+              `/**
+   * $1 - 执行$1操作
+   * @param {$2} - 输入参数
+   * @returns 处理结果
+   */
+  async $1($2) {
+    if (!this.isValid($2)) {
+      throw new Error('Invalid input parameters');
+    }`
+            );
+          }
+          return baseCode;
+      }
+    };
+
     const archComments = getArchitectureComments(architectures, language);
+    let baseCode = '';
     
     if (expectationId === 'user_management_system') {
       if (language === 'typescript') {
         if (frameworks.includes('nestjs')) {
-          return `${archComments}// 用户管理系统 - TypeScript + NestJS 实现
+          baseCode = `${archComments}// 用户管理系统 - TypeScript + NestJS 实现
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -292,7 +420,7 @@ export class UsersService {
   }
 }`;
         } else {
-          return `// 用户管理系统 - TypeScript 实现
+          baseCode = `// 用户管理系统 - TypeScript 实现
 interface User {
   id: string;
   name: string;
@@ -358,19 +486,21 @@ class UserService {
 export default UserService;`;
         }
       } else if (frameworks.includes('react')) {
-        return `${archComments}// 用户管理系统 - React 实现`;
+        baseCode = `${archComments}// 用户管理系统 - React 实现`;
       } else {
-        return `// ${expectationId} - ${language} 实现示例\n// 这里将根据选择的期望和语言生成相应的代码`;
+        baseCode = `// ${expectationId} - ${language} 实现示例\n// 这里将根据选择的期望和语言生成相应的代码`;
       }
     } else if (expectationId === 'payment_processing') {
       if (language === 'typescript') {
-        return `${archComments}// 支付处理系统 - TypeScript 实现`;
+        baseCode = `${archComments}// 支付处理系统 - TypeScript 实现`;
       } else {
-        return `// ${expectationId} - ${language} 实现示例\n// 这里将根据选择的期望和语言生成相应的代码`;
+        baseCode = `// ${expectationId} - ${language} 实现示例\n// 这里将根据选择的期望和语言生成相应的代码`;
       }
     } else {
-      return `// ${expectationId} - ${language} 实现示例\n// 这里将根据选择的期望和语言生成相应的代码`;
+      baseCode = `// ${expectationId} - ${language} 实现示例\n// 这里将根据选择的期望和语言生成相应的代码`;
     }
+    
+    return getTemplateCode(baseCode, template, codeQuality, includeComments);
   };
   
   const handleCopyCode = () => {
@@ -508,6 +638,73 @@ export default UserService;`;
                 </div>
               </div>
               
+              <div className="option-group">
+                <label>代码模板</label>
+                <div className="radio-options">
+                  {templateOptions.map(option => (
+                    <div key={option.id} className="radio-option">
+                      <input 
+                        type="radio" 
+                        id={`template-${option.id}`} 
+                        name="template"
+                        value={option.id}
+                        checked={selectedTemplate === option.id}
+                        onChange={() => setSelectedTemplate(option.id)}
+                      />
+                      <label htmlFor={`template-${option.id}`}>
+                        <span className="option-label">{option.label}</span>
+                        <span className="option-description">{option.description}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="option-group">
+                <button 
+                  className="secondary-button toggle-advanced"
+                  onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                >
+                  <span className="material-symbols-rounded">
+                    {showAdvancedOptions ? 'expand_less' : 'expand_more'}
+                  </span>
+                  <span>高级选项</span>
+                </button>
+                
+                {showAdvancedOptions && (
+                  <div className="advanced-options">
+                    <div className="slider-option">
+                      <label>代码质量 ({codeQuality}%)</label>
+                      <input 
+                        type="range" 
+                        min="50" 
+                        max="100" 
+                        value={codeQuality}
+                        onChange={(e) => setCodeQuality(parseInt(e.target.value))}
+                        className="slider"
+                      />
+                      <div className="slider-labels">
+                        <span>速度优先</span>
+                        <span>质量优先</span>
+                      </div>
+                    </div>
+                    
+                    <div className="checkbox-option">
+                      <input 
+                        type="checkbox" 
+                        id="code-comments" 
+                        checked={codeComments}
+                        onChange={(e) => setCodeComments(e.target.checked)}
+                      />
+                      <label htmlFor="code-comments">
+                        <span className="option-label">生成详细注释</span>
+                        <span className="option-description">包含详细的代码注释和文档</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
               <div className="option-actions">
                 <button 
                   className="primary-button generate-button"
@@ -572,11 +769,28 @@ export default UserService;`;
                       {generatedCode.frameworks.map(fw => (
                         <span key={fw} className="framework-badge">{fw}</span>
                       ))}
+                      {generatedCode.template && (
+                        <span className="template-badge">{
+                          templateOptions.find(t => t.id === generatedCode.template)?.label || generatedCode.template
+                        }</span>
+                      )}
                     </div>
                     <div className="code-info">
                       <span className="code-timestamp">{generatedCode.createdAt.toLocaleString('zh-CN')}</span>
                     </div>
                   </div>
+                  
+                  {generatedCode.semanticTags && generatedCode.semanticTags.length > 0 && (
+                    <div className="semantic-tags">
+                      <div className="tags-label">语义标签:</div>
+                      <div className="tags-container">
+                        {generatedCode.semanticTags.map(tag => (
+                          <span key={tag} className="semantic-tag">{tag}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   <pre ref={codeRef} className={`code-block language-${generatedCode.language}`}>
                     <code>{generatedCode.code}</code>
                   </pre>
