@@ -26,7 +26,11 @@ interface CodeTemplate {
   compatibleWith?: {
     languages?: string[];
     architectures?: string[];
+    frameworks?: string[];
   };
+  features?: string[];
+  semanticTags?: string[];
+  complexity?: 'simple' | 'medium' | 'complex';
 }
 
 interface GeneratedCode {
@@ -72,6 +76,19 @@ const CodeGeneration: React.FC = () => {
   const [showAdvancedOptions, setShowAdvancedOptions] = useState<boolean>(false);
   const [codeQuality, setCodeQuality] = useState<number>(80);
   const [codeComments, setCodeComments] = useState<boolean>(true);
+  const [semanticContext, setSemanticContext] = useState<{
+    industry: string;
+    domain: string;
+    complexity: 'simple' | 'medium' | 'complex';
+    priority: 'low' | 'medium' | 'high';
+  }>({
+    industry: '',
+    domain: '',
+    complexity: 'medium',
+    priority: 'medium'
+  });
+  const [showTemplateFeatures, setShowTemplateFeatures] = useState<boolean>(false);
+  const [selectedTemplateDetails, setSelectedTemplateDetails] = useState<CodeTemplate | null>(null);
   const codeRef = useRef<HTMLPreElement>(null);
   
   const expectations: ExpectationDetail[] = [
@@ -106,15 +123,17 @@ const CodeGeneration: React.FC = () => {
   ];
   
   const frameworkOptions = [
-    { id: 'react', label: 'React', description: '用于构建用户界面的JavaScript库' },
-    { id: 'angular', label: 'Angular', description: '由Google维护的TypeScript框架' },
-    { id: 'vue', label: 'Vue.js', description: '渐进式JavaScript框架' },
-    { id: 'express', label: 'Express', description: 'Node.js的Web应用框架' },
-    { id: 'nestjs', label: 'NestJS', description: '用于构建高效、可靠的服务器端应用程序的框架' },
-    { id: 'django', label: 'Django', description: 'Python高级Web框架，鼓励快速开发和简洁实用的设计' },
-    { id: 'flask', label: 'Flask', description: 'Python轻量级Web应用框架' },
-    { id: 'spring', label: 'Spring', description: 'Java应用程序开发框架和控制反转容器实现' },
-    { id: 'dotnet', label: '.NET Core', description: '微软开发的跨平台开源框架' }
+    { id: 'react', label: 'React', description: '用于构建用户界面的JavaScript库', compatibleWith: ['typescript', 'javascript'] },
+    { id: 'angular', label: 'Angular', description: '由Google维护的TypeScript框架', compatibleWith: ['typescript'] },
+    { id: 'vue', label: 'Vue.js', description: '渐进式JavaScript框架', compatibleWith: ['typescript', 'javascript'] },
+    { id: 'express', label: 'Express', description: 'Node.js的Web应用框架', compatibleWith: ['typescript', 'javascript'] },
+    { id: 'nestjs', label: 'NestJS', description: '用于构建高效、可靠的服务器端应用程序的框架', compatibleWith: ['typescript'] },
+    { id: 'django', label: 'Django', description: 'Python高级Web框架，鼓励快速开发和简洁实用的设计', compatibleWith: ['python'] },
+    { id: 'flask', label: 'Flask', description: 'Python轻量级Web应用框架', compatibleWith: ['python'] },
+    { id: 'spring', label: 'Spring', description: 'Java应用程序开发框架和控制反转容器实现', compatibleWith: ['java'] },
+    { id: 'dotnet', label: '.NET Core', description: '微软开发的跨平台开源框架', compatibleWith: ['csharp'] },
+    { id: 'fastapi', label: 'FastAPI', description: '现代、快速的Python Web框架，基于标准Python类型提示', compatibleWith: ['python'] },
+    { id: 'graphql', label: 'GraphQL', description: '用于API的查询语言和运行时', compatibleWith: ['typescript', 'javascript', 'java', 'python', 'csharp'] }
   ];
   
   const architectureOptions = [
@@ -134,28 +153,90 @@ const CodeGeneration: React.FC = () => {
     { 
       id: 'standard', 
       label: '标准模板', 
-      description: '基础代码结构，适用于大多数项目' 
+      description: '基础代码结构，适用于大多数项目',
+      features: ['基本错误处理', '标准注释', '常见设计模式'],
+      complexity: 'medium',
+      semanticTags: ['通用', '标准化']
     },
     { 
       id: 'enterprise', 
       label: '企业级模板', 
       description: '包含完整的错误处理、日志记录和性能优化',
       compatibleWith: {
-        architectures: ['clean', 'hexagonal', 'ddd']
-      }
+        architectures: ['clean', 'hexagonal', 'ddd', 'onion'],
+        frameworks: ['spring', 'nestjs', 'dotnet']
+      },
+      features: ['高级错误处理', '全面日志记录', '性能监控', '依赖注入', '事务管理'],
+      complexity: 'complex',
+      semanticTags: ['企业级', '可扩展', '高可用', '可维护']
     },
     { 
       id: 'minimal', 
       label: '最小化模板', 
-      description: '简洁的代码结构，适用于原型开发和概念验证' 
+      description: '简洁的代码结构，适用于原型开发和概念验证',
+      features: ['最小依赖', '快速启动', '简化结构'],
+      complexity: 'simple',
+      semanticTags: ['原型', '概念验证', '轻量级']
     },
     { 
       id: 'security_focused', 
       label: '安全强化模板', 
       description: '包含额外的安全措施和最佳实践',
       compatibleWith: {
-        languages: ['typescript', 'java', 'csharp']
-      }
+        languages: ['typescript', 'java', 'csharp'],
+        frameworks: ['spring', 'nestjs', 'dotnet']
+      },
+      features: ['输入验证', '认证授权', '数据加密', 'CSRF保护', 'XSS防御', '安全日志'],
+      complexity: 'complex',
+      semanticTags: ['安全', '合规', '防御性编程']
+    },
+    {
+      id: 'microservice',
+      label: '微服务模板',
+      description: '专为微服务架构设计的代码结构，包含服务发现、负载均衡等功能',
+      compatibleWith: {
+        architectures: ['microservices', 'hexagonal', 'clean'],
+        frameworks: ['spring', 'nestjs', 'dotnet']
+      },
+      features: ['服务发现', '负载均衡', '断路器模式', '分布式追踪', '配置中心'],
+      complexity: 'complex',
+      semanticTags: ['微服务', '分布式', '弹性', '可扩展']
+    },
+    {
+      id: 'event_driven',
+      label: '事件驱动模板',
+      description: '基于事件驱动架构的代码结构，适用于需要高度解耦的系统',
+      compatibleWith: {
+        architectures: ['event_sourcing', 'cqrs', 'microservices'],
+        frameworks: ['spring', 'nestjs']
+      },
+      features: ['事件发布订阅', '事件存储', '事件处理器', '命令处理器', '查询处理器'],
+      complexity: 'complex',
+      semanticTags: ['事件驱动', '异步', '解耦', '可扩展']
+    },
+    {
+      id: 'domain_driven',
+      label: '领域驱动模板',
+      description: '基于领域驱动设计的代码结构，适用于复杂业务领域',
+      compatibleWith: {
+        architectures: ['ddd', 'clean', 'hexagonal', 'onion'],
+        frameworks: ['spring', 'nestjs', 'dotnet']
+      },
+      features: ['领域模型', '聚合根', '值对象', '领域事件', '仓储模式', '领域服务'],
+      complexity: 'complex',
+      semanticTags: ['领域驱动', '业务建模', '通用语言', '边界上下文']
+    },
+    {
+      id: 'serverless',
+      label: '无服务器模板',
+      description: '为无服务器架构设计的代码结构，适用于基于云函数的应用',
+      compatibleWith: {
+        architectures: ['serverless'],
+        languages: ['typescript', 'javascript', 'python']
+      },
+      features: ['函数即服务', '事件触发', '状态管理', '冷启动优化'],
+      complexity: 'medium',
+      semanticTags: ['无服务器', '云原生', '按需计算', '自动扩展']
     }
   ];
   
@@ -208,6 +289,11 @@ const CodeGeneration: React.FC = () => {
     }
   };
   
+  const isFrameworkCompatible = (frameworkId: string): boolean => {
+    const framework = frameworkOptions.find(fw => fw.id === frameworkId);
+    return framework?.compatibleWith?.includes(selectedLanguage) ?? true;
+  };
+  
   const handleArchitectureChange = (architectureId: string, isChecked: boolean) => {
     if (isChecked) {
       setSelectedArchitecture(prev => [...prev, architectureId]);
@@ -223,37 +309,52 @@ const CodeGeneration: React.FC = () => {
     const semanticTags = currentExpectation?.semanticTags || [];
     
     const determineSemanticContext = () => {
-      let industry = '';
-      let domain = '';
-      let complexity = 'medium';
+      let industry = semanticContext.industry;
+      let domain = semanticContext.domain;
+      let complexity = semanticContext.complexity;
+      let priority = semanticContext.priority;
       
-      if (selectedExpectationId === 'user_management_system') {
-        industry = '企业';
-        domain = '身份认证';
-      } else if (selectedExpectationId === 'payment_processing') {
-        industry = '金融';
-        domain = '交易处理';
-      } else if (selectedExpectationId === 'inventory_management') {
-        industry = '零售';
-        domain = '库存管理';
-      } else if (selectedExpectationId === 'reporting_dashboard') {
-        industry = '商业智能';
-        domain = '数据可视化';
+      if (!industry) {
+        if (selectedExpectationId === 'user_management_system') {
+          industry = '企业';
+        } else if (selectedExpectationId === 'payment_processing') {
+          industry = '金融';
+        } else if (selectedExpectationId === 'inventory_management') {
+          industry = '零售';
+        } else if (selectedExpectationId === 'reporting_dashboard') {
+          industry = '商业智能';
+        }
       }
       
-      if (selectedArchitecture.includes('microservices') || 
-          selectedArchitecture.includes('event_sourcing') || 
-          selectedArchitecture.includes('cqrs')) {
-        complexity = 'complex';
-      } else if (selectedArchitecture.includes('mvc') && selectedArchitecture.length === 1) {
-        complexity = 'simple';
+      if (!domain) {
+        if (selectedExpectationId === 'user_management_system') {
+          domain = '身份认证';
+        } else if (selectedExpectationId === 'payment_processing') {
+          domain = '交易处理';
+        } else if (selectedExpectationId === 'inventory_management') {
+          domain = '库存管理';
+        } else if (selectedExpectationId === 'reporting_dashboard') {
+          domain = '数据可视化';
+        }
       }
       
-      let priority = 'medium';
-      if (selectedTemplate === 'enterprise' || codeQuality >= 90) {
-        priority = 'high';
-      } else if (selectedTemplate === 'minimal' || codeQuality <= 60) {
-        priority = 'low';
+      if (complexity === 'medium' && !semanticContext.complexity) {
+        if (selectedArchitecture.includes('microservices') || 
+            selectedArchitecture.includes('event_sourcing') || 
+            selectedArchitecture.includes('cqrs') ||
+            selectedArchitecture.includes('ddd')) {
+          complexity = 'complex';
+        } else if (selectedArchitecture.includes('mvc') && selectedArchitecture.length === 1) {
+          complexity = 'simple';
+        }
+      }
+      
+      if (priority === 'medium' && !semanticContext.priority) {
+        if (selectedTemplate === 'enterprise' || codeQuality >= 90) {
+          priority = 'high';
+        } else if (selectedTemplate === 'minimal' || codeQuality <= 60) {
+          priority = 'low';
+        }
       }
       
       return { industry, domain, complexity, priority };
@@ -696,7 +797,7 @@ export default UserService;`;
                 <label>框架选择</label>
                 <div className="checkbox-options">
                   {frameworkOptions.map(option => (
-                    <div key={option.id} className="checkbox-option">
+                    <div key={option.id} className={`checkbox-option ${!isFrameworkCompatible(option.id) ? 'incompatible' : ''}`}>
                       <input 
                         type="checkbox" 
                         id={`framework-${option.id}`} 
@@ -704,10 +805,14 @@ export default UserService;`;
                         value={option.id}
                         checked={selectedFrameworks.includes(option.id)}
                         onChange={(e) => handleFrameworkChange(option.id, e.target.checked)}
+                        disabled={!isFrameworkCompatible(option.id)}
                       />
                       <label htmlFor={`framework-${option.id}`}>
                         <span className="option-label">{option.label}</span>
                         <span className="option-description">{option.description}</span>
+                        {!isFrameworkCompatible(option.id) && (
+                          <span className="compatibility-warning">与所选语言不兼容</span>
+                        )}
                       </label>
                     </div>
                   ))}
@@ -769,6 +874,18 @@ export default UserService;`;
                   <span>高级选项</span>
                 </button>
                 
+                <button 
+                  className="secondary-button template-info-button"
+                  onClick={() => {
+                    const template = templateOptions.find(t => t.id === selectedTemplate);
+                    setSelectedTemplateDetails(template || null);
+                    setShowTemplateFeatures(true);
+                  }}
+                >
+                  <span className="material-symbols-rounded">info</span>
+                  <span>模板详情</span>
+                </button>
+                
                 {showAdvancedOptions && (
                   <div className="advanced-options">
                     <div className="slider-option">
@@ -798,6 +915,74 @@ export default UserService;`;
                         <span className="option-label">生成详细注释</span>
                         <span className="option-description">包含详细的代码注释和文档</span>
                       </label>
+                    </div>
+                    
+                    <div className="option-section">
+                      <h4>语义上下文</h4>
+                      <div className="option-row">
+                        <div className="option-col">
+                          <label>行业</label>
+                          <select 
+                            value={semanticContext.industry}
+                            onChange={(e) => setSemanticContext({...semanticContext, industry: e.target.value})}
+                            className="select-input"
+                          >
+                            <option value="">未指定</option>
+                            <option value="电子商务">电子商务</option>
+                            <option value="金融">金融</option>
+                            <option value="医疗">医疗</option>
+                            <option value="教育">教育</option>
+                            <option value="制造">制造</option>
+                            <option value="零售">零售</option>
+                            <option value="物流">物流</option>
+                            <option value="企业">企业</option>
+                          </select>
+                        </div>
+                        <div className="option-col">
+                          <label>领域</label>
+                          <select 
+                            value={semanticContext.domain}
+                            onChange={(e) => setSemanticContext({...semanticContext, domain: e.target.value})}
+                            className="select-input"
+                          >
+                            <option value="">未指定</option>
+                            <option value="用户管理">用户管理</option>
+                            <option value="支付处理">支付处理</option>
+                            <option value="数据分析">数据分析</option>
+                            <option value="内容管理">内容管理</option>
+                            <option value="库存管理">库存管理</option>
+                            <option value="客户关系">客户关系</option>
+                            <option value="身份认证">身份认证</option>
+                            <option value="数据可视化">数据可视化</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="option-row">
+                        <div className="option-col">
+                          <label>复杂度</label>
+                          <select 
+                            value={semanticContext.complexity}
+                            onChange={(e) => setSemanticContext({...semanticContext, complexity: e.target.value as any})}
+                            className="select-input"
+                          >
+                            <option value="simple">简单</option>
+                            <option value="medium">中等</option>
+                            <option value="complex">复杂</option>
+                          </select>
+                        </div>
+                        <div className="option-col">
+                          <label>优先级</label>
+                          <select 
+                            value={semanticContext.priority}
+                            onChange={(e) => setSemanticContext({...semanticContext, priority: e.target.value as any})}
+                            className="select-input"
+                          >
+                            <option value="low">低</option>
+                            <option value="medium">中</option>
+                            <option value="high">高</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
