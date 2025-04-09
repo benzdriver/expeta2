@@ -252,8 +252,53 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       "您的组织有哪些特定的技术栈偏好或限制？"
     ];
     
+    const industrySpecificQuestions: Record<string, string[]> = {
+      '电商': [
+        "您的电商平台需要支持哪些支付方式？是否需要国际支付功能？",
+        "您需要什么样的库存管理和订单处理系统？是否需要与物流系统集成？",
+        "您的平台是否需要个性化推荐功能？基于什么样的用户行为数据？"
+      ],
+      '金融': [
+        "您的金融系统需要符合哪些监管要求和合规标准？",
+        "系统需要处理的交易类型和交易量是什么？有哪些风控要求？",
+        "您需要什么样的报表和分析功能来满足业务和监管需求？"
+      ],
+      '医疗': [
+        "您的医疗系统需要符合哪些数据隐私和安全标准（如HIPAA）？",
+        "系统需要与哪些医疗设备或现有医疗信息系统集成？",
+        "您需要什么样的患者数据管理和医疗记录功能？"
+      ],
+      '教育': [
+        "您的教育平台需要支持哪些类型的学习内容和互动方式？",
+        "系统需要什么样的学生进度跟踪和评估功能？",
+        "您需要什么样的数据分析来评估学习效果和改进教学方法？"
+      ],
+      '企业': [
+        "您的企业系统需要支持哪些业务流程和部门协作？",
+        "系统需要与哪些现有企业软件（如ERP、CRM）集成？",
+        "您需要什么样的报表和分析功能来支持业务决策？"
+      ]
+    };
+    
     if (currentExpectation.description) {
       const description = currentExpectation.description.toLowerCase();
+      
+      const industryKeywords: Record<string, string[]> = {
+        '电商': ['电商', '购物', '商城', '订单', '支付', '物流', '商品'],
+        '金融': ['金融', '银行', '支付', '交易', '投资', '风控', '合规'],
+        '医疗': ['医疗', '健康', '患者', '医院', '诊所', '医生', '病历'],
+        '教育': ['教育', '学习', '课程', '学生', '教师', '培训', '考试'],
+        '企业': ['企业', '公司', '业务', '流程', '部门', '员工', '管理']
+      };
+      
+      for (const [industry, keywords] of Object.entries(industryKeywords)) {
+        if (keywords.some(keyword => description.includes(keyword))) {
+          const industryQuestions = industrySpecificQuestions[industry];
+          if (industryQuestions && round < industryQuestions.length) {
+            return industryQuestions[round];
+          }
+        }
+      }
       
       if (description.includes('安全') || description.includes('认证') || description.includes('授权') || description.includes('加密')) {
         if (round === 0) {
@@ -262,6 +307,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           return "关于用户认证和授权，您是否需要支持第三方登录（如Google、微信等）？您期望系统如何管理不同角色的权限？";
         } else if (round === 2) {
           return "您的系统是否需要符合特定的安全标准或法规（如GDPR、ISO27001等）？这会对系统架构产生什么影响？";
+        } else if (round === 3) {
+          return "您是否需要安全审计和监控功能？如何处理潜在的安全漏洞和威胁？";
         }
       }
       
@@ -272,6 +319,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           return "您的系统预计会处理多大规模的数据？是否有特定的峰值时段需要考虑？";
         } else if (round === 2) {
           return "您对系统的可用性和容错性有什么要求？例如，是否需要高可用架构、灾难恢复策略等？";
+        } else if (round === 3) {
+          return "您是否需要性能监控和自动扩展功能？如何确定系统性能瓶颈并进行优化？";
         }
       }
       
@@ -282,6 +331,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           return "您的系统需要支持哪些设备和平台？是否需要响应式设计或原生应用？";
         } else if (round === 2) {
           return "您对系统的可访问性有什么要求？例如，是否需要支持残障人士使用，或者多语言支持？";
+        } else if (round === 3) {
+          return "您是否有用户研究或用户反馈机制的需求？如何收集和应用用户反馈来改进系统？";
         }
       }
       
@@ -292,6 +343,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           return "您需要什么样的数据分析和报表功能？是否需要实时分析或定期报告？";
         } else if (round === 2) {
           return "您对数据备份、恢复和保留策略有什么要求？数据需要保存多长时间？";
+        } else if (round === 3) {
+          return "您是否需要数据治理和数据质量管理功能？如何确保数据的准确性和一致性？";
         }
       }
       
@@ -302,6 +355,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           return "这些集成是实时的还是批量的？有没有特定的数据格式或协议要求？";
         } else if (round === 2) {
           return "您对集成的安全性和错误处理有什么要求？如何处理第三方系统不可用的情况？";
+        } else if (round === 3) {
+          return "您是否需要API管理和监控功能？如何跟踪和管理不同版本的API？";
         }
       }
       
@@ -312,6 +367,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           return "这些流程中是否有需要人工审批或干预的环节？如何处理异常情况？";
         } else if (round === 2) {
           return "您期望系统如何监控和报告这些流程的执行情况？是否需要流程优化建议？";
+        } else if (round === 3) {
+          return "您是否需要流程版本控制和变更管理功能？如何确保流程变更不会影响正在执行的实例？";
         }
       }
     }
@@ -331,6 +388,41 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       if (allCriteria.includes('功能') && !allCriteria.includes('可用性') && !allCriteria.includes('易用') && round === 2) {
         return "您已经描述了一些系统功能，对于这些功能的可用性和用户友好性，您有什么期望或标准？";
       }
+      
+      if (allCriteria.includes('高性能') && allCriteria.includes('低成本') && round === 2) {
+        return "您同时提到了高性能和低成本需求，这两者可能存在权衡。您能否详细说明哪些方面的性能是最关键的，以及在成本方面的具体限制？";
+      }
+      
+      if (allCriteria.includes('简单') && allCriteria.includes('复杂') && round === 2) {
+        return "您的回答中同时提到了简单性和复杂功能，能否澄清哪些方面需要保持简单，哪些功能可以更复杂？";
+      }
+      
+      const domainTerms = [
+        { term: '微服务', question: "您提到了微服务架构，能否详细说明您对服务边界划分和服务间通信的期望？" },
+        { term: '区块链', question: "您提到了区块链技术，能否详细说明您期望通过区块链解决什么问题？是否需要公链、联盟链或私链？" },
+        { term: '人工智能', question: "您提到了人工智能功能，能否详细说明您期望AI解决什么具体问题？您有哪些训练数据或模型要求？" },
+        { term: '物联网', question: "您提到了物联网应用，能否详细说明需要连接的设备类型、数据收集频率和处理要求？" },
+        { term: '大数据', question: "您提到了大数据处理需求，能否详细说明数据量级、数据来源和期望的分析结果？" }
+      ];
+      
+      for (const { term, question } of domainTerms) {
+        if (allCriteria.includes(term) && round === 2) {
+          return question;
+        }
+      }
+      
+      if (currentExpectation.criteria.length >= 2) {
+        const lastCriterion = currentExpectation.criteria[currentExpectation.criteria.length - 1].toLowerCase();
+        const secondLastCriterion = currentExpectation.criteria[currentExpectation.criteria.length - 2].toLowerCase();
+        
+        if (lastCriterion.length < 50 && secondLastCriterion.length < 50 && round === 2) {
+          return "您的回答比较简洁，能否更详细地描述您的需求和期望？特别是关于系统的关键功能和用户体验方面。";
+        }
+        
+        if (lastCriterion.includes('，') && lastCriterion.includes('。') && lastCriterion.length > 100 && round === 2) {
+          return "您提到了多个需求点，能否按照优先级对这些需求进行排序？哪些是必须实现的核心功能，哪些是可选的增强功能？";
+        }
+      }
     }
     
     return clarificationQuestions[round % clarificationQuestions.length];
@@ -343,67 +435,71 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const commonWords = [
       '的', '了', '和', '与', '或', '在', '是', '有', '这个', '那个', '如何', '什么', '为什么',
       '需要', '可以', '应该', '能够', '希望', '想要', '系统', '功能', '使用', '提供', '支持',
-      '请', '您', '我们', '他们', '它', '这些', '那些', '一些', '所有', '任何', '每个'
+      '请', '您', '我们', '他们', '它', '这些', '那些', '一些', '所有', '任何', '每个', '以及',
+      '但是', '因为', '所以', '如果', '当', '而且', '并且', '不', '没有', '很', '非常', '更加'
     ];
     
     const domainSpecificTags: Record<string, string[]> = {
-      '安全': ['信息安全', '数据保护', '安全机制'],
-      '认证': ['用户认证', '身份验证', '访问控制'],
-      '授权': ['权限管理', '角色授权', '访问控制'],
-      '加密': ['数据加密', '端到端加密', '传输安全'],
-      '隐私': ['隐私保护', '数据隐私', 'GDPR合规'],
-      '合规': ['法规遵从', '合规要求', '行业标准'],
+      '安全': ['信息安全', '数据保护', '安全机制', '安全架构'],
+      '认证': ['用户认证', '身份验证', '访问控制', '多因素认证'],
+      '授权': ['权限管理', '角色授权', '访问控制', '细粒度权限'],
+      '加密': ['数据加密', '端到端加密', '传输安全', '加密算法'],
+      '隐私': ['隐私保护', '数据隐私', 'GDPR合规', '隐私设计'],
+      '合规': ['法规遵从', '合规要求', '行业标准', '审计跟踪'],
+      '风控': ['风险控制', '安全审计', '威胁检测', '漏洞管理'],
       
-      '性能': ['高性能', '系统优化', '响应速度'],
-      '并发': ['并发处理', '高并发', '负载均衡'],
-      '可靠': ['系统可靠性', '容错机制', '故障恢复'],
-      '可用': ['高可用性', '服务可用性', '冗余设计'],
-      '扩展': ['可扩展性', '水平扩展', '垂直扩展'],
-      '监控': ['系统监控', '性能监控', '日志记录'],
+      '性能': ['高性能', '系统优化', '响应速度', '性能调优'],
+      '并发': ['并发处理', '高并发', '负载均衡', '并发控制'],
+      '可靠': ['系统可靠性', '容错机制', '故障恢复', '健壮性'],
+      '可用': ['高可用性', '服务可用性', '冗余设计', '故障转移'],
+      '扩展': ['可扩展性', '水平扩展', '垂直扩展', '弹性伸缩'],
+      '监控': ['系统监控', '性能监控', '日志记录', '健康检查'],
+      '缓存': ['数据缓存', '缓存策略', '分布式缓存', '缓存一致性'],
       
-      '用户': ['用户体验', '用户管理', '用户交互'],
-      '界面': ['用户界面', 'UI设计', '交互设计'],
-      '交互': ['人机交互', '用户交互', '交互模式'],
-      '易用': ['易用性', '用户友好', '直观操作'],
-      '响应': ['响应式设计', '快速响应', '实时反馈'],
-      '多语言': ['国际化', '本地化', '多语言支持'],
-      '可访问': ['可访问性', '无障碍设计', '辅助功能'],
+      '用户': ['用户体验', '用户管理', '用户交互', '用户旅程'],
+      '界面': ['用户界面', 'UI设计', '交互设计', '视觉设计'],
+      '交互': ['人机交互', '用户交互', '交互模式', '交互反馈'],
+      '易用': ['易用性', '用户友好', '直观操作', '学习曲线'],
+      '响应': ['响应式设计', '快速响应', '实时反馈', '交互响应'],
+      '多语言': ['国际化', '本地化', '多语言支持', '文化适配'],
+      '可访问': ['可访问性', '无障碍设计', '辅助功能', '普适设计'],
+      '个性化': ['用户个性化', '定制体验', '偏好设置', '智能推荐'],
       
-      '数据': ['数据管理', '数据处理', '数据分析'],
-      '存储': ['数据存储', '持久化', '存储策略'],
-      '备份': ['数据备份', '灾难恢复', '数据冗余'],
-      '分析': ['数据分析', '商业智能', '预测分析'],
-      '报表': ['数据可视化', '报表生成', '统计分析'],
-      '搜索': ['搜索功能', '信息检索', '全文搜索'],
-      '大数据': ['大数据处理', '数据湖', '数据仓库'],
+      '数据': ['数据管理', '数据处理', '数据分析', '数据架构'],
+      '存储': ['数据存储', '持久化', '存储策略', '存储优化'],
+      '备份': ['数据备份', '灾难恢复', '数据冗余', '备份策略'],
+      '分析': ['数据分析', '商业智能', '预测分析', '数据挖掘'],
+      '报表': ['数据可视化', '报表生成', '统计分析', '交互式报表'],
+      '搜索': ['搜索功能', '信息检索', '全文搜索', '搜索优化'],
+      '大数据': ['大数据处理', '数据湖', '数据仓库', '流处理'],
       
-      '集成': ['系统集成', 'API集成', '第三方集成'],
-      '接口': ['API设计', '接口规范', '服务接口'],
-      '微服务': ['微服务架构', '服务编排', '服务网格'],
-      '消息': ['消息队列', '事件驱动', '异步通信'],
-      '同步': ['数据同步', '实时同步', '状态同步'],
+      '集成': ['系统集成', 'API集成', '第三方集成', '集成架构'],
+      '接口': ['API设计', '接口规范', '服务接口', 'RESTful API'],
+      '微服务': ['微服务架构', '服务编排', '服务网格', '服务发现'],
+      '消息': ['消息队列', '事件驱动', '异步通信', '消息中间件'],
+      '同步': ['数据同步', '实时同步', '状态同步', '双向同步'],
       
-      '流程': ['业务流程', '工作流', '流程自动化'],
-      '审批': ['审批流程', '审核机制', '多级审批'],
-      '自动化': ['流程自动化', '任务自动化', '智能自动化'],
-      '规则': ['业务规则', '规则引擎', '决策系统'],
+      '流程': ['业务流程', '工作流', '流程自动化', '流程优化'],
+      '审批': ['审批流程', '审核机制', '多级审批', '审批追踪'],
+      '自动化': ['流程自动化', '任务自动化', '智能自动化', 'RPA'],
+      '规则': ['业务规则', '规则引擎', '决策系统', '规则管理'],
       
-      '支付': ['支付处理', '交易系统', '金融安全'],
-      '通知': ['消息通知', '提醒系统', '实时通信'],
-      '移动': ['移动应用', '响应式设计', '跨平台'],
-      '离线': ['离线功能', '本地存储', '同步机制'],
-      '社交': ['社交功能', '用户互动', '社区管理'],
-      '电商': ['电子商务', '购物车', '订单管理'],
-      '内容': ['内容管理', '富媒体', '版本控制'],
+      '支付': ['支付处理', '交易系统', '金融安全', '支付网关'],
+      '通知': ['消息通知', '提醒系统', '实时通信', '推送服务'],
+      '移动': ['移动应用', '响应式设计', '跨平台', '移动优先'],
+      '离线': ['离线功能', '本地存储', '同步机制', '断网恢复'],
+      '社交': ['社交功能', '用户互动', '社区管理', '内容分享'],
+      '电商': ['电子商务', '购物车', '订单管理', '商品目录'],
+      '内容': ['内容管理', '富媒体', '版本控制', '内容分发'],
       
-      '部署': ['系统部署', '云部署', '持续集成'],
-      '测试': ['自动化测试', '质量保证', '测试覆盖'],
-      '架构': ['系统架构', '软件架构', '架构设计'],
-      '模式': ['设计模式', '架构模式', '实现模式'],
-      '云': ['云服务', '云原生', 'SaaS模型'],
-      '容器': ['容器化', 'Docker', 'Kubernetes'],
-      '前端': ['前端开发', 'UI框架', '客户端'],
-      '后端': ['后端开发', '服务端', 'API服务']
+      '部署': ['系统部署', '云部署', '持续集成', '部署自动化'],
+      '测试': ['自动化测试', '质量保证', '测试覆盖', '测试策略'],
+      '架构': ['系统架构', '软件架构', '架构设计', '架构模式'],
+      '模式': ['设计模式', '架构模式', '实现模式', '集成模式'],
+      '云': ['云服务', '云原生', 'SaaS模型', '多云策略'],
+      '容器': ['容器化', 'Docker', 'Kubernetes', '容器编排'],
+      '前端': ['前端开发', 'UI框架', '客户端', '前端架构'],
+      '后端': ['后端开发', '服务端', 'API服务', '后端架构']
     };
     
     const analyzeKeyPhrases = (text: string): string[] => {
@@ -419,7 +515,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         { pattern: /(自动化|智能).*?(测试|部署|流程)/g, tag: '自动化流程' },
         { pattern: /(云原生|云服务|云平台)/g, tag: '云原生架构' },
         { pattern: /(微服务|分布式).*?(架构|系统|设计)/g, tag: '微服务架构' },
-        { pattern: /(移动|手机|平板).*?(应用|客户端|界面)/g, tag: '移动应用' }
+        { pattern: /(移动|手机|平板).*?(应用|客户端|界面)/g, tag: '移动应用' },
+        { pattern: /(多租户|租户隔离|SaaS)/g, tag: '多租户架构' },
+        { pattern: /(事件驱动|消息队列|发布订阅)/g, tag: '事件驱动架构' },
+        { pattern: /(机器学习|人工智能|智能算法)/g, tag: 'AI功能' },
+        { pattern: /(离线工作|断网操作|本地优先)/g, tag: '离线优先' },
+        { pattern: /(高并发|大流量|峰值处理)/g, tag: '高并发处理' }
       ];
       
       phrasePatterns.forEach(({ pattern, tag }) => {
@@ -429,6 +530,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       });
       
       return keyPhrases;
+    };
+    
+    const detectIndustry = (text: string): string[] => {
+      const industries: string[] = [];
+      
+      const industryPatterns = [
+        { pattern: /(电子商务|网上商城|购物平台|订单管理|商品目录|购物车)/g, tag: '电子商务' },
+        { pattern: /(金融服务|银行|支付系统|交易处理|风险控制|投资管理)/g, tag: '金融科技' },
+        { pattern: /(医疗系统|患者管理|医院信息|临床决策|健康记录|医疗设备)/g, tag: '医疗健康' },
+        { pattern: /(教育平台|学习管理|课程内容|学生评估|在线教育|教学工具)/g, tag: '教育科技' },
+        { pattern: /(社交网络|用户互动|社区管理|内容分享|社交媒体|用户关系)/g, tag: '社交平台' }
+      ];
+      
+      industryPatterns.forEach(({ pattern, tag }) => {
+        if (pattern.test(text)) {
+          industries.push(tag);
+        }
+      });
+      
+      return industries;
     };
     
     const words = allText.split(/\s+|[,.;，。；]/);
@@ -450,12 +571,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             bestTag = '数据保护';
           } else if (allText.includes('认证') || allText.includes('登录')) {
             bestTag = '安全认证';
+          } else if (allText.includes('合规') || allText.includes('标准')) {
+            bestTag = '安全合规';
           }
         } else if (keyword === '用户') {
           if (allText.includes('体验') || allText.includes('易用')) {
             bestTag = '用户体验';
           } else if (allText.includes('管理') || allText.includes('角色')) {
             bestTag = '用户管理';
+          } else if (allText.includes('交互') || allText.includes('界面')) {
+            bestTag = '用户交互';
+          }
+        } else if (keyword === '数据') {
+          if (allText.includes('分析') || allText.includes('报表')) {
+            bestTag = '数据分析';
+          } else if (allText.includes('存储') || allText.includes('持久化')) {
+            bestTag = '数据存储';
+          } else if (allText.includes('安全') || allText.includes('保护')) {
+            bestTag = '数据安全';
           }
         }
         
@@ -465,15 +598,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     
     const keyPhraseTags = analyzeKeyPhrases(allText);
     
-    let semanticTags = Array.from(new Set([...domainTags, ...keyPhraseTags]));
+    const industryTags = detectIndustry(allText);
+    
+    let semanticTags = Array.from(new Set([...domainTags, ...keyPhraseTags, ...industryTags]));
     
     const remainingSlots = 5 - semanticTags.length;
     if (remainingSlots > 0) {
-      semanticTags = [...semanticTags, ...uniqueWords.slice(0, remainingSlots)];
+      const wordFrequency: Record<string, number> = {};
+      filteredWords.forEach(word => {
+        wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+      });
+      
+      const sortedWords = uniqueWords.sort((a, b) => (wordFrequency[b] || 0) - (wordFrequency[a] || 0));
+      semanticTags = [...semanticTags, ...sortedWords.slice(0, remainingSlots)];
     }
     
     if (semanticTags.length < 3 && title) {
-      const defaultTags = ['系统开发', '软件需求', '功能实现'];
+      let defaultTags: string[] = ['系统开发', '软件需求', '功能实现'];
+      
+      if (title.includes('管理') || title.includes('系统')) {
+        defaultTags = ['管理系统', '业务流程', '数据处理'];
+      } else if (title.includes('平台') || title.includes('门户')) {
+        defaultTags = ['应用平台', '用户服务', '集成系统'];
+      } else if (title.includes('移动') || title.includes('应用')) {
+        defaultTags = ['移动应用', '用户体验', '前端开发'];
+      }
+      
       const neededTags = 3 - semanticTags.length;
       semanticTags = [...semanticTags, ...defaultTags.slice(0, neededTags)];
     }
