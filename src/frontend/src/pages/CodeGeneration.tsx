@@ -237,6 +237,30 @@ const CodeGeneration: React.FC = () => {
       features: ['函数即服务', '事件触发', '状态管理', '冷启动优化'],
       complexity: 'medium',
       semanticTags: ['无服务器', '云原生', '按需计算', '自动扩展']
+    },
+    {
+      id: 'hybrid_cloud',
+      label: '混合云模板',
+      description: '支持跨云平台和本地部署的混合架构，提供统一的接口和部署策略',
+      compatibleWith: {
+        architectures: ['microservices', 'serverless', 'clean'],
+        languages: ['typescript', 'java', 'python']
+      },
+      features: ['多云适配', '统一抽象层', '云资源管理', '混合部署', '跨环境数据同步'],
+      complexity: 'complex',
+      semanticTags: ['混合云', '多云', '云迁移', '云原生', '弹性架构']
+    },
+    {
+      id: 'api_gateway',
+      label: 'API网关模板',
+      description: '专注于API管理、路由和安全的模板，适用于构建API网关和服务聚合层',
+      compatibleWith: {
+        architectures: ['microservices', 'serverless'],
+        languages: ['typescript', 'java', 'python']
+      },
+      features: ['请求路由', 'API版本控制', '限流熔断', '请求转换', '认证授权', '缓存策略'],
+      complexity: 'medium',
+      semanticTags: ['API管理', '服务聚合', '边缘计算', '安全网关']
     }
   ];
   
@@ -323,6 +347,10 @@ const CodeGeneration: React.FC = () => {
           industry = '零售';
         } else if (selectedExpectationId === 'reporting_dashboard') {
           industry = '商业智能';
+        } else if (selectedTemplate === 'hybrid_cloud') {
+          industry = '企业';
+        } else if (selectedTemplate === 'api_gateway') {
+          industry = '技术服务';
         }
       }
       
@@ -342,7 +370,8 @@ const CodeGeneration: React.FC = () => {
         if (selectedArchitecture.includes('microservices') || 
             selectedArchitecture.includes('event_sourcing') || 
             selectedArchitecture.includes('cqrs') ||
-            selectedArchitecture.includes('ddd')) {
+            selectedArchitecture.includes('ddd') ||
+            selectedTemplate === 'hybrid_cloud') {
           complexity = 'complex';
         } else if (selectedArchitecture.includes('mvc') && selectedArchitecture.length === 1) {
           complexity = 'simple';
@@ -350,7 +379,10 @@ const CodeGeneration: React.FC = () => {
       }
       
       if (priority === 'medium' && !semanticContext.priority) {
-        if (selectedTemplate === 'enterprise' || codeQuality >= 90) {
+        if (selectedTemplate === 'enterprise' || 
+            selectedTemplate === 'security_focused' ||
+            selectedTemplate === 'api_gateway' ||
+            codeQuality >= 90) {
           priority = 'high';
         } else if (selectedTemplate === 'minimal' || codeQuality <= 60) {
           priority = 'low';
@@ -367,17 +399,26 @@ const CodeGeneration: React.FC = () => {
       if (selectedArchitecture.includes('ddd') || selectedArchitecture.includes('clean')) {
         semanticScore += 1.0;
       }
+      if (selectedTemplate === 'hybrid_cloud') {
+        semanticScore += 0.8;
+      }
       semanticScore = Math.min(5.0, semanticScore);
       
       let qualityScore = baseQualityScore;
       if (selectedTemplate === 'enterprise') {
         qualityScore += 0.5;
       }
+      if (selectedTemplate === 'api_gateway') {
+        qualityScore += 0.4;
+      }
       qualityScore = Math.min(5.0, qualityScore);
       
       let performanceScore = 3.0;
       if (selectedArchitecture.includes('microservices')) {
         performanceScore += 0.7;
+      }
+      if (selectedTemplate === 'hybrid_cloud') {
+        performanceScore += 0.6;
       }
       if (selectedFrameworks.includes('nestjs') || selectedFrameworks.includes('spring')) {
         performanceScore += 0.5;
@@ -387,6 +428,9 @@ const CodeGeneration: React.FC = () => {
       let securityScore = 3.0;
       if (selectedTemplate === 'security_focused') {
         securityScore += 1.5;
+      }
+      if (selectedTemplate === 'api_gateway') {
+        securityScore += 1.2;
       }
       if (selectedLanguage === 'typescript' || selectedLanguage === 'java') {
         securityScore += 0.5;
@@ -493,6 +537,14 @@ const CodeGeneration: React.FC = () => {
         comments += `${commentPrefix}- 控制器(Controller)：处理用户输入并协调模型和视图\n\n`;
       }
       
+      if (architectures.includes('serverless')) {
+        comments += `${commentPrefix}使用无服务器架构\n`;
+        comments += `${commentPrefix}- 函数即服务(FaaS)模式，按需执行和计费\n`;
+        comments += `${commentPrefix}- 事件驱动的函数触发机制\n`;
+        comments += `${commentPrefix}- 自动扩展，无需管理服务器基础设施\n`;
+        comments += `${commentPrefix}- 冷启动优化和状态管理考虑\n\n`;
+      }
+      
       return comments;
     };
     
@@ -543,6 +595,88 @@ const CodeGeneration: React.FC = () => {
             .replace(/\/\*[\s\S]*?\*\//g, '')
             .replace(/\s{2,}/g, ' ')
             .replace(/\n\s*\n/g, '\n');
+        
+        case 'hybrid_cloud':
+          return baseCode.replace(
+            /class\s+(\w+)/g,
+            `/**
+ * 混合云适配的$1类
+ * 支持跨云平台和本地部署的统一接口
+ */
+@CloudProvider({
+  providers: ['aws', 'azure', 'gcp', 'local'],
+  autoDetect: true
+})
+class $1`
+          ).replace(
+            /async\s+(\w+)\(([^)]*)\)\s*{/g,
+            `/**
+   * $1 - 云平台无关的$1实现
+   * @param {$2} - 输入参数
+   * @returns 处理结果
+   */
+  @CloudAdaptive({
+    retryPolicy: { maxRetries: 3, backoffFactor: 1.5 },
+    fallbackStrategy: 'nearest-region'
+  })
+  async $1($2) {
+    const provider = this.cloudContext.getCurrentProvider();
+    const metrics = this.cloudContext.getMetricsCollector();
+    
+    metrics.startOperation('$1');`
+          ).replace(
+            /return\s+([^;]+);(?!\s*})/g,
+            `const result = $1;
+    metrics.endOperation('$1');
+    return this.cloudContext.adaptResult(result);`
+          );
+          
+        case 'api_gateway':
+          return baseCode.replace(
+            /class\s+(\w+)/g,
+            `/**
+ * API网关 - $1
+ * 处理API路由、版本控制、限流和认证
+ */
+@ApiGateway({
+  basePath: '/api/v1',
+  rateLimit: { windowMs: 15 * 60 * 1000, max: 100 },
+  authentication: ['jwt', 'apiKey']
+})
+class $1`
+          ).replace(
+            /async\s+(\w+)\(([^)]*)\)\s*{/g,
+            `/**
+   * $1 - API端点
+   * @param {$2} - 请求参数
+   * @returns API响应
+   */
+  @Endpoint({
+    path: '/$1',
+    method: 'POST',
+    version: '1.0',
+    deprecated: false,
+    throttle: { burstLimit: 10, rateLimit: 5 }
+  })
+  async $1($2) {
+    this.logger.info(\`API请求: $1 - \${JSON.stringify($2)}\`);
+    this.metrics.incrementCounter('api.$1.calls');
+    
+    try {`
+          ).replace(
+            /return\s+([^;]+);(?!\s*})/g,
+            `const result = $1;
+      this.cache.set(\`$1:\${this.requestId}\`, result, 60);
+      return this.transformer.formatResponse(result);`
+          ).replace(
+            /}\s*$/g,
+            `    } catch (error) {
+      this.logger.error(\`API错误: $1 - \${error.message}\`);
+      this.metrics.incrementCounter('api.$1.errors');
+      throw this.errorHandler.formatError(error);
+    }
+  }`
+          );
             
         default:
           if (quality >= 90) {
