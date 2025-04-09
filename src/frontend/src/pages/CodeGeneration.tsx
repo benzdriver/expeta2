@@ -162,18 +162,9 @@ const CodeGeneration: React.FC = () => {
   useEffect(() => {
     setIsCopied(false);
     
-    if (generatedCode && codeRef.current) {
-      applySyntaxHighlighting(codeRef.current, generatedCode.language);
-    }
   }, [generatedCode]);
   
-  const applySyntaxHighlighting = (codeElement: HTMLPreElement, language: string) => {
-    const codeContent = codeElement.querySelector('code');
-    if (!codeContent) return;
-    
-    const code = codeContent.textContent || '';
-    let highlightedCode = '';
-    
+  const applySyntaxHighlighting = (code: string, language: string): string => {
     const escapeHtml = (text: string) => {
       return text
         .replace(/&/g, "&amp;")
@@ -184,6 +175,7 @@ const CodeGeneration: React.FC = () => {
     };
     
     const escapedCode = escapeHtml(code);
+    let highlightedCode = '';
     
     if (language === 'typescript' || language === 'javascript') {
       highlightedCode = escapedCode
@@ -205,7 +197,7 @@ const CodeGeneration: React.FC = () => {
       highlightedCode = escapedCode;
     }
     
-    codeContent.innerHTML = highlightedCode;
+    return highlightedCode;
   };
   
   const handleFrameworkChange = (frameworkId: string, isChecked: boolean) => {
@@ -989,7 +981,9 @@ export default UserService;`;
                   )}
                   
                   <pre ref={codeRef} className={`code-block language-${generatedCode.language}`}>
-                    <code>{generatedCode.code}</code>
+                    <code dangerouslySetInnerHTML={{ 
+                      __html: applySyntaxHighlighting(generatedCode.code, generatedCode.language) 
+                    }} />
                   </pre>
                 </div>
               ) : (
