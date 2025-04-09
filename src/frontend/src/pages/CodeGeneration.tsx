@@ -100,7 +100,41 @@ const CodeGeneration: React.FC = () => {
   
   useEffect(() => {
     setIsCopied(false);
+    
+    if (generatedCode && codeRef.current) {
+      applySyntaxHighlighting(codeRef.current, generatedCode.language);
+    }
   }, [generatedCode]);
+  
+  const applySyntaxHighlighting = (codeElement: HTMLPreElement, language: string) => {
+    const codeContent = codeElement.querySelector('code');
+    if (!codeContent) return;
+    
+    const code = codeContent.textContent || '';
+    let highlightedCode = '';
+    
+    if (language === 'typescript' || language === 'javascript') {
+      highlightedCode = code
+        .replace(/(\/\/.*)/g, '<span class="comment">$1</span>')
+        .replace(/('.*?'|".*?")/g, '<span class="string">$1</span>')
+        .replace(/\b(const|let|var|function|class|interface|type|enum|export|import|from|return|if|else|for|while|switch|case|break|continue|new|this|super|extends|implements|async|await)\b/g, 
+          '<span class="keyword">$1</span>')
+        .replace(/\b([A-Z][a-zA-Z0-9_]*)\b/g, '<span class="class-name">$1</span>')
+        .replace(/\b(\d+)\b/g, '<span class="number">$1</span>');
+    } else if (language === 'python') {
+      highlightedCode = code
+        .replace(/(#.*)/g, '<span class="comment">$1</span>')
+        .replace(/('.*?'|".*?")/g, '<span class="string">$1</span>')
+        .replace(/\b(def|class|import|from|as|return|if|elif|else|for|while|break|continue|with|try|except|finally|raise|assert|global|nonlocal|lambda|pass|yield)\b/g, 
+          '<span class="keyword">$1</span>')
+        .replace(/\b([A-Z][a-zA-Z0-9_]*)\b/g, '<span class="class-name">$1</span>')
+        .replace(/\b(\d+)\b/g, '<span class="number">$1</span>');
+    } else {
+      highlightedCode = code;
+    }
+    
+    codeContent.innerHTML = highlightedCode;
+  };
   
   const handleFrameworkChange = (frameworkId: string, isChecked: boolean) => {
     if (isChecked) {
@@ -148,43 +182,62 @@ const CodeGeneration: React.FC = () => {
     frameworks: string[],
     architectures: string[]
   ): string => {
-    const getArchitectureComments = (architectures: string[]): string => {
+    const getArchitectureComments = (architectures: string[], language: string): string => {
       let comments = '';
+      const commentPrefix = language === 'python' ? '# ' : '// ';
       
       if (architectures.includes('hexagonal')) {
-        comments += '// 使用六边形架构 (端口和适配器)\n';
-        comments += '// - 领域逻辑位于核心层\n';
-        comments += '// - 通过端口与外部系统交互\n';
-        comments += '// - 适配器实现端口接口\n\n';
+        comments += `${commentPrefix}使用六边形架构 (端口和适配器)\n`;
+        comments += `${commentPrefix}- 领域逻辑位于核心层，完全独立于外部系统\n`;
+        comments += `${commentPrefix}- 通过端口（接口）定义与外部系统的交互契约\n`;
+        comments += `${commentPrefix}- 适配器实现端口接口，处理外部系统的具体交互\n`;
+        comments += `${commentPrefix}- 依赖方向：外部 → 适配器 → 端口 → 领域模型\n\n`;
       }
       
       if (architectures.includes('cqrs')) {
-        comments += '// 使用CQRS模式\n';
-        comments += '// - 命令负责修改数据\n';
-        comments += '// - 查询负责读取数据\n';
-        comments += '// - 分离读写职责\n\n';
+        comments += `${commentPrefix}使用CQRS模式（命令查询责任分离）\n`;
+        comments += `${commentPrefix}- 命令模型负责修改数据，处理业务逻辑和状态变更\n`;
+        comments += `${commentPrefix}- 查询模型负责读取数据，优化为查询场景\n`;
+        comments += `${commentPrefix}- 两个模型可以使用不同的数据存储和表示方式\n`;
+        comments += `${commentPrefix}- 通过事件在命令模型和查询模型之间同步数据\n\n`;
       }
       
       if (architectures.includes('event_sourcing')) {
-        comments += '// 使用事件溯源模式\n';
-        comments += '// - 所有状态变化都作为事件存储\n';
-        comments += '// - 通过重放事件重建状态\n';
-        comments += '// - 提供完整的审计跟踪\n\n';
+        comments += `${commentPrefix}使用事件溯源模式\n`;
+        comments += `${commentPrefix}- 所有状态变化都作为事件序列存储，而非存储当前状态\n`;
+        comments += `${commentPrefix}- 通过重放事件序列重建任意时间点的系统状态\n`;
+        comments += `${commentPrefix}- 提供完整的审计跟踪和历史记录\n`;
+        comments += `${commentPrefix}- 支持时间点回溯和基于事件的业务分析\n\n`;
       }
       
       if (architectures.includes('clean')) {
-        comments += '// 使用清洁架构\n';
-        comments += '// - 依赖规则：内层不依赖外层\n';
-        comments += '// - 实体：包含企业业务规则\n';
-        comments += '// - 用例：包含应用业务规则\n';
-        comments += '// - 接口适配器：转换数据格式\n';
-        comments += '// - 框架和驱动：外部接口\n\n';
+        comments += `${commentPrefix}使用清洁架构\n`;
+        comments += `${commentPrefix}- 依赖规则：内层不依赖外层，依赖指向由外向内\n`;
+        comments += `${commentPrefix}- 实体层：包含企业业务规则和核心领域模型\n`;
+        comments += `${commentPrefix}- 用例层：包含应用业务规则和特定用例实现\n`;
+        comments += `${commentPrefix}- 接口适配器层：转换数据格式，连接外部与内部\n`;
+        comments += `${commentPrefix}- 框架和驱动层：处理与外部系统的具体交互\n\n`;
+      }
+      
+      if (architectures.includes('microservices')) {
+        comments += `${commentPrefix}使用微服务架构\n`;
+        comments += `${commentPrefix}- 按业务能力划分为独立部署的服务\n`;
+        comments += `${commentPrefix}- 服务间通过API或消息队列通信\n`;
+        comments += `${commentPrefix}- 每个服务有自己的数据存储\n`;
+        comments += `${commentPrefix}- 服务可以独立扩展和部署\n\n`;
+      }
+      
+      if (architectures.includes('mvc')) {
+        comments += `${commentPrefix}使用MVC架构模式\n`;
+        comments += `${commentPrefix}- 模型(Model)：处理数据和业务逻辑\n`;
+        comments += `${commentPrefix}- 视图(View)：负责数据展示和用户界面\n`;
+        comments += `${commentPrefix}- 控制器(Controller)：处理用户输入并协调模型和视图\n\n`;
       }
       
       return comments;
     };
     
-    const archComments = getArchitectureComments(architectures);
+    const archComments = getArchitectureComments(architectures, language);
     
     if (expectationId === 'user_management_system') {
       if (language === 'typescript') {
@@ -513,7 +566,18 @@ export default UserService;`;
             <div className="card-content">
               {generatedCode ? (
                 <div className="code-container">
-                  <pre ref={codeRef} className="code-block">
+                  <div className="code-header">
+                    <div className="code-language">
+                      <span className="language-badge">{generatedCode.language}</span>
+                      {generatedCode.frameworks.map(fw => (
+                        <span key={fw} className="framework-badge">{fw}</span>
+                      ))}
+                    </div>
+                    <div className="code-info">
+                      <span className="code-timestamp">{generatedCode.createdAt.toLocaleString('zh-CN')}</span>
+                    </div>
+                  </div>
+                  <pre ref={codeRef} className={`code-block language-${generatedCode.language}`}>
                     <code>{generatedCode.code}</code>
                   </pre>
                 </div>

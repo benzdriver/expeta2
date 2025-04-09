@@ -163,3 +163,117 @@ textarea:focus {
 .card-content {
   margin-bottom: 15px;
 }
+
+/* Code Generation Styles */
+.code-container {
+  position: relative;
+  overflow: auto;
+  max-height: 600px;
+  border-radius: 8px;
+  background-color: #1e1e1e;
+  display: flex;
+  flex-direction: column;
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #252526;
+  border-bottom: 1px solid #333;
+}
+
+.code-language {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.language-badge {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.framework-badge {
+  background-color: #444;
+  color: #ddd;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.code-info {
+  font-size: 12px;
+  color: #888;
+}
+
+.code-block {
+  margin: 0;
+  padding: 20px;
+  font-family: 'Fira Code', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #d4d4d4;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* Syntax highlighting */
+.language-typescript .keyword,
+.language-javascript .keyword {
+  color: #569cd6;
+}
+
+.language-typescript .string,
+.language-javascript .string {
+  color: #ce9178;
+}
+
+.language-typescript .comment,
+.language-javascript .comment {
+  color: #6a9955;
+}
+
+.language-typescript .class-name,
+.language-javascript .class-name {
+  color: #4ec9b0;
+}
+
+.language-typescript .function,
+.language-javascript .function {
+  color: #dcdcaa;
+}
+
+.language-typescript .number,
+.language-javascript .number {
+  color: #b5cea8;
+}
+
+.language-python .keyword {
+  color: #ff79c6;
+}
+
+.language-python .string {
+  color: #f1fa8c;
+}
+
+.language-python .comment {
+  color: #6272a4;
+}
+
+.language-python .class-name {
+  color: #8be9fd;
+}
+
+.language-python .function {
+  color: #50fa7b;
+}
+
+.language-python .number {
+  color: #bd93f9;
+}
