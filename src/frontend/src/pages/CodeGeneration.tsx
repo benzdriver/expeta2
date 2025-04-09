@@ -174,8 +174,19 @@ const CodeGeneration: React.FC = () => {
     const code = codeContent.textContent || '';
     let highlightedCode = '';
     
+    const escapeHtml = (text: string) => {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    };
+    
+    const escapedCode = escapeHtml(code);
+    
     if (language === 'typescript' || language === 'javascript') {
-      highlightedCode = code
+      highlightedCode = escapedCode
         .replace(/(\/\/.*)/g, '<span class="comment">$1</span>')
         .replace(/('.*?'|".*?")/g, '<span class="string">$1</span>')
         .replace(/\b(const|let|var|function|class|interface|type|enum|export|import|from|return|if|else|for|while|switch|case|break|continue|new|this|super|extends|implements|async|await)\b/g, 
@@ -183,7 +194,7 @@ const CodeGeneration: React.FC = () => {
         .replace(/\b([A-Z][a-zA-Z0-9_]*)\b/g, '<span class="class-name">$1</span>')
         .replace(/\b(\d+)\b/g, '<span class="number">$1</span>');
     } else if (language === 'python') {
-      highlightedCode = code
+      highlightedCode = escapedCode
         .replace(/(#.*)/g, '<span class="comment">$1</span>')
         .replace(/('.*?'|".*?")/g, '<span class="string">$1</span>')
         .replace(/\b(def|class|import|from|as|return|if|elif|else|for|while|break|continue|with|try|except|finally|raise|assert|global|nonlocal|lambda|pass|yield)\b/g, 
@@ -191,7 +202,7 @@ const CodeGeneration: React.FC = () => {
         .replace(/\b([A-Z][a-zA-Z0-9_]*)\b/g, '<span class="class-name">$1</span>')
         .replace(/\b(\d+)\b/g, '<span class="number">$1</span>');
     } else {
-      highlightedCode = code;
+      highlightedCode = escapedCode;
     }
     
     codeContent.innerHTML = highlightedCode;
