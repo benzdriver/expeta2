@@ -39,6 +39,18 @@ interface GeneratedCode {
   code: string;
   createdAt: Date;
   semanticTags?: string[];
+  semanticContext?: {
+    industry?: string;
+    domain?: string;
+    complexity?: string;
+    priority?: string;
+  };
+  generationMetrics?: {
+    semanticScore: number;
+    qualityScore: number;
+    performanceScore: number;
+    securityScore: number;
+  };
 }
 
 interface ExpectationDetail {
@@ -207,7 +219,88 @@ const CodeGeneration: React.FC = () => {
     const currentExpectation = expectations.find(exp => exp.id === selectedExpectationId);
     const semanticTags = currentExpectation?.semanticTags || [];
     
+    const determineSemanticContext = () => {
+      let industry = '';
+      let domain = '';
+      let complexity = 'medium';
+      
+      if (selectedExpectationId === 'user_management_system') {
+        industry = '企业';
+        domain = '身份认证';
+      } else if (selectedExpectationId === 'payment_processing') {
+        industry = '金融';
+        domain = '交易处理';
+      } else if (selectedExpectationId === 'inventory_management') {
+        industry = '零售';
+        domain = '库存管理';
+      } else if (selectedExpectationId === 'reporting_dashboard') {
+        industry = '商业智能';
+        domain = '数据可视化';
+      }
+      
+      if (selectedArchitecture.includes('microservices') || 
+          selectedArchitecture.includes('event_sourcing') || 
+          selectedArchitecture.includes('cqrs')) {
+        complexity = 'complex';
+      } else if (selectedArchitecture.includes('mvc') && selectedArchitecture.length === 1) {
+        complexity = 'simple';
+      }
+      
+      let priority = 'medium';
+      if (selectedTemplate === 'enterprise' || codeQuality >= 90) {
+        priority = 'high';
+      } else if (selectedTemplate === 'minimal' || codeQuality <= 60) {
+        priority = 'low';
+      }
+      
+      return { industry, domain, complexity, priority };
+    };
+    
+    const calculateGenerationMetrics = () => {
+      const baseQualityScore = codeQuality / 20; // 转换为0-5的范围
+      
+      let semanticScore = 3.0 + (semanticTags.length * 0.2);
+      if (selectedArchitecture.includes('ddd') || selectedArchitecture.includes('clean')) {
+        semanticScore += 1.0;
+      }
+      semanticScore = Math.min(5.0, semanticScore);
+      
+      let qualityScore = baseQualityScore;
+      if (selectedTemplate === 'enterprise') {
+        qualityScore += 0.5;
+      }
+      qualityScore = Math.min(5.0, qualityScore);
+      
+      let performanceScore = 3.0;
+      if (selectedArchitecture.includes('microservices')) {
+        performanceScore += 0.7;
+      }
+      if (selectedFrameworks.includes('nestjs') || selectedFrameworks.includes('spring')) {
+        performanceScore += 0.5;
+      }
+      performanceScore = Math.min(5.0, performanceScore);
+      
+      let securityScore = 3.0;
+      if (selectedTemplate === 'security_focused') {
+        securityScore += 1.5;
+      }
+      if (selectedLanguage === 'typescript' || selectedLanguage === 'java') {
+        securityScore += 0.5;
+      }
+      securityScore = Math.min(5.0, securityScore);
+      
+      return {
+        semanticScore,
+        qualityScore,
+        performanceScore,
+        securityScore
+      };
+    };
+    
     setTimeout(() => {
+      const semanticContext = determineSemanticContext();
+      const generationMetrics = calculateGenerationMetrics();
+      
       const newGeneratedCode: GeneratedCode = {
         id: `code-${Date.now()}`,
         expectationId: selectedExpectationId,
@@ -225,6 +318,8 @@ const CodeGeneration: React.FC = () => {
           codeComments
         ),
         semanticTags: semanticTags,
+        semanticContext,
+        generationMetrics,
         createdAt: new Date()
       };
       
@@ -787,6 +882,97 @@ export default UserService;`;
                         {generatedCode.semanticTags.map(tag => (
                           <span key={tag} className="semantic-tag">{tag}</span>
                         ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {generatedCode.generationMetrics && (
+                    <div className="code-metrics">
+                      <div className="metrics-header">
+                        <span className="metrics-title">生成指标</span>
+                        <span className="metrics-info">基于语义上下文和选择的选项计算</span>
+                      </div>
+                      <div className="metrics-container">
+                        <div className="metric-item">
+                          <div className="metric-label">语义匹配</div>
+                          <div className="metric-bar">
+                            <div 
+                              className="metric-fill semantic-fill" 
+                              style={{width: `${generatedCode.generationMetrics.semanticScore * 20}%`}}
+                            ></div>
+                          </div>
+                          <div className="metric-value">{generatedCode.generationMetrics.semanticScore.toFixed(1)}</div>
+                        </div>
+                        <div className="metric-item">
+                          <div className="metric-label">代码质量</div>
+                          <div className="metric-bar">
+                            <div 
+                              className="metric-fill quality-fill" 
+                              style={{width: `${generatedCode.generationMetrics.qualityScore * 20}%`}}
+                            ></div>
+                          </div>
+                          <div className="metric-value">{generatedCode.generationMetrics.qualityScore.toFixed(1)}</div>
+                        </div>
+                        <div className="metric-item">
+                          <div className="metric-label">性能优化</div>
+                          <div className="metric-bar">
+                            <div 
+                              className="metric-fill performance-fill" 
+                              style={{width: `${generatedCode.generationMetrics.performanceScore * 20}%`}}
+                            ></div>
+                          </div>
+                          <div className="metric-value">{generatedCode.generationMetrics.performanceScore.toFixed(1)}</div>
+                        </div>
+                        <div className="metric-item">
+                          <div className="metric-label">安全评分</div>
+                          <div className="metric-bar">
+                            <div 
+                              className="metric-fill security-fill" 
+                              style={{width: `${generatedCode.generationMetrics.securityScore * 20}%`}}
+                            ></div>
+                          </div>
+                          <div className="metric-value">{generatedCode.generationMetrics.securityScore.toFixed(1)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {generatedCode.semanticContext && (
+                    <div className="semantic-context">
+                      <div className="context-header">
+                        <span className="context-title">语义上下文</span>
+                      </div>
+                      <div className="context-container">
+                        {generatedCode.semanticContext.industry && (
+                          <div className="context-item">
+                            <span className="context-label">行业:</span>
+                            <span className="context-value">{generatedCode.semanticContext.industry}</span>
+                          </div>
+                        )}
+                        {generatedCode.semanticContext.domain && (
+                          <div className="context-item">
+                            <span className="context-label">领域:</span>
+                            <span className="context-value">{generatedCode.semanticContext.domain}</span>
+                          </div>
+                        )}
+                        {generatedCode.semanticContext.complexity && (
+                          <div className="context-item">
+                            <span className="context-label">复杂度:</span>
+                            <span className="context-value">
+                              {generatedCode.semanticContext.complexity === 'simple' ? '简单' : 
+                               generatedCode.semanticContext.complexity === 'medium' ? '中等' : '复杂'}
+                            </span>
+                          </div>
+                        )}
+                        {generatedCode.semanticContext.priority && (
+                          <div className="context-item">
+                            <span className="context-label">优先级:</span>
+                            <span className="context-value">
+                              {generatedCode.semanticContext.priority === 'low' ? '低' : 
+                               generatedCode.semanticContext.priority === 'medium' ? '中' : '高'}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
