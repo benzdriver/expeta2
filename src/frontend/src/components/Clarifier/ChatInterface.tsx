@@ -15,6 +15,9 @@ interface Expectation {
   title: string;
   description: string;
   criteria: string[];
+  semanticTags?: string[];
+  priority?: 'low' | 'medium' | 'high';
+  industryExamples?: string;
   subExpectations?: Expectation[];
 }
 
@@ -40,12 +43,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [currentStage, setCurrentStage] = useState<'initial' | 'clarification' | 'industry' | 'summary' | 'confirmation'>('initial');
+  const [currentStage, setCurrentStage] = useState<'initial' | 'clarification' | 'industry' | 'summary' | 'confirmation' | 'semantic_analysis'>('initial');
   const [currentExpectation, setCurrentExpectation] = useState<Partial<Expectation>>({
     id: `exp-${Date.now()}`,
-    criteria: []
+    criteria: [],
+    semanticTags: [],
+    priority: 'medium'
   });
   const [clarificationRound, setClarificationRound] = useState(0);
+  const [semanticAnalysisComplete, setSemanticAnalysisComplete] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -141,17 +147,38 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         industryExamples: userInput
       }));
       
-      setCurrentStage('summary');
+      setCurrentStage('semantic_analysis');
       
       setTimeout(() => {
-        const summary = generateSummary();
-        addSystemMessage(summary, 'summary');
+        const analysisMessage = "正在进行语义分析，提取关键概念和语义标签...";
+        addSystemMessage(analysisMessage, 'regular');
         
         setTimeout(() => {
-          const confirmationQuestion = "以上是我对您需求的理解总结。这是否准确反映了您的需求？如果有任何需要调整的地方，请告诉我。";
-          addSystemMessage(confirmationQuestion, 'confirmation');
-          setCurrentStage('confirmation');
-        }, 1500);
+          const semanticTags = extractSemanticTags(currentExpectation);
+          
+          setCurrentExpectation(prev => ({
+            ...prev,
+            semanticTags
+          }));
+          
+          setSemanticAnalysisComplete(true);
+          
+          const analysisCompleteMessage = `语义分析完成。已识别以下关键概念：${semanticTags.join('、')}`;
+          addSystemMessage(analysisCompleteMessage, 'regular');
+          
+          setCurrentStage('summary');
+          
+          setTimeout(() => {
+            const summary = generateSummary();
+            addSystemMessage(summary, 'summary');
+            
+            setTimeout(() => {
+              const confirmationQuestion = "以上是我对您需求的理解总结。这是否准确反映了您的需求？如果有任何需要调整的地方，请告诉我。";
+              addSystemMessage(confirmationQuestion, 'confirmation');
+              setCurrentStage('confirmation');
+            }, 1500);
+          }, 1500);
+        }, 3000);
       }, 1500);
     }
     else if (currentStage === 'confirmation') {
@@ -161,6 +188,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                          userInput.toLowerCase().includes('确认');
       
       if (isConfirmed) {
+        const priority = determinePriority(currentExpectation);
+        setCurrentExpectation(prev => ({
+          ...prev,
+          priority
+        }));
+        
         const finalizedExpectation = currentExpectation as Expectation;
         
         if (onExpectationCreated) {
@@ -168,15 +201,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         }
         
         setTimeout(() => {
-          const thankYouMessage = "非常感谢您的确认！我已经创建了这个期望模型。您可以在期望管理页面查看和编辑它。您是否想继续添加其他需求？";
+          const priorityText = priority === 'high' ? '高' : priority === 'medium' ? '中' : '低';
+          const thankYouMessage = `非常感谢您的确认！我已经创建了这个期望模型，并将其优先级设置为"${priorityText}"。您可以在期望管理页面查看和编辑它。您是否想继续添加其他需求？`;
           addSystemMessage(thankYouMessage, 'regular');
           
           setCurrentStage('initial');
           setCurrentExpectation({
             id: `exp-${Date.now()}`,
-            criteria: []
+            criteria: [],
+            semanticTags: [],
+            priority: 'medium'
           });
           setClarificationRound(0);
+          setSemanticAnalysisComplete(false);
         }, 1500);
       } else {
         setTimeout(() => {
@@ -212,11 +249,95 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       "您能否描述一下理想情况下，用户使用这个系统的完整流程？"
     ];
     
+    if (currentExpectation.description) {
+      const description = currentExpectation.description.toLowerCase();
+      
+      if (description.includes('安全') || description.includes('认证') || description.includes('授权') || description.includes('加密')) {
+        if (round === 1) {
+          return "您提到了安全相关的需求，能否详细说明您期望的安全级别和具体的安全机制？例如，是否需要加密、多因素认证或特定的合规要求？";
+        }
+      }
+      
+      if (description.includes('性能') || description.includes('速度') || description.includes('响应') || description.includes('并发')) {
+        if (round === 1) {
+          return "您提到了性能方面的需求，能否具体说明您期望的性能指标？例如，响应时间、并发用户数或处理速度等。";
+        }
+      }
+      
+      if (description.includes('用户体验') || description.includes('界面') || description.includes('交互') || description.includes('易用')) {
+        if (round === 1) {
+          return "您提到了用户体验方面的需求，能否详细描述您期望的用户界面和交互方式？有没有特定的设计风格或参考产品？";
+        }
+      }
+    }
+    
     return clarificationQuestions[round % clarificationQuestions.length];
   };
 
+  const extractSemanticTags = (expectation: Partial<Expectation>): string[] => {
+    const { title, description, criteria, industryExamples } = expectation;
+    const allText = `${title || ''} ${description || ''} ${criteria?.join(' ') || ''} ${industryExamples || ''}`;
+    
+    const commonWords = [
+      '的', '了', '和', '与', '或', '在', '是', '有', '这个', '那个', '如何', '什么', '为什么',
+      '需要', '可以', '应该', '能够', '希望', '想要', '系统', '功能', '使用', '提供', '支持'
+    ];
+    
+    const domainSpecificTags: Record<string, string[]> = {
+      '安全': ['信息安全', '数据保护', '安全机制'],
+      '认证': ['用户认证', '身份验证', '访问控制'],
+      '授权': ['权限管理', '角色授权', '访问控制'],
+      '性能': ['高性能', '系统优化', '响应速度'],
+      '用户': ['用户体验', '用户管理', '用户交互'],
+      '界面': ['用户界面', 'UI设计', '交互设计'],
+      '数据': ['数据管理', '数据处理', '数据分析'],
+      '报表': ['数据可视化', '报表生成', '统计分析'],
+      '集成': ['系统集成', 'API集成', '第三方集成'],
+      '监控': ['系统监控', '性能监控', '日志记录'],
+      '部署': ['系统部署', '云部署', '持续集成'],
+      '测试': ['自动化测试', '质量保证', '测试覆盖'],
+      '支付': ['支付处理', '交易系统', '金融安全'],
+      '通知': ['消息通知', '提醒系统', '实时通信'],
+      '搜索': ['搜索功能', '信息检索', '全文搜索'],
+      '多语言': ['国际化', '本地化', '多语言支持'],
+      '移动': ['移动应用', '响应式设计', '跨平台'],
+      '离线': ['离线功能', '本地存储', '同步机制']
+    };
+    
+    const words = allText.split(/\s+|[,.;，。；]/);
+    const filteredWords = words
+      .filter(word => word.length >= 2)
+      .filter(word => !commonWords.includes(word))
+      .map(word => word.trim())
+      .filter(Boolean);
+    
+    const uniqueWords = Array.from(new Set(filteredWords));
+    
+    const domainTags: string[] = [];
+    Object.entries(domainSpecificTags).forEach(([keyword, tags]) => {
+      if (allText.includes(keyword)) {
+        domainTags.push(tags[0]);
+      }
+    });
+    
+    let semanticTags = [...domainTags];
+    
+    const remainingSlots = 5 - semanticTags.length;
+    if (remainingSlots > 0) {
+      semanticTags = [...semanticTags, ...uniqueWords.slice(0, remainingSlots)];
+    }
+    
+    if (semanticTags.length < 3 && title) {
+      const defaultTags = ['系统开发', '软件需求', '功能实现'];
+      const neededTags = 3 - semanticTags.length;
+      semanticTags = [...semanticTags, ...defaultTags.slice(0, neededTags)];
+    }
+    
+    return semanticTags;
+  };
+  
   const generateSummary = (): string => {
-    const { title, description, criteria } = currentExpectation;
+    const { title, description, criteria, semanticTags, priority } = currentExpectation;
     
     let summaryText = `## 需求总结：${title}\n\n`;
     summaryText += `**基本描述**：${description}\n\n`;
@@ -226,7 +347,70 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       summaryText += `${index + 1}. ${criterion}\n`;
     });
     
+    if (semanticTags && semanticTags.length > 0) {
+      summaryText += `\n**语义标签**：${semanticTags.join('、')}\n`;
+    }
+    
+    if (priority) {
+      summaryText += `\n**优先级**：${
+        priority === 'high' ? '高' : 
+        priority === 'medium' ? '中' : '低'
+      }\n`;
+    }
+    
     return summaryText;
+  };
+
+  const determinePriority = (expectation: Partial<Expectation>): 'low' | 'medium' | 'high' => {
+    const { description, criteria, semanticTags } = expectation;
+    const allText = `${description || ''} ${criteria?.join(' ') || ''}`;
+    
+    const highPriorityKeywords = [
+      '紧急', '关键', '核心', '必须', '立即', '重要', '安全', '主要', '基础', 
+      '不可或缺', '强制', '优先', '首要', '关键路径', '严格要求', '硬性指标'
+    ];
+    
+    const lowPriorityKeywords = [
+      '次要', '可选', '建议', '未来', '考虑', '如果可能', '额外', '增强', '改进',
+      '非关键', '锦上添花', '长期', '远期', '后续版本', '有时间再做', '低风险'
+    ];
+    
+    const highPriorityTags = [
+      '信息安全', '数据保护', '用户认证', '身份验证', '访问控制', '权限管理',
+      '核心功能', '基础架构', '关键业务', '主流程'
+    ];
+    
+    let priorityScore = 0;
+    
+    highPriorityKeywords.forEach(keyword => {
+      if (allText.includes(keyword)) {
+        priorityScore += 2;
+      }
+    });
+    
+    lowPriorityKeywords.forEach(keyword => {
+      if (allText.includes(keyword)) {
+        priorityScore -= 2;
+      }
+    });
+    
+    semanticTags?.forEach(tag => {
+      if (highPriorityTags.includes(tag)) {
+        priorityScore += 1;
+      }
+    });
+    
+    if (criteria && criteria.length > 3) {
+      priorityScore += 1; // 详细的标准通常表示更重要的需求
+    }
+    
+    if (priorityScore >= 2) {
+      return 'high';
+    } else if (priorityScore <= -2) {
+      return 'low';
+    } else {
+      return 'medium'; // 默认为中等优先级
+    }
   };
 
   const formatTime = (date: Date): string => {
