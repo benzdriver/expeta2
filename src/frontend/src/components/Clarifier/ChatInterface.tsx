@@ -15,6 +15,9 @@ interface Expectation {
   title: string;
   description: string;
   criteria: string[];
+  semanticTags?: string[];
+  priority?: 'low' | 'medium' | 'high';
+  industryExamples?: string;
   subExpectations?: Expectation[];
 }
 
@@ -40,12 +43,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [currentStage, setCurrentStage] = useState<'initial' | 'clarification' | 'industry' | 'summary' | 'confirmation'>('initial');
+  const [currentStage, setCurrentStage] = useState<'initial' | 'clarification' | 'industry' | 'summary' | 'confirmation' | 'semantic_analysis'>('initial');
   const [currentExpectation, setCurrentExpectation] = useState<Partial<Expectation>>({
     id: `exp-${Date.now()}`,
-    criteria: []
+    criteria: [],
+    semanticTags: [],
+    priority: 'medium'
   });
   const [clarificationRound, setClarificationRound] = useState(0);
+  const [semanticAnalysisComplete, setSemanticAnalysisComplete] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -141,17 +147,38 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         industryExamples: userInput
       }));
       
-      setCurrentStage('summary');
+      setCurrentStage('semantic_analysis');
       
       setTimeout(() => {
-        const summary = generateSummary();
-        addSystemMessage(summary, 'summary');
+        const analysisMessage = "正在进行语义分析，提取关键概念和语义标签...";
+        addSystemMessage(analysisMessage, 'regular');
         
         setTimeout(() => {
-          const confirmationQuestion = "以上是我对您需求的理解总结。这是否准确反映了您的需求？如果有任何需要调整的地方，请告诉我。";
-          addSystemMessage(confirmationQuestion, 'confirmation');
-          setCurrentStage('confirmation');
-        }, 1500);
+          const semanticTags = extractSemanticTags(currentExpectation);
+          
+          setCurrentExpectation(prev => ({
+            ...prev,
+            semanticTags
+          }));
+          
+          setSemanticAnalysisComplete(true);
+          
+          const analysisCompleteMessage = `语义分析完成。已识别以下关键概念：${semanticTags.join('、')}`;
+          addSystemMessage(analysisCompleteMessage, 'regular');
+          
+          setCurrentStage('summary');
+          
+          setTimeout(() => {
+            const summary = generateSummary();
+            addSystemMessage(summary, 'summary');
+            
+            setTimeout(() => {
+              const confirmationQuestion = "以上是我对您需求的理解总结。这是否准确反映了您的需求？如果有任何需要调整的地方，请告诉我。";
+              addSystemMessage(confirmationQuestion, 'confirmation');
+              setCurrentStage('confirmation');
+            }, 1500);
+          }, 1500);
+        }, 3000);
       }, 1500);
     }
     else if (currentStage === 'confirmation') {
@@ -161,6 +188,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                          userInput.toLowerCase().includes('确认');
       
       if (isConfirmed) {
+        const priority = determinePriority(currentExpectation);
+        setCurrentExpectation(prev => ({
+          ...prev,
+          priority
+        }));
+        
         const finalizedExpectation = currentExpectation as Expectation;
         
         if (onExpectationCreated) {
@@ -168,15 +201,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         }
         
         setTimeout(() => {
-          const thankYouMessage = "非常感谢您的确认！我已经创建了这个期望模型。您可以在期望管理页面查看和编辑它。您是否想继续添加其他需求？";
+          const priorityText = priority === 'high' ? '高' : priority === 'medium' ? '中' : '低';
+          const thankYouMessage = `非常感谢您的确认！我已经创建了这个期望模型，并将其优先级设置为"${priorityText}"。您可以在期望管理页面查看和编辑它。您是否想继续添加其他需求？`;
           addSystemMessage(thankYouMessage, 'regular');
           
           setCurrentStage('initial');
           setCurrentExpectation({
             id: `exp-${Date.now()}`,
-            criteria: []
+            criteria: [],
+            semanticTags: [],
+            priority: 'medium'
           });
           setClarificationRound(0);
+          setSemanticAnalysisComplete(false);
         }, 1500);
       } else {
         setTimeout(() => {
@@ -215,8 +252,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return clarificationQuestions[round % clarificationQuestions.length];
   };
 
+  const extractSemanticTags = (expectation: Partial<Expectation>): string[] => {
+    const { title, description, criteria, industryExamples } = expectation;
+    const allText = `${title || ''} ${description || ''} ${criteria?.join(' ') || ''} ${industryExamples || ''}`;
+    
+    const commonWords = ['的', '了', '和', '与', '或', '在', '是', '有', '这个', '那个', '如何', '什么', '为什么'];
+    const words = allText.split(/\s+|[,.;，。；]/);
+    
+    const filteredWords = words
+      .filter(word => word.length >= 2)
+      .filter(word => !commonWords.includes(word))
+      .map(word => word.trim())
+      .filter(Boolean);
+    
+    const uniqueWords = Array.from(new Set(filteredWords));
+    const semanticTags = uniqueWords.slice(0, 5);
+    
+    if (semanticTags.length < 3 && title) {
+      semanticTags.push('系统开发', '软件需求', '功能实现');
+    }
+    
+    return semanticTags;
+  };
+  
   const generateSummary = (): string => {
-    const { title, description, criteria } = currentExpectation;
+    const { title, description, criteria, semanticTags, priority } = currentExpectation;
     
     let summaryText = `## 需求总结：${title}\n\n`;
     summaryText += `**基本描述**：${description}\n\n`;
@@ -226,7 +286,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       summaryText += `${index + 1}. ${criterion}\n`;
     });
     
+    if (semanticTags && semanticTags.length > 0) {
+      summaryText += `\n**语义标签**：${semanticTags.join('、')}\n`;
+    }
+    
+    if (priority) {
+      summaryText += `\n**优先级**：${
+        priority === 'high' ? '高' : 
+        priority === 'medium' ? '中' : '低'
+      }\n`;
+    }
+    
     return summaryText;
+  };
+
+  const determinePriority = (expectation: Partial<Expectation>): 'low' | 'medium' | 'high' => {
+    const { description, criteria } = expectation;
+    const allText = `${description || ''} ${criteria?.join(' ') || ''}`;
+    
+    const highPriorityKeywords = ['紧急', '关键', '核心', '必须', '立即', '重要', '安全', '主要', '基础'];
+    
+    const lowPriorityKeywords = ['次要', '可选', '建议', '未来', '考虑', '如果可能', '额外', '增强', '改进'];
+    
+    const containsHighPriority = highPriorityKeywords.some(keyword => 
+      allText.includes(keyword)
+    );
+    
+    const containsLowPriority = lowPriorityKeywords.some(keyword => 
+      allText.includes(keyword)
+    );
+    
+    if (containsHighPriority) {
+      return 'high';
+    } else if (containsLowPriority) {
+      return 'low';
+    } else {
+      return 'medium'; // 默认为中等优先级
+    }
   };
 
   const formatTime = (date: Date): string => {
