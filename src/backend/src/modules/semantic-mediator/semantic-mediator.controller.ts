@@ -30,12 +30,28 @@ interface TrackTransformationDto {
   targetModule: string;
   sourceData: any;
   transformedData: any;
+  options?: {
+    trackDifferences?: boolean;
+    analyzeTransformation?: boolean;
+    saveToMemory?: boolean;
+  };
 }
 
 interface EvaluateTransformationDto {
   sourceData: any;
   transformedData: any;
   expectedOutcome: string;
+}
+
+interface GenerateValidationContextDto {
+  expectationId: string;
+  codeId: string;
+  previousValidations?: string[];
+  options?: {
+    focusAreas?: string[];
+    strategy?: 'balanced' | 'strict' | 'lenient' | 'performance' | 'security' | 'custom';
+    customWeights?: Record<string, number>;
+  };
 }
 
 @Controller('semantic-mediator')
@@ -88,14 +104,23 @@ export class SemanticMediatorController {
   @Post('track-transformation')
   async trackSemanticTransformation(@Body() dto: TrackTransformationDto) {
     this.logger.debug(`Manually tracking transformation from ${dto.sourceModule} to ${dto.targetModule}`);
-    const { sourceModule, targetModule, sourceData, transformedData } = dto;
-    await this.semanticMediatorService.trackSemanticTransformation(
+    const { sourceModule, targetModule, sourceData, transformedData, options } = dto;
+    
+    const result = await this.semanticMediatorService.trackSemanticTransformation(
       sourceModule, 
       targetModule, 
       sourceData, 
-      transformedData
+      transformedData,
+      options
     );
-    return { success: true, message: 'Transformation tracked successfully' };
+    
+    return { 
+      success: true, 
+      message: 'Transformation tracked successfully',
+      transformationId: result.transformationId,
+      hasAnalysis: options?.analyzeTransformation !== false,
+      hasDifferences: options?.trackDifferences !== false
+    };
   }
 
   @Post('evaluate-transformation')
@@ -106,6 +131,19 @@ export class SemanticMediatorController {
       sourceData,
       transformedData,
       expectedOutcome
+    );
+  }
+  
+  @Post('generate-validation-context')
+  async generateValidationContext(@Body() dto: GenerateValidationContextDto) {
+    this.logger.log(`Generating validation context for expectation: ${dto.expectationId}, code: ${dto.codeId}`);
+    const { expectationId, codeId, previousValidations = [], options = {} } = dto;
+    
+    return this.semanticMediatorService.generateValidationContext(
+      expectationId,
+      codeId,
+      previousValidations,
+      options
     );
   }
 }

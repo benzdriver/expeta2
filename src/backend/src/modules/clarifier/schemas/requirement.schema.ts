@@ -9,6 +9,14 @@ export interface Clarification {
 
 export type RequirementStatus = 'initial' | 'clarifying' | 'expectations_generated' | 'completed';
 
+export interface DialogueMessage {
+  sender: 'user' | 'system' | 'clarifier';
+  content: string;
+  type?: string;
+  metadata?: Record<string, any>;
+  timestamp: Date;
+}
+
 @Schema()
 export class Requirement extends Document {
   @Prop({ required: true })
@@ -31,6 +39,15 @@ export class Requirement extends Document {
 
   @Prop({ type: [{ questionId: String, answer: String, timestamp: Date }] })
   clarifications?: Clarification[];
+
+  @Prop({ type: [{ 
+    sender: String, 
+    content: String, 
+    type: String, 
+    metadata: Object, 
+    timestamp: Date 
+  }] })
+  dialogueLog?: DialogueMessage[];
 
   @Prop()
   createdAt: Date;

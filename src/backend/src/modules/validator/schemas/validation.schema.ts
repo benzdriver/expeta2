@@ -6,6 +6,9 @@ export interface ValidationDetail {
   status: 'passed' | 'failed' | 'partial';
   score: number;
   message: string;
+  semanticInsights?: string;
+  improvement?: string;
+  remainingIssues?: string;
 }
 
 @Schema()
@@ -22,8 +25,19 @@ export class Validation extends Document {
   @Prop({ required: true, min: 0, max: 100 })
   score: number;
 
-  @Prop({ type: [{ expectationId: String, status: String, score: Number, message: String }], required: true })
+  @Prop({ type: [{ 
+    expectationId: String, 
+    status: String, 
+    score: Number, 
+    message: String,
+    semanticInsights: String,
+    improvement: String,
+    remainingIssues: String
+  }], required: true })
   details: ValidationDetail[];
+
+  @Prop({ type: Object })
+  metadata: Record<string, any>;
 
   @Prop({ required: true })
   createdAt: Date;

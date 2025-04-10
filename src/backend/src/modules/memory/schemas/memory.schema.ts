@@ -6,6 +6,7 @@ export enum MemoryType {
   EXPECTATION = 'expectation',
   CODE = 'code',
   VALIDATION = 'validation',
+  VALIDATION_FEEDBACK = 'validation_feedback',
   SYSTEM = 'system',
   SEMANTIC_TRANSFORMATION = 'semantic_transformation',
 }

@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ChatInterface from '../ChatInterface';
+import { ConversationStage } from '../types';
 
 jest.mock('../../../services/logging.service', () => ({
   __esModule: true,
@@ -17,9 +18,15 @@ jest.mock('../../../services/logging.service', () => ({
   }
 }));
 
+jest.useFakeTimers();
+
 describe('ChatInterface Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
   });
 
   test('renders welcome message on initial load', () => {
@@ -41,15 +48,32 @@ describe('ChatInterface Component', () => {
     });
   });
 
-  test('handles multi-round conversation flow', async () => {
-    render(<ChatInterface />);
+  test('handles multi-round conversation flow with state transitions', async () => {
+    const onSendMessage = jest.fn();
+    const onExpectationCreated = jest.fn();
+    
+    let currentStage: ConversationStage = 'initial';
+    let clarificationRound = 0;
+    
+    const { rerender } = render(
+      <ChatInterface 
+        onSendMessage={onSendMessage} 
+        onExpectationCreated={onExpectationCreated}
+        sessionId="test-multi-round"
+      />
+    );
     
     const input = screen.getByPlaceholderText('请输入您的需求或回答...');
-    fireEvent.change(input, { target: { value: '我需要一个电子商务网站' } });
+    
+    fireEvent.change(input, { target: { value: '我需要一个电子商务网站，支持多种支付方式和商品管理' } });
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     
     await waitFor(() => {
-      expect(screen.getByText(/我需要一个电子商务网站/)).toBeInTheDocument();
+      expect(screen.getByText(/我需要一个电子商务网站，支持多种支付方式和商品管理/)).toBeInTheDocument();
+    });
+    
+    act(() => {
+      jest.advanceTimersByTime(2000);
     });
     
     await waitFor(() => {
@@ -57,15 +81,44 @@ describe('ChatInterface Component', () => {
       expect(messages.length).toBeGreaterThan(2);
     });
     
-    fireEvent.change(input, { target: { value: '主要面向B2C市场，需要支持多种支付方式' } });
+    fireEvent.change(input, { target: { value: '主要面向B2C市场，需要支持支付宝、微信支付和银行卡支付' } });
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     
     await waitFor(() => {
-      expect(screen.getByText(/主要面向B2C市场，需要支持多种支付方式/)).toBeInTheDocument();
+      expect(screen.getByText(/主要面向B2C市场，需要支持支付宝、微信支付和银行卡支付/)).toBeInTheDocument();
     });
+    
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    
+    await waitFor(() => {
+      const messages = screen.getAllByRole('listitem');
+      expect(messages.length).toBeGreaterThan(4);
+    });
+    
+    fireEvent.change(input, { target: { value: '系统需要支持至少1000个并发用户，响应时间不超过2秒' } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    
+    await waitFor(() => {
+      expect(screen.getByText(/系统需要支持至少1000个并发用户，响应时间不超过2秒/)).toBeInTheDocument();
+    });
+    
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    
+    await waitFor(() => {
+      const messages = screen.getAllByRole('listitem');
+      expect(messages.length).toBeGreaterThan(6);
+    });
+    
+    const mockLoggingService = require('../../../services/logging.service').default;
+    expect(mockLoggingService.logSessionStateChange).toHaveBeenCalled();
+    expect(mockLoggingService.logSessionMessage).toHaveBeenCalled();
   });
 
-  test('logs session events properly', () => {
+  test('logs session events properly with detailed tracking', () => {
     const mockLoggingService = require('../../../services/logging.service').default;
     render(<ChatInterface sessionId="test-session-123" enableLogging={true} />);
     
@@ -76,9 +129,14 @@ describe('ChatInterface Component', () => {
         initialMessages: expect.any(Number)
       })
     );
+    
+    expect(mockLoggingService.info).toHaveBeenCalledWith(
+      'ChatInterface',
+      expect.stringContaining('Initialized chat interface with session ID: test-session-123')
+    );
   });
 
-  test('generates semantic tags from user input', async () => {
+  test('generates semantic tags from user input and performs analysis', async () => {
     render(<ChatInterface />);
     
     const input = screen.getByPlaceholderText('请输入您的需求或回答...');
@@ -91,5 +149,52 @@ describe('ChatInterface Component', () => {
       expect(screen.getByText(testMessage)).toBeInTheDocument();
     });
     
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    
+    await waitFor(() => {
+      const messages = screen.getAllByRole('listitem');
+      expect(messages.length).toBeGreaterThan(2);
+    });
+  });
+  
+  test('handles confirmation and expectation creation', async () => {
+    const onExpectationCreated = jest.fn();
+    
+    render(<ChatInterface onExpectationCreated={onExpectationCreated} />);
+    
+    const input = screen.getByPlaceholderText('请输入您的需求或回答...');
+    
+    fireEvent.change(input, { target: { value: '我需要一个简单的博客系统' } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    
+    for (let i = 0; i < 5; i++) {
+      await act(async () => {
+        jest.advanceTimersByTime(2000);
+      });
+      
+      fireEvent.change(input, { target: { value: '是的，这是必要的功能' } });
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      
+      await waitFor(() => {
+        expect(input.value).toBe('');
+      });
+    }
+    
+    act(() => {
+      jest.advanceTimersByTime(10000);
+    });
+    
+    fireEvent.change(input, { target: { value: '是的，确认无误' } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    
+    await waitFor(() => {
+      expect(onExpectationCreated).toHaveBeenCalled();
+    });
   });
 });
