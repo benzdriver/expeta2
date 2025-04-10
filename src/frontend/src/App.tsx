@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { ExpetaProvider } from './contexts/ExpetaContext';
 import Sidebar from './components/common/Sidebar';
 import TopBar from './components/common/TopBar';
 import Dashboard from './pages/Dashboard';
@@ -8,6 +9,7 @@ import Expectations from './pages/Expectations';
 import CodeGeneration from './pages/CodeGeneration';
 import Validation from './pages/Validation';
 import Memory from './pages/Memory';
+import Integration from './pages/Integration';
 import Settings from './pages/Settings';
 import './styles/global.css';
 
@@ -70,6 +72,9 @@ const AppContent = () => {
           <Route path="/memory" element={
             <RouteWrapper Component={Memory} pageId="memory" setCurrentPage={setCurrentPage} />
           } />
+          <Route path="/integration" element={
+            <RouteWrapper Component={Integration} pageId="integration" setCurrentPage={setCurrentPage} />
+          } />
           <Route path="/settings" element={
             <RouteWrapper Component={Settings} pageId="settings" setCurrentPage={setCurrentPage} />
           } />
@@ -81,9 +86,11 @@ const AppContent = () => {
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ExpetaProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </ExpetaProvider>
   );
 };
 
@@ -95,6 +102,7 @@ const getPageTitle = (pageId: string): string => {
     'code-generation': '代码生成',
     'validation': '验证结果',
     'memory': '记忆系统',
+    'integration': '语义集成',
     'settings': '系统设置'
   };
   
