@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Code } from './schemas/code.schema';
 import { LlmService } from '../../services/llm.service';
 import { MemoryService } from '../memory/memory.service';
+import { MemoryType } from '../memory/schemas/memory.schema';
 
 @Injectable()
 export class GeneratorService {
@@ -14,7 +15,7 @@ export class GeneratorService {
   ) {}
 
   async generateCode(expectationId: string): Promise<Code> {
-    const expectationMemory = await this.memoryService.getMemoryByType('expectation');
+    const expectationMemory = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
     const expectation = expectationMemory.find(
       (memory) => memory.content._id.toString() === expectationId,
     );
@@ -54,7 +55,7 @@ export class GeneratorService {
     const savedCode = await createdCode.save();
 
     await this.memoryService.storeMemory({
-      type: 'code',
+      type: MemoryType.CODE,
       content: savedCode,
       metadata: {
         expectationId,
@@ -67,6 +68,19 @@ export class GeneratorService {
 
   async getCodeByExpectationId(expectationId: string): Promise<Code[]> {
     return this.codeModel.find({ expectationId }).sort({ 'metadata.version': -1 }).exec();
+  }
+  
+  /**
+   * 根据ID获取代码
+   */
+  async getCodeById(id: string): Promise<Code> {
+    const code = await this.codeModel.findById(id).exec();
+    
+    if (!code) {
+      throw new Error(`Code with id ${id} not found`);
+    }
+    
+    return code;
   }
 
   async getCodeFiles(id: string): Promise<any> {

@@ -88,11 +88,12 @@ export class MemoryService {
       .exec();
   }
 
-  async storeMemory(data: { type: string; content: any; metadata: any }): Promise<Memory> {
+  async storeMemory(data: { type: string; content: any; metadata?: any; tags?: string[] }): Promise<Memory> {
     const memoryEntry = new this.memoryModel({
       type: data.type as MemoryType,
       content: data.content,
-      metadata: data.metadata,
+      metadata: data.metadata || {},
+      tags: data.tags || [],
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -100,7 +101,7 @@ export class MemoryService {
     return memoryEntry.save();
   }
 
-  async updateMemory(type: string, contentId: string, data: { content: any; metadata: any }): Promise<Memory> {
+  async updateMemory(type: string, contentId: string, data: { content: any; metadata?: any; tags?: string[] }): Promise<Memory> {
     const memoryEntry = await this.memoryModel.findOne({
       type: type as MemoryType,
       'content._id': contentId,
@@ -110,12 +111,16 @@ export class MemoryService {
       return this.storeMemory({
         type,
         content: data.content,
-        metadata: data.metadata,
+        metadata: data.metadata || {},
+        tags: data.tags || [],
       });
     }
 
     memoryEntry.content = data.content;
-    memoryEntry.metadata = data.metadata;
+    memoryEntry.metadata = data.metadata || memoryEntry.metadata;
+    if (data.tags) {
+      memoryEntry.tags = data.tags;
+    }
     memoryEntry.updatedAt = new Date();
 
     return memoryEntry.save();

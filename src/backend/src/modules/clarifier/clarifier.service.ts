@@ -181,6 +181,13 @@ export class ClarifierService {
   async getExpectations(requirementId: string): Promise<any> {
     return this.expectationModel.findOne({ requirementId }).exec();
   }
+  
+  /**
+   * 根据ID获取期望模型
+   */
+  async getExpectationById(id: string): Promise<any> {
+    return this.expectationModel.findById(id).exec();
+  }
 
   async analyzeClarificationProgress(requirementId: string): Promise<any> {
     const requirement = await this.requirementModel.findById(requirementId).exec();

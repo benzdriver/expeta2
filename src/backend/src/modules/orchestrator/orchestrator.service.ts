@@ -1,12 +1,20 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, Logger } from '@nestjs/common';
 import { ClarifierService } from '../clarifier/clarifier.service';
 import { GeneratorService } from '../generator/generator.service';
 import { ValidatorService } from '../validator/validator.service';
 import { MemoryService } from '../memory/memory.service';
 import { SemanticMediatorService } from '../semantic-mediator/semantic-mediator.service';
+import { MemoryType } from '../memory/schemas/memory.schema';
+
+/**
+ * 编排器服务
+ * 负责协调各个模块之间的工作流程，确保系统按照预期的顺序执行
+ */
 
 @Injectable()
 export class OrchestratorService {
+  private readonly logger = new Logger(OrchestratorService.name);
+
   constructor(
     private readonly clarifierService: ClarifierService,
     private readonly generatorService: GeneratorService,
@@ -106,46 +114,194 @@ export class OrchestratorService {
     };
   }
 
+  /**
+   * 执行指定的工作流程
+   */
   async executeWorkflow(workflowId: string, params: any): Promise<any> {
-    switch (workflowId) {
-      case 'full_process':
-        const { requirementId } = params;
-        
-        const requirement = await this.clarifierService.getRequirementById(requirementId);
-        
-        if (!requirement) {
-          throw new Error('Requirement not found');
-        }
-        
-        const expectations = await this.clarifierService.generateExpectations(requirementId);
-        
-        const code = await this.generatorService.generateCode(expectations._id.toString());
-        
-        const validation = await this.validatorService.validateCode(
-          expectations._id.toString(),
-          code._id.toString(),
-        );
-        
-        return {
-          status: 'completed',
-          requirement,
-          expectations,
-          code,
-          validation,
-        };
-        
-      case 'regenerate_code':
-        const { expectationId } = params;
-        
-        const newCode = await this.generatorService.generateCode(expectationId);
-        
-        return {
-          status: 'completed',
-          code: newCode,
-        };
-        
-      default:
-        throw new Error(`Unknown workflow: ${workflowId}`);
+    try {
+      this.logger.log(`Executing workflow: ${workflowId} with params: ${JSON.stringify(params)}`);
+      
+      switch (workflowId) {
+        case 'full_process':
+          return await this.executeFullProcess(params);
+          
+        case 'regenerate_code':
+          return await this.regenerateCode(params);
+          
+        case 'semantic_validation':
+          return await this.executeSemanticValidation(params);
+          
+        case 'semantic_enrichment':
+          return await this.executeSemanticEnrichment(params);
+          
+        default:
+          throw new Error(`Unknown workflow: ${workflowId}`);
+      }
+    } catch (error) {
+      this.logger.error(`Error executing workflow ${workflowId}: ${error.message}`, error.stack);
+      throw new Error(`Workflow execution failed: ${error.message}`);
     }
+  }
+  
+  /**
+   * 执行完整的处理流程
+   */
+  private async executeFullProcess(params: any): Promise<any> {
+    const { requirementId } = params;
+    
+    const requirement = await this.clarifierService.getRequirementById(requirementId);
+    
+    if (!requirement) {
+      throw new Error('Requirement not found');
+    }
+    
+    this.logger.log(`Generating expectations for requirement: ${requirementId}`);
+    const expectations = await this.clarifierService.generateExpectations(requirementId);
+    
+    this.logger.log(`Enriching expectations with semantic context`);
+    const enrichedExpectations = await this.semanticMediatorService.enrichWithContext(
+      'clarifier',
+      expectations,
+      `requirement:${requirementId}`
+    );
+    
+    this.logger.log(`Generating code based on enriched expectations`);
+    const code = await this.generatorService.generateCode(expectations._id.toString());
+    
+    this.logger.log(`Validating generated code`);
+    const validation = await this.validatorService.validateCode(
+      expectations._id.toString(),
+      code._id.toString(),
+    );
+    
+    await this.memoryService.storeMemory({
+      type: MemoryType.SYSTEM,
+      content: {
+        workflowId: 'full_process',
+        requirementId,
+        expectationsId: expectations._id.toString(),
+        codeId: code._id.toString(),
+        validationId: validation._id.toString(),
+        timestamp: new Date()
+      },
+      metadata: {
+        status: 'completed',
+        requirementTitle: requirement.title
+      },
+      tags: ['workflow', 'full_process', requirementId]
+    });
+    
+    return {
+      status: 'completed',
+      requirement,
+      expectations: enrichedExpectations,
+      code,
+      validation,
+    };
+  }
+  
+  /**
+   * 重新生成代码
+   */
+  private async regenerateCode(params: any): Promise<any> {
+    const { expectationId } = params;
+    
+    this.logger.log(`Regenerating code for expectation: ${expectationId}`);
+    const newCode = await this.generatorService.generateCode(expectationId);
+    
+    return {
+      status: 'completed',
+      code: newCode,
+    };
+  }
+  
+  /**
+   * 执行语义验证流程
+   */
+  private async executeSemanticValidation(params: any): Promise<any> {
+    const { expectationId, codeId } = params;
+    
+    if (!expectationId || !codeId) {
+      throw new Error('Both expectationId and codeId are required');
+    }
+    
+    const expectations = await this.clarifierService.getExpectationById(expectationId);
+    const code = await this.generatorService.getCodeById(codeId);
+    
+    if (!expectations || !code) {
+      throw new Error('Expectations or code not found');
+    }
+    
+    this.logger.log(`Resolving semantic conflicts between expectations and code`);
+    const semanticResolution = await this.semanticMediatorService.resolveSemanticConflicts(
+      'expectations',
+      expectations,
+      'code',
+      code
+    );
+    
+    this.logger.log(`Validating code with semantic resolution`);
+    const validation = await this.validatorService.validateCodeWithSemanticInput(
+      expectationId,
+      codeId,
+      semanticResolution
+    );
+    
+    return {
+      status: 'completed',
+      validation,
+      semanticResolution
+    };
+  }
+  
+  /**
+   * 执行语义丰富流程
+   */
+  private async executeSemanticEnrichment(params: any): Promise<any> {
+    const { moduleType, dataId, contextQuery } = params;
+    
+    if (!moduleType || !dataId || !contextQuery) {
+      throw new Error('moduleType, dataId and contextQuery are required');
+    }
+    
+    let originalData;
+    
+    switch (moduleType) {
+      case 'requirement':
+        originalData = await this.clarifierService.getRequirementById(dataId);
+        break;
+      case 'expectations':
+        originalData = await this.clarifierService.getExpectationById(dataId);
+        break;
+      case 'code':
+        originalData = await this.generatorService.getCodeById(dataId);
+        break;
+      default:
+        throw new Error(`Unsupported module type: ${moduleType}`);
+    }
+    
+    if (!originalData) {
+      throw new Error(`Data not found for ${moduleType} with id ${dataId}`);
+    }
+    
+    this.logger.log(`Enriching ${moduleType} data with context: ${contextQuery}`);
+    const enrichedData = await this.semanticMediatorService.enrichWithContext(
+      moduleType,
+      originalData,
+      contextQuery
+    );
+    
+    await this.semanticMediatorService.trackSemanticTransformation(
+      moduleType,
+      `${moduleType}_enriched`,
+      originalData,
+      enrichedData
+    );
+    
+    return {
+      status: 'completed',
+      originalData,
+      enrichedData
+    };
   }
 }
