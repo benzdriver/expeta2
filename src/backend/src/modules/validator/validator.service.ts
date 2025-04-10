@@ -419,4 +419,163 @@ export class ValidatorService {
     logger.log(`Successfully generated validation feedback for validation: ${validationId}`);
     return feedback;
   }
+  
+  /**
+   * 使用自适应语义验证
+   * 根据验证上下文和语义分析动态调整验证标准和权重
+   */
+  async validateWithAdaptiveContext(
+    expectationId: string,
+    codeId: string,
+    validationContext: {
+      strategy: string;
+      focusAreas?: string[];
+      weights?: Record<string, number>;
+      previousValidations?: string[];
+      semanticContext?: any;
+    }
+  ): Promise<Validation> {
+    const logger = new Logger('ValidatorService');
+    logger.log(`Performing adaptive validation with context - expectation: ${expectationId}, code: ${codeId}`);
+    
+    const expectationMemories = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
+    const expectation = expectationMemories.find(
+      (memory) => memory.content._id.toString() === expectationId,
+    )?.content;
+
+    const codeMemories = await this.memoryService.getMemoryByType(MemoryType.CODE);
+    const code = codeMemories.find(
+      (memory) => memory.content._id.toString() === codeId,
+    )?.content;
+    
+    if (!expectation || !code) {
+      logger.error(`Expectation or Code not found for adaptive validation`);
+      throw new Error('Expectation or Code not found');
+    }
+    
+    let previousValidationsData = [];
+    if (validationContext.previousValidations && validationContext.previousValidations.length > 0) {
+      const previousValidationIds = validationContext.previousValidations;
+      const previousValidations = await this.validationModel.find({
+        _id: { $in: previousValidationIds }
+      }).exec();
+      
+      previousValidationsData = previousValidations.map(v => ({
+        id: v._id.toString(),
+        status: v.status,
+        score: v.score,
+        details: v.details,
+        metadata: v.metadata
+      }));
+    }
+    
+    const validationPrompt = `
+      基于以下期望模型、生成的代码和验证上下文，执行自适应语义验证：
+      
+      期望模型：${JSON.stringify(expectation.model, null, 2)}
+      
+      生成的代码：
+      ${code.files.map(file => `文件路径: ${file.path}\n内容:\n${file.content}`).join('\n\n')}
+      
+      验证上下文：
+      - 验证策略: ${validationContext.strategy || 'balanced'}
+      - 重点关注领域: ${JSON.stringify(validationContext.focusAreas || [])}
+      - 权重配置: ${JSON.stringify(validationContext.weights || {
+        functionality: 1.0,
+        performance: 1.0,
+        security: 1.0,
+        maintainability: 1.0
+      })}
+      
+      ${previousValidationsData.length > 0 ? `
+      先前验证结果：
+      ${JSON.stringify(previousValidationsData, null, 2)}
+      ` : ''}
+      
+      ${validationContext.semanticContext ? `
+      语义上下文：
+      ${JSON.stringify(validationContext.semanticContext, null, 2)}
+      ` : ''}
+      
+      请根据提供的验证上下文，执行自适应验证，并提供以下格式的JSON结果：
+      {
+        "status": "passed|failed|partial",
+        "score": 0-100,
+        "details": [
+          {
+            "expectationId": "期望ID",
+            "status": "passed|failed|partial",
+            "score": 0-100,
+            "message": "评估说明",
+            "semanticInsights": "基于语义分析的洞察",
+            "adaptiveAnalysis": "基于自适应上下文的分析"
+          }
+        ],
+        "adaptiveInsights": {
+          "strategyEffectiveness": "验证策略有效性评估",
+          "focusAreasAnalysis": "重点关注领域分析",
+          "weightEffectiveness": "权重配置有效性分析",
+          "suggestedAdjustments": {
+            "weights": { "功能类别1": 权重值, ... },
+            "focusAreas": ["建议关注领域1", ...]
+          }
+        }
+      }
+    `;
+    
+    logger.debug('Sending adaptive validation prompt to LLM service');
+    const validationResultText = await this.llmService.generateContent(validationPrompt);
+    
+    let validationResult;
+    try {
+      validationResult = JSON.parse(validationResultText);
+      logger.debug(`Successfully parsed adaptive validation result with status: ${validationResult.status}`);
+    } catch (error) {
+      logger.error(`Failed to parse adaptive validation result: ${error.message}`);
+      throw new Error(`Failed to parse adaptive validation result: ${error.message}`);
+    }
+    
+    const validation = new this.validationModel({
+      expectationId,
+      codeId,
+      status: validationResult.status,
+      score: validationResult.score,
+      details: validationResult.details,
+      metadata: {
+        adaptiveInsights: validationResult.adaptiveInsights,
+        validationContext,
+        previousValidations: validationContext.previousValidations || [],
+        validatedAt: new Date().toISOString(),
+        validationType: 'adaptive'
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    
+    logger.debug('Saving adaptive validation result to database');
+    const savedValidation = await validation.save();
+    
+    logger.debug('Storing adaptive validation in memory service');
+    await this.memoryService.storeMemory({
+      type: MemoryType.VALIDATION,
+      content: savedValidation,
+      metadata: {
+        expectationId,
+        codeId,
+        status: validationResult.status,
+        score: validationResult.score,
+        isAdaptive: true,
+        validationContext: {
+          strategy: validationContext.strategy,
+          focusAreas: validationContext.focusAreas,
+          weights: validationContext.weights
+        },
+        timestamp: new Date().toISOString()
+      },
+      tags: ['validation', 'adaptive_validation', expectationId, codeId]
+    });
+    
+    logger.log(`Successfully performed adaptive validation - status: ${validationResult.status}, score: ${validationResult.score}`);
+    return savedValidation;
+  }
 }

@@ -14,6 +14,18 @@ interface ValidateIterativelyDto {
   iterationFocus?: string[];
 }
 
+interface ValidateWithAdaptiveContextDto {
+  expectationId: string;
+  codeId: string;
+  validationContext: {
+    strategy: string;
+    focusAreas?: string[];
+    weights?: Record<string, number>;
+    previousValidations?: string[];
+    semanticContext?: any;
+  };
+}
+
 @Controller('validator')
 export class ValidatorController {
   private readonly logger = new Logger(ValidatorController.name);
@@ -69,5 +81,15 @@ export class ValidatorController {
   async getValidationById(@Param('id') id: string) {
     this.logger.debug(`Fetching validation by ID: ${id}`);
     return this.validatorService.getValidationById(id);
+  }
+  
+  @Post('validate-with-adaptive-context')
+  async validateWithAdaptiveContext(@Body() data: ValidateWithAdaptiveContextDto) {
+    this.logger.log(`Validating with adaptive context - expectation: ${data.expectationId}, code: ${data.codeId}`);
+    return this.validatorService.validateWithAdaptiveContext(
+      data.expectationId,
+      data.codeId,
+      data.validationContext
+    );
   }
 }
