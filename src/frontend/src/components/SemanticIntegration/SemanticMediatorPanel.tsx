@@ -11,6 +11,8 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
     enrichWithContext, 
     extractSemanticInsights, 
     resolveSemanticConflicts,
+    trackSemanticTransformation,
+    evaluateSemanticTransformation,
     isLoading, 
     error 
   } = useExpeta();
@@ -26,6 +28,9 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
   const [moduleB, setModuleB] = useState<string>('generator');
   const [dataA, setDataA] = useState<string>('');
   const [dataB, setDataB] = useState<string>('');
+  const [sourceData, setSourceData] = useState<string>('');
+  const [transformedData, setTransformedData] = useState<string>('');
+  const [expectedOutcome, setExpectedOutcome] = useState<string>('');
   
   const handleTranslate = async () => {
     try {
@@ -72,6 +77,39 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
     }
   };
   
+  const handleTrackTransformation = async () => {
+    try {
+      const parsedSourceData = JSON.parse(sourceData);
+      const parsedTransformedData = JSON.parse(transformedData);
+      const result = await trackSemanticTransformation(
+        sourceModule,
+        targetModule,
+        parsedSourceData,
+        parsedTransformedData
+      );
+      setResult(result);
+    } catch (err: any) {
+      console.error('Transformation tracking failed', err);
+      setResult({ error: err.message || 'Failed to track semantic transformation' });
+    }
+  };
+  
+  const handleEvaluateTransformation = async () => {
+    try {
+      const parsedSourceData = JSON.parse(sourceData);
+      const parsedTransformedData = JSON.parse(transformedData);
+      const evaluation = await evaluateSemanticTransformation(
+        parsedSourceData,
+        parsedTransformedData,
+        expectedOutcome
+      );
+      setResult(evaluation);
+    } catch (err: any) {
+      console.error('Transformation evaluation failed', err);
+      setResult({ error: err.message || 'Failed to evaluate semantic transformation' });
+    }
+  };
+
   const handleOperation = () => {
     switch (selectedOperation) {
       case 'translate':
@@ -85,6 +123,12 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
         break;
       case 'conflicts':
         handleResolveConflicts();
+        break;
+      case 'track':
+        handleTrackTransformation();
+        break;
+      case 'evaluate':
+        handleEvaluateTransformation();
         break;
     }
   };
@@ -129,6 +173,94 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
                 onChange={e => setInputData(e.target.value)}
                 rows={8}
                 placeholder="输入要转换的JSON数据"
+              />
+            </div>
+          </div>
+        );
+        
+      case 'track':
+        return (
+          <div className="operation-form">
+            <div className="form-row">
+              <div className="form-group">
+                <label>源模块</label>
+                <select 
+                  value={sourceModule} 
+                  onChange={e => setSourceModule(e.target.value)}
+                >
+                  <option value="clarifier">澄清器</option>
+                  <option value="generator">生成器</option>
+                  <option value="validator">验证器</option>
+                  <option value="memory">记忆系统</option>
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label>目标模块</label>
+                <select 
+                  value={targetModule} 
+                  onChange={e => setTargetModule(e.target.value)}
+                >
+                  <option value="clarifier">澄清器</option>
+                  <option value="generator">生成器</option>
+                  <option value="validator">验证器</option>
+                  <option value="memory">记忆系统</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label>源数据 (JSON)</label>
+              <textarea 
+                value={sourceData} 
+                onChange={e => setSourceData(e.target.value)}
+                rows={6}
+                placeholder="输入源数据的JSON"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>转换后数据 (JSON)</label>
+              <textarea 
+                value={transformedData} 
+                onChange={e => setTransformedData(e.target.value)}
+                rows={6}
+                placeholder="输入转换后的JSON数据"
+              />
+            </div>
+          </div>
+        );
+        
+      case 'evaluate':
+        return (
+          <div className="operation-form">
+            <div className="form-group">
+              <label>源数据 (JSON)</label>
+              <textarea 
+                value={sourceData} 
+                onChange={e => setSourceData(e.target.value)}
+                rows={5}
+                placeholder="输入源数据的JSON"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>转换后数据 (JSON)</label>
+              <textarea 
+                value={transformedData} 
+                onChange={e => setTransformedData(e.target.value)}
+                rows={5}
+                placeholder="输入转换后的JSON数据"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>预期结果描述</label>
+              <textarea 
+                value={expectedOutcome} 
+                onChange={e => setExpectedOutcome(e.target.value)}
+                rows={3}
+                placeholder="描述预期的转换结果和质量标准"
               />
             </div>
           </div>
@@ -296,6 +428,22 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
             >
               <h4>冲突解决</h4>
               <p>解决不同模块之间的语义冲突</p>
+            </div>
+            
+            <div 
+              className={`operation-option ${selectedOperation === 'track' ? 'selected' : ''}`}
+              onClick={() => setSelectedOperation('track')}
+            >
+              <h4>转换跟踪</h4>
+              <p>记录和跟踪模块间的语义转换过程</p>
+            </div>
+            
+            <div 
+              className={`operation-option ${selectedOperation === 'evaluate' ? 'selected' : ''}`}
+              onClick={() => setSelectedOperation('evaluate')}
+            >
+              <h4>转换评估</h4>
+              <p>评估语义转换的质量和准确性</p>
             </div>
           </div>
         </div>

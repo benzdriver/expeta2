@@ -99,6 +99,8 @@ interface ExpetaContextType {
   enrichWithContext: (module: string, data: any, contextQuery: string) => Promise<any>;
   extractSemanticInsights: (data: any, query: string) => Promise<any>;
   resolveSemanticConflicts: (moduleA: string, dataA: any, moduleB: string, dataB: any) => Promise<any>;
+  trackSemanticTransformation: (sourceModule: string, targetModule: string, sourceData: any, transformedData: any) => Promise<any>;
+  evaluateSemanticTransformation: (sourceData: any, transformedData: any, expectedOutcome: string) => Promise<any>;
 }
 
 const ExpetaContext = createContext<ExpetaContextType | undefined>(undefined);
@@ -305,6 +307,38 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
     });
   };
 
+  const trackSemanticTransformation = async (
+    sourceModule: string, 
+    targetModule: string, 
+    sourceData: any, 
+    transformedData: any
+  ): Promise<any> => {
+    return handleApiCall(async () => {
+      const response = await semanticMediatorApi.trackSemanticTransformation(
+        sourceModule, 
+        targetModule, 
+        sourceData, 
+        transformedData
+      );
+      return response.data;
+    });
+  };
+
+  const evaluateSemanticTransformation = async (
+    sourceData: any, 
+    transformedData: any, 
+    expectedOutcome: string
+  ): Promise<any> => {
+    return handleApiCall(async () => {
+      const response = await semanticMediatorApi.evaluateSemanticTransformation(
+        sourceData, 
+        transformedData, 
+        expectedOutcome
+      );
+      return response.data;
+    });
+  };
+
   const value = {
     requirements,
     currentRequirement,
@@ -338,6 +372,8 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
         return response.data;
       });
     },
+    trackSemanticTransformation,
+    evaluateSemanticTransformation,
   };
 
   return (

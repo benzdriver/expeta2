@@ -78,6 +78,10 @@ export const semanticMediatorApi = {
     api.post('/semantic-mediator/resolve-conflicts', { moduleA, dataA, moduleB, dataB }),
   extractSemanticInsights: (data: any, query: string) => 
     api.post('/semantic-mediator/extract-insights', { data, query }),
+  trackSemanticTransformation: (sourceModule: string, targetModule: string, sourceData: any, transformedData: any) => 
+    api.post('/semantic-mediator/track-transformation', { sourceModule, targetModule, sourceData, transformedData }),
+  evaluateSemanticTransformation: (sourceData: any, transformedData: any, expectedOutcome: string) => 
+    api.post('/semantic-mediator/evaluate-transformation', { sourceData, transformedData, expectedOutcome }),
 };
 
 export default api;
