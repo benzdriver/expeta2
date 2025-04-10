@@ -1,36 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ChatInterface.css';
+import type { Message } from '../../services/logging.service';
+import type { Expectation, ConversationStage, ConversationContext, ChatInterfaceProps } from './types';
+const loggingService = (() => {
+  try {
+    return require('../../services/logging.service').default;
+  } catch (e) {
+    console.error('Failed to load logging service:', e);
+    return {
+      startSession: () => {},
+      endSession: () => {},
+      info: () => {},
+      debug: () => {},
+      warn: () => {},
+      error: () => {},
+      logSessionMessage: () => {},
+      logSessionStateChange: () => {}
+    };
+  }
+})();
 
-interface Message {
-  id: string;
-  sender: 'user' | 'system';
-  content: string;
-  timestamp: Date;
-  type?: 'question' | 'summary' | 'confirmation' | 'regular';
-  expectationId?: string;
-}
-
-interface Expectation {
-  id: string;
-  title: string;
-  description: string;
-  criteria: string[];
-  semanticTags?: string[];
-  priority?: 'low' | 'medium' | 'high';
-  industryExamples?: string;
-  subExpectations?: Partial<Expectation>[];
-}
-
-interface ChatInterfaceProps {
-  initialMessages?: Message[];
-  onSendMessage?: (message: string) => void;
-  onExpectationCreated?: (expectation: Expectation) => void;
-}
+const ConversationLogger = React.lazy(() => import('./ConversationLogger'));
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   initialMessages = [], 
   onSendMessage,
-  onExpectationCreated
+  onExpectationCreated,
+  enableLogging = true,
+  sessionId = `session-${Date.now()}`
 }) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages.length > 0 ? initialMessages : [
     {
@@ -43,7 +40,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [currentStage, setCurrentStage] = useState<'initial' | 'clarification' | 'industry' | 'summary' | 'confirmation' | 'semantic_analysis' | 'refinement' | 'examples'>('initial');
+  const [currentStage, setCurrentStage] = useState<ConversationStage>('initial');
   const [currentExpectation, setCurrentExpectation] = useState<Partial<Expectation>>({
     id: `exp-${Date.now()}`,
     criteria: [],
@@ -53,20 +50,50 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   });
   const [clarificationRound, setClarificationRound] = useState(0);
   const [semanticAnalysisComplete, setSemanticAnalysisComplete] = useState(false);
-  const [conversationContext, setConversationContext] = useState<{
-    industry?: string;
-    domain?: string;
-    complexity?: 'simple' | 'medium' | 'complex';
-    detectedKeywords: string[];
-    userPreferences: Record<string, string>;
-    followUpQuestions: string[];
-  }>({
+  const [conversationContext, setConversationContext] = useState<ConversationContext>({
     detectedKeywords: [],
     userPreferences: {},
     followUpQuestions: []
   });
+  const [showLogger, setShowLogger] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [inputValue]);
+
+  useEffect(() => {
+    if (enableLogging) {
+      try {
+        loggingService.startSession(sessionId, {
+          initialStage: currentStage,
+          initialMessages: messages.length
+        });
+        loggingService.info('ChatInterface', `Initialized chat interface with session ID: ${sessionId}`);
+      } catch (error) {
+        console.error('Failed to initialize logging:', error);
+      }
+    }
+    
+    return () => {
+      if (enableLogging) {
+        try {
+          loggingService.endSession(sessionId);
+          loggingService.info('ChatInterface', `Chat interface unmounted, session ended: ${sessionId}`);
+        } catch (error) {
+          console.error('Failed to end logging session:', error);
+        }
+      }
+    };
+  }, [enableLogging, sessionId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -113,6 +140,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       onSendMessage(inputValue);
     }
 
+    if (enableLogging) {
+      try {
+        loggingService.logSessionMessage(sessionId, newUserMessage);
+        loggingService.logSessionStateChange(sessionId, currentStage, currentStage, {
+          userInput: inputValue,
+          clarificationRound
+        });
+      } catch (error) {
+        console.error('Failed to log user message:', error);
+      }
+    }
+
     processUserInput(inputValue);
   };
 
@@ -140,7 +179,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         }));
       }
       
+      const prevStage = currentStage;
       setCurrentStage('clarification');
+      
+      if (enableLogging) {
+        try {
+          loggingService.logSessionStateChange(sessionId, prevStage, 'clarification', {
+            detectedIndustry,
+            complexity: conversationContext.complexity,
+            initialRequirement: userInput
+          });
+        } catch (error) {
+          console.error('Failed to log state change:', error);
+        }
+      }
       
       setTimeout(() => {
         let initialQuestion = '';
@@ -185,13 +237,39 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       if (nextRound > maxRounds) {
         if (shouldAskForExamples(conversationContext)) {
+          const prevStage = currentStage;
           setCurrentStage('examples');
+          
+          if (enableLogging) {
+            try {
+              loggingService.logSessionStateChange(sessionId, prevStage, 'examples', {
+                clarificationRounds: clarificationRound,
+                detectedKeywords: conversationContext.detectedKeywords
+              });
+            } catch (error) {
+              console.error('Failed to log state change:', error);
+            }
+          }
+          
           setTimeout(() => {
             const examplesQuestion = generateExamplesQuestion(conversationContext);
             addSystemMessage(examplesQuestion, 'question');
           }, 1500);
         } else {
+          const prevStage = currentStage;
           setCurrentStage('industry');
+          
+          if (enableLogging) {
+            try {
+              loggingService.logSessionStateChange(sessionId, prevStage, 'industry', {
+                clarificationRounds: clarificationRound,
+                detectedKeywords: conversationContext.detectedKeywords
+              });
+            } catch (error) {
+              console.error('Failed to log state change:', error);
+            }
+          }
+          
           setTimeout(() => {
             const industryQuestion = generateIndustryQuestion(conversationContext);
             addSystemMessage(industryQuestion, 'question');
@@ -908,6 +986,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     
     setMessages(prev => [...prev, systemMessage]);
     setIsTyping(false);
+    
+    if (enableLogging) {
+      try {
+        loggingService.logSessionMessage(sessionId, systemMessage);
+        loggingService.debug('ChatInterface', `System sent message type: ${type}`, {
+          contentLength: content.length,
+          messageType: type
+        });
+      } catch (error) {
+        console.error('Failed to log system message:', error);
+      }
+    }
   };
 
   const generateClarificationQuestion = (round: number): string => {
