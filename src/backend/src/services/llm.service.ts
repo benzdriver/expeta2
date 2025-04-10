@@ -363,4 +363,50 @@ export class LlmService {
       throw new Error('Failed to parse LLM response as JSON');
     }
   }
+
+  /**
+   * 使用语义分析结果生成代码
+   * 这个方法使用语义分析结果来增强代码生成过程
+   */
+  async generateCodeWithSemanticInput(
+    expectation: any,
+    semanticAnalysis: any,
+    options?: any
+  ): Promise<any> {
+    this.logger.log('Generating code with semantic input');
+    
+    const prompt = templates.GENERATE_CODE_WITH_SEMANTIC_INPUT_PROMPT
+      ? templates.GENERATE_CODE_WITH_SEMANTIC_INPUT_PROMPT
+          .replace('{expectationModel}', JSON.stringify(expectation, null, 2))
+          .replace('{semanticAnalysis}', JSON.stringify(semanticAnalysis, null, 2))
+          .replace('{options}', JSON.stringify(options || {}, null, 2))
+      : `
+        基于以下期望模型和语义分析结果，生成相应的代码实现：
+        
+        期望模型：${JSON.stringify(expectation, null, 2)}
+        
+        语义分析结果：${JSON.stringify(semanticAnalysis, null, 2)}
+        
+        生成选项：${JSON.stringify(options || {}, null, 2)}
+        
+        请生成以下文件的代码：
+        1. 主要功能实现文件
+        2. 接口定义文件
+        3. 测试文件
+        
+        返回JSON格式，包含files数组，每个文件包含path、content和language字段。
+      `;
+
+    const codeText = await this.generateContent(prompt, {
+      systemPrompt: templates.GENERATOR_SYSTEM_PROMPT,
+      maxTokens: 8000, // Code generation requires more tokens
+    });
+    
+    try {
+      return JSON.parse(codeText);
+    } catch (error) {
+      this.logger.error(`Error parsing LLM response: ${error.message}`, error.stack);
+      throw new Error('Failed to parse LLM response as JSON');
+    }
+  }
 }

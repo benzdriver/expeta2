@@ -1,19 +1,37 @@
-import { Injectable, Inject, forwardRef, Logger } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, Logger, NotFoundException } from '@nestjs/common';
 import { ClarifierService } from '../clarifier/clarifier.service';
 import { GeneratorService } from '../generator/generator.service';
 import { ValidatorService } from '../validator/validator.service';
 import { MemoryService } from '../memory/memory.service';
 import { SemanticMediatorService } from '../semantic-mediator/semantic-mediator.service';
 import { MemoryType } from '../memory/schemas/memory.schema';
+import { CustomWorkflowDto, WorkflowType } from './dto/workflow.dto';
+import { v4 as uuidv4 } from 'uuid';
+import { getValueByPath, setValueByPath, evaluateCondition } from './utils/workflow-utils';
+import { 
+  executeClarifierOperation,
+  executeGeneratorOperation,
+  executeValidatorOperation,
+  executeMemoryOperation,
+  executeSemanticMediatorOperation
+} from './utils/module-operations';
+
+import { 
+  WorkflowExecution, 
+  WorkflowExecutionStep, 
+  CustomWorkflow, 
+  WorkflowStep 
+} from './schemas/workflow.schema';
 
 /**
  * 编排器服务
  * 负责协调各个模块之间的工作流程，确保系统按照预期的顺序执行
  */
-
 @Injectable()
 export class OrchestratorService {
   private readonly logger = new Logger(OrchestratorService.name);
+  private readonly workflowExecutions: Map<string, WorkflowExecution> = new Map();
+  private readonly customWorkflows: Map<string, CustomWorkflow> = new Map();
 
   constructor(
     private readonly clarifierService: ClarifierService,
@@ -117,28 +135,115 @@ export class OrchestratorService {
   /**
    * 执行指定的工作流程
    */
-  async executeWorkflow(workflowId: string, params: any): Promise<any> {
+  async executeWorkflow(workflowId: string | WorkflowType, params: any): Promise<any> {
     try {
       this.logger.log(`Executing workflow: ${workflowId} with params: ${JSON.stringify(params)}`);
       
+      const executionId = uuidv4();
+      const execution: WorkflowExecution = {
+        id: executionId,
+        workflowId: workflowId.toString(),
+        params,
+        status: 'running',
+        startTime: new Date(),
+        steps: []
+      };
+      
+      this.workflowExecutions.set(executionId, execution);
+      
+      let result;
+      
       switch (workflowId) {
-        case 'full_process':
-          return await this.executeFullProcess(params);
+        case WorkflowType.FULL_PROCESS:
+          result = await this.executeFullProcess(params);
+          break;
           
-        case 'regenerate_code':
-          return await this.regenerateCode(params);
+        case WorkflowType.REGENERATE_CODE:
+          result = await this.regenerateCode(params);
+          break;
           
-        case 'semantic_validation':
-          return await this.executeSemanticValidation(params);
+        case WorkflowType.SEMANTIC_VALIDATION:
+          result = await this.executeSemanticValidation(params);
+          break;
           
-        case 'semantic_enrichment':
-          return await this.executeSemanticEnrichment(params);
+        case WorkflowType.SEMANTIC_ENRICHMENT:
+          result = await this.executeSemanticEnrichment(params);
+          break;
+          
+        case WorkflowType.ITERATIVE_REFINEMENT:
+          result = await this.executeIterativeRefinement(params);
+          break;
+          
+        case WorkflowType.PARALLEL_VALIDATION:
+          result = await this.executeParallelValidation(params);
+          break;
+          
+        case WorkflowType.CUSTOM:
+          if (!params.customWorkflowId) {
+            throw new Error('customWorkflowId is required for custom workflow execution');
+          }
+          result = await this.executeCustomWorkflow(params.customWorkflowId, params);
+          break;
           
         default:
-          throw new Error(`Unknown workflow: ${workflowId}`);
+          if (this.customWorkflows.has(workflowId.toString())) {
+            result = await this.executeCustomWorkflow(workflowId.toString(), params);
+          } else {
+            throw new Error(`Unknown workflow: ${workflowId}`);
+          }
       }
+      
+      execution.status = 'completed';
+      execution.endTime = new Date();
+      execution.result = result;
+      
+      await this.memoryService.storeMemory({
+        type: MemoryType.SYSTEM,
+        content: {
+          executionId,
+          workflowId,
+          params,
+          result,
+          timestamp: new Date()
+        },
+        metadata: {
+          status: 'completed',
+          duration: execution.endTime.getTime() - execution.startTime.getTime()
+        },
+        tags: ['workflow', workflowId.toString(), executionId]
+      });
+      
+      return {
+        executionId,
+        ...result
+      };
     } catch (error) {
       this.logger.error(`Error executing workflow ${workflowId}: ${error.message}`, error.stack);
+      
+      const executionId = Array.from(this.workflowExecutions.entries())
+        .find(([_, exec]) => exec.workflowId === workflowId.toString() && exec.status === 'running')?.[0];
+      
+      if (executionId) {
+        const execution = this.workflowExecutions.get(executionId);
+        execution.status = 'failed';
+        execution.endTime = new Date();
+        execution.error = error.message;
+        
+        await this.memoryService.storeMemory({
+          type: MemoryType.SYSTEM,
+          content: {
+            executionId,
+            workflowId,
+            error: error.message,
+            timestamp: new Date()
+          },
+          metadata: {
+            status: 'failed'
+          },
+          tags: ['workflow', 'error', workflowId.toString(), executionId]
+        });
+      }
+      
       throw new Error(`Workflow execution failed: ${error.message}`);
     }
   }
@@ -303,5 +408,247 @@ export class OrchestratorService {
       originalData,
       enrichedData
     };
+  }
+  
+  /**
+   * 执行迭代优化流程
+   */
+  private async executeIterativeRefinement(params: any): Promise<any> {
+    const { expectationId, codeId, maxIterations = 3 } = params;
+    
+    if (!expectationId || !codeId) {
+      throw new Error('Both expectationId and codeId are required');
+    }
+    
+    const expectations = await this.clarifierService.getExpectationById(expectationId);
+    let code = await this.generatorService.getCodeById(codeId);
+    
+    if (!expectations || !code) {
+      throw new Error('Expectations or code not found');
+    }
+    
+    this.logger.log(`Starting iterative refinement for expectation: ${expectationId}, code: ${codeId}`);
+    
+    let currentIteration = 0;
+    let validationResult;
+    let refinedCode = code;
+    const iterationResults = [];
+    
+    while (currentIteration < maxIterations) {
+      currentIteration++;
+      this.logger.log(`Iteration ${currentIteration} of ${maxIterations}`);
+      
+      validationResult = await this.validatorService.validateCode(
+        expectationId,
+        refinedCode._id.toString()
+      );
+      
+      iterationResults.push({
+        iteration: currentIteration,
+        codeId: refinedCode._id.toString(),
+        validationId: validationResult._id.toString(),
+        score: validationResult.score,
+        issues: validationResult.issues
+      });
+      
+      if (validationResult.score >= 0.9) {
+        this.logger.log(`Validation score ${validationResult.score} reached threshold, stopping iterations`);
+        break;
+      }
+      
+      if (currentIteration >= maxIterations) {
+        break;
+      }
+      
+      const semanticAnalysis = await this.semanticMediatorService.resolveSemanticConflicts(
+        'validation',
+        validationResult,
+        'expectations',
+        expectations
+      );
+      
+      this.logger.log(`Generating improved code based on semantic analysis`);
+      refinedCode = await this.generatorService.generateCodeWithSemanticInput(
+        expectationId,
+        semanticAnalysis
+      );
+    }
+    
+    await this.memoryService.storeMemory({
+      type: MemoryType.SYSTEM,
+      content: {
+        workflowId: WorkflowType.ITERATIVE_REFINEMENT,
+        expectationId,
+        initialCodeId: codeId,
+        finalCodeId: refinedCode._id.toString(),
+        iterations: iterationResults,
+        timestamp: new Date()
+      },
+      metadata: {
+        status: 'completed',
+        iterationCount: currentIteration,
+        finalScore: validationResult.score
+      },
+      tags: ['workflow', 'iterative_refinement', expectationId]
+    });
+    
+    return {
+      status: 'completed',
+      initialCode: code,
+      finalCode: refinedCode,
+      validation: validationResult,
+      iterations: iterationResults
+    };
+  }
+  
+  /**
+   * 执行并行验证流程
+   */
+  private async executeParallelValidation(params: any): Promise<any> {
+    const { expectationId, codeIds } = params;
+    
+    if (!expectationId || !codeIds || !Array.isArray(codeIds) || codeIds.length === 0) {
+      throw new Error('expectationId and non-empty codeIds array are required');
+    }
+    
+    this.logger.log(`Starting parallel validation for expectation: ${expectationId}, codes: ${codeIds.join(', ')}`);
+    
+    const validationPromises = codeIds.map(codeId => 
+      this.validatorService.validateCode(expectationId, codeId)
+    );
+    
+    const validations = await Promise.all(validationPromises);
+    
+    const results = validations.map((validation, index) => ({
+      codeId: codeIds[index],
+      validation,
+      score: validation.score
+    }));
+    
+    results.sort((a, b) => b.score - a.score);
+    
+    await this.memoryService.storeMemory({
+      type: MemoryType.SYSTEM,
+      content: {
+        workflowId: WorkflowType.PARALLEL_VALIDATION,
+        expectationId,
+        codeIds,
+        results: results.map(r => ({
+          codeId: r.codeId,
+          validationId: r.validation._id.toString(),
+          score: r.score
+        })),
+        timestamp: new Date()
+      },
+      metadata: {
+        status: 'completed',
+        bestCodeId: results[0].codeId,
+        bestScore: results[0].score
+      },
+      tags: ['workflow', 'parallel_validation', expectationId]
+    });
+    
+    return {
+      status: 'completed',
+      results,
+      bestResult: results[0]
+    };
+  }
+  
+  /**
+   * 执行自定义工作流
+   */
+  private async executeCustomWorkflow(workflowId: string, params: any): Promise<any> {
+    const workflow = this.customWorkflows.get(workflowId);
+    
+    if (!workflow) {
+      throw new NotFoundException(`Custom workflow with id ${workflowId} not found`);
+    }
+    
+    this.logger.log(`Executing custom workflow: ${workflow.name}`);
+    
+    const executionId = uuidv4();
+    const execution: WorkflowExecution = {
+      id: executionId,
+      workflowId,
+      params,
+      status: 'running',
+      startTime: new Date(),
+      steps: workflow.steps.map(step => ({
+        name: `${step.moduleId}.${step.operation}`,
+        status: 'pending'
+      }))
+    };
+    
+    this.workflowExecutions.set(executionId, execution);
+    
+    const context = { ...params };
+    
+    for (let i = 0; i < workflow.steps.length; i++) {
+      const step = workflow.steps[i];
+      const executionStep = execution.steps[i];
+      
+      if (step.condition) {
+        const conditionMet = evaluateCondition(step.condition, context);
+        
+        if (!conditionMet) {
+          executionStep.status = 'skipped';
+          continue;
+        }
+      }
+      
+      executionStep.status = 'running';
+      executionStep.startTime = new Date();
+      
+      try {
+        const stepParams = {};
+        
+        for (const [paramName, paramPath] of Object.entries(step.inputMapping)) {
+          stepParams[paramName] = getValueByPath(context, paramPath);
+        }
+        
+        let result;
+        
+        switch (step.moduleId) {
+          case 'clarifier':
+            result = await executeClarifierOperation(this.clarifierService, step.operation, stepParams);
+            break;
+          case 'generator':
+            result = await executeGeneratorOperation(this.generatorService, step.operation, stepParams);
+            break;
+          case 'validator':
+            result = await executeValidatorOperation(this.validatorService, step.operation, stepParams);
+            break;
+          case 'memory':
+            result = await executeMemoryOperation(this.memoryService, step.operation, stepParams);
+            break;
+          case 'semantic_mediator':
+            result = await executeSemanticMediatorOperation(this.semanticMediatorService, step.operation, stepParams);
+            break;
+          default:
+            throw new Error(`Unknown module: ${step.moduleId}`);
+        }
+        
+        for (const [contextPath, resultPath] of Object.entries(step.outputMapping)) {
+          setValueByPath(context, contextPath, getValueByPath(result, resultPath));
+        }
+        
+        executionStep.status = 'completed';
+        executionStep.endTime = new Date();
+        executionStep.result = result;
+      } catch (error) {
+        executionStep.status = 'failed';
+        executionStep.endTime = new Date();
+        executionStep.error = error.message;
+        
+        throw error;
+      }
+    }
+    
+    execution.status = 'completed';
+    execution.endTime = new Date();
+    execution.result = context;
+    
+    return context;
   }
 }

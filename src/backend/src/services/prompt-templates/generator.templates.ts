@@ -92,3 +92,32 @@ export const GENERATE_DOCUMENTATION_PROMPT = `
 
 以Markdown格式返回文档。
 `;
+
+export const GENERATE_CODE_WITH_SEMANTIC_INPUT_PROMPT = `
+请根据以下期望模型和语义分析结果生成代码：
+
+期望模型：
+{expectationModel}
+
+语义分析结果：
+{semanticAnalysis}
+
+生成选项：
+{options}
+
+请生成完整的代码实现，包括必要的类、函数、接口等。
+返回JSON格式，包含以下字段：
+- files: 数组，每个元素包含以下字段：
+  - path: 文件路径
+  - content: 文件内容
+  - language: 编程语言
+- description: 代码的简短描述
+- metadata: 包含生成过程中的元数据
+
+确保代码是可运行的，并符合期望模型中的所有要求。
+利用语义分析结果来增强代码质量，特别关注：
+1. 语义分析中识别的关键概念和关系
+2. 潜在的边缘情况和错误处理
+3. 性能和可扩展性考虑
+4. 与现有系统的集成点
+`;

@@ -5,6 +5,7 @@ import { Code } from './schemas/code.schema';
 import { LlmService } from '../../services/llm.service';
 import { MemoryService } from '../memory/memory.service';
 import { MemoryType } from '../memory/schemas/memory.schema';
+import { GenerateCodeWithSemanticInputDto } from './dto';
 
 @Injectable()
 export class GeneratorService {
@@ -114,5 +115,71 @@ export class GeneratorService {
     });
     
     return updatedCode;
+  }
+
+  /**
+   * 使用语义分析结果生成代码
+   * 这个方法使用语义分析结果来增强代码生成过程
+   */
+  async generateCodeWithSemanticInput(
+    expectationId: string,
+    semanticAnalysis: any,
+    options?: any
+  ): Promise<Code> {
+    const expectationMemory = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
+    const expectation = expectationMemory.find(
+      (memory) => memory.content._id.toString() === expectationId,
+    );
+
+    if (!expectation) {
+      throw new Error('Expectation not found');
+    }
+
+    const codeGenerationPrompt = `
+      基于以下期望模型和语义分析结果，生成相应的代码实现：
+      
+      期望模型：${JSON.stringify(expectation.content.model, null, 2)}
+      
+      语义分析结果：${JSON.stringify(semanticAnalysis, null, 2)}
+      
+      请生成以下文件的代码：
+      1. 主要功能实现文件
+      2. 接口定义文件
+      3. 测试文件
+      
+      返回JSON格式，包含files数组，每个文件包含path、content和language字段。
+    `;
+
+    const generatedCodeText = await this.llmService.generateContent(codeGenerationPrompt);
+    const generatedCode = JSON.parse(generatedCodeText);
+
+    const createdCode = new this.codeModel({
+      expectationId,
+      files: generatedCode.files,
+      metadata: {
+        expectationId,
+        version: 1,
+        status: 'generated',
+        semanticAnalysisUsed: true,
+        semanticAnalysisSummary: semanticAnalysis.summary || 'No summary available',
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const savedCode = await createdCode.save();
+
+    await this.memoryService.storeMemory({
+      type: MemoryType.CODE,
+      content: savedCode,
+      metadata: {
+        expectationId,
+        status: 'generated',
+        semanticAnalysisUsed: true,
+      },
+      tags: ['code', 'semantic_enhanced', expectationId, savedCode._id.toString()],
+    });
+
+    return savedCode;
   }
 }
