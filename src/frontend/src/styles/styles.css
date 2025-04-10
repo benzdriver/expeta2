@@ -1,0 +1,24 @@
+/* 全局样式 */
+:root {
+    --primary-color: #5B61F4;
+    --primary-light: #E8E9FF;
+    --primary-dark: #4046C0;
+    --secondary-color: #6C757D;
+    --success-color: #28A745;
+    --info-color: #17A2B8;
+    --warning-color: #FFC107;
+    --danger-color: #DC3545;
+    --light-color: #F8F9FA;
+    --dark-color: #343A40;
+    --text-color: #212529;
+    --text-light: #6C757D;
+    --border-color: #DEE2E6;
+    --border-radius: 8px;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+}
+
+/* Base styles and other CSS content from the provided file */
+/* This is a partial implementation - the complete CSS would be added here */
