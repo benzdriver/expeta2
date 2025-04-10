@@ -8,6 +8,7 @@ export enum WorkflowType {
   SEMANTIC_ENRICHMENT = 'semantic_enrichment',
   ITERATIVE_REFINEMENT = 'iterative_refinement',
   PARALLEL_VALIDATION = 'parallel_validation',
+  ADAPTIVE_VALIDATION = 'adaptive_validation',
   CUSTOM = 'custom'
 }
 

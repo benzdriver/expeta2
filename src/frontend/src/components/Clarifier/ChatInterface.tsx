@@ -156,9 +156,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const processUserInput = (userInput: string) => {
+    if (enableLogging) {
+      try {
+        loggingService.debug('ConversationFlow', '处理用户输入', {
+          currentStage,
+          inputLength: userInput.length,
+          clarificationRound,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Failed to log user input processing:', error);
+      }
+    }
+    
     updateConversationContext(userInput);
     
     if (currentStage === 'initial') {
+      if (enableLogging) {
+        try {
+          loggingService.info('ConversationFlow', '初始需求接收', {
+            requirementLength: userInput.length,
+            timestamp: new Date().toISOString()
+          });
+        } catch (error) {
+          console.error('Failed to log initial requirement:', error);
+        }
+      }
+      
       setCurrentExpectation(prev => ({
         ...prev,
         title: userInput.split('.')[0] || userInput.substring(0, 30),
@@ -171,12 +195,34 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         complexity
       }));
       
+      if (enableLogging) {
+        try {
+          loggingService.debug('ConversationAnalysis', '需求复杂度分析', {
+            complexity,
+            requirementLength: userInput.length
+          });
+        } catch (error) {
+          console.error('Failed to log complexity analysis:', error);
+        }
+      }
+      
       const detectedIndustry = detectIndustryFromInput(userInput);
       if (detectedIndustry) {
         setConversationContext(prev => ({
           ...prev,
           detectedIndustry
         }));
+        
+        if (enableLogging) {
+          try {
+            loggingService.debug('ConversationAnalysis', '行业检测', {
+              detectedIndustry,
+              confidence: 'medium' // 可以根据实际检测算法添加置信度
+            });
+          } catch (error) {
+            console.error('Failed to log industry detection:', error);
+          }
+        }
       }
       
       const prevStage = currentStage;
@@ -187,7 +233,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           loggingService.logSessionStateChange(sessionId, prevStage, 'clarification', {
             detectedIndustry,
             complexity: conversationContext.complexity,
-            initialRequirement: userInput
+            initialRequirement: userInput,
+            timestamp: new Date().toISOString(),
+            expectationId: currentExpectation.id
           });
         } catch (error) {
           console.error('Failed to log state change:', error);
@@ -402,25 +450,54 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
     }
     else if (currentStage === 'confirmation') {
-      const isFullyConfirmed = userInput.toLowerCase().includes('是') || 
-                              userInput.toLowerCase().includes('对') || 
-                              userInput.toLowerCase().includes('正确') ||
-                              userInput.toLowerCase().includes('确认');
-                              
-      const isPartiallyConfirmed = userInput.toLowerCase().includes('基本') || 
-                                  userInput.toLowerCase().includes('大致') || 
-                                  userInput.toLowerCase().includes('大体') ||
-                                  userInput.toLowerCase().includes('差不多');
-                                  
-      const needsMajorRevision = userInput.toLowerCase().includes('不对') || 
-                                userInput.toLowerCase().includes('错误') || 
-                                userInput.toLowerCase().includes('重新') ||
-                                userInput.toLowerCase().includes('完全不');
+      if (enableLogging) {
+        try {
+          loggingService.info('ConversationFlow', '用户确认响应', {
+            responseLength: userInput.length,
+            stage: 'confirmation',
+            timestamp: new Date().toISOString(),
+            expectationId: currentExpectation.id
+          });
+        } catch (error) {
+          console.error('Failed to log confirmation response:', error);
+        }
+      }
       
-      const needsMinorRevision = userInput.toLowerCase().includes('修改') || 
-                                userInput.toLowerCase().includes('调整') || 
-                                userInput.toLowerCase().includes('补充') ||
-                                userInput.toLowerCase().includes('添加');
+      const confirmationResponse = userInput.toLowerCase();
+      
+      const isFullyConfirmed = confirmationResponse.includes('是') || 
+                              confirmationResponse.includes('对') || 
+                              confirmationResponse.includes('正确') ||
+                              confirmationResponse.includes('确认');
+                              
+      const isPartiallyConfirmed = confirmationResponse.includes('基本') || 
+                                  confirmationResponse.includes('大致') || 
+                                  confirmationResponse.includes('大体') ||
+                                  confirmationResponse.includes('差不多');
+                                  
+      const needsMajorRevision = confirmationResponse.includes('不对') || 
+                                confirmationResponse.includes('错误') || 
+                                confirmationResponse.includes('重新') ||
+                                confirmationResponse.includes('完全不');
+      
+      const needsMinorRevision = confirmationResponse.includes('修改') || 
+                                confirmationResponse.includes('调整') || 
+                                confirmationResponse.includes('补充') ||
+                                confirmationResponse.includes('添加');
+                                
+      if (enableLogging) {
+        try {
+          loggingService.debug('ConversationAnalysis', '确认分析结果', {
+            isFullyConfirmed,
+            isPartiallyConfirmed,
+            needsMajorRevision,
+            needsMinorRevision,
+            originalResponse: confirmationResponse
+          });
+        } catch (error) {
+          console.error('Failed to log confirmation analysis:', error);
+        }
+      }
       
       if (isFullyConfirmed && !needsMinorRevision && !needsMajorRevision) {
         const priority = determinePriority(currentExpectation);
@@ -430,6 +507,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         }));
         
         const finalizedExpectation = currentExpectation as Expectation;
+        
+        if (enableLogging) {
+          try {
+            loggingService.info('ConversationFlow', '期望模型创建完成', {
+              expectationId: finalizedExpectation.id,
+              priority,
+              semanticTagsCount: finalizedExpectation.semanticTags?.length || 0,
+              subExpectationsCount: finalizedExpectation.subExpectations?.length || 0,
+              timestamp: new Date().toISOString()
+            });
+          } catch (error) {
+            console.error('Failed to log expectation creation:', error);
+          }
+        }
         
         if (onExpectationCreated) {
           onExpectationCreated(finalizedExpectation);
@@ -1263,6 +1354,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const extractSemanticTags = (expectation: Partial<Expectation>): string[] => {
+    if (enableLogging) {
+      try {
+        loggingService.info('SemanticAnalysis', '开始语义标签提取过程', {
+          expectationId: expectation.id,
+          stage: currentStage
+        });
+      } catch (error) {
+        console.error('Failed to log semantic analysis start:', error);
+      }
+    }
+    
     const { title, description, criteria, industryExamples, subExpectations } = expectation;
     const allText = `${title || ''} ${description || ''} ${criteria?.join(' ') || ''} ${industryExamples || ''}`;
     
@@ -1271,6 +1373,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     ).join(' ') || '';
     
     const fullText = `${allText} ${subExpectationsText}`;
+    
+    if (enableLogging) {
+      try {
+        loggingService.debug('SemanticAnalysis', '收集的文本用于语义分析', {
+          textLength: fullText.length,
+          hasTitle: !!title,
+          hasCriteria: Array.isArray(criteria) && criteria.length > 0,
+          hasSubExpectations: Array.isArray(subExpectations) && subExpectations.length > 0
+        });
+      } catch (error) {
+        console.error('Failed to log semantic analysis text collection:', error);
+      }
+    }
     
     const commonWords = [
       '的', '了', '和', '与', '或', '在', '是', '有', '这个', '那个', '如何', '什么', '为什么',
@@ -1674,7 +1789,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       return tags.sort((a, b) => (tagWeights[b] || 0) - (tagWeights[a] || 0));
     };
     
-    return prioritizeTags(semanticTags).slice(0, 7);
+    const finalTags = prioritizeTags(semanticTags).slice(0, 7);
+    
+    if (enableLogging) {
+      try {
+        loggingService.info('SemanticAnalysis', '语义标签提取完成', {
+          expectationId: expectation.id,
+          tagCount: finalTags.length,
+          topTags: finalTags.slice(0, 5),
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Failed to log semantic tags extraction completion:', error);
+      }
+    }
+    
+    return finalTags;
   };
   
   const generateSummary = (): string => {

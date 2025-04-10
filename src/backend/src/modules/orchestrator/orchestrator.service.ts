@@ -178,6 +178,10 @@ export class OrchestratorService {
           result = await this.executeParallelValidation(params);
           break;
           
+        case WorkflowType.ADAPTIVE_VALIDATION:
+          result = await this.executeAdaptiveValidation(params);
+          break;
+          
         case WorkflowType.CUSTOM:
           if (!params.customWorkflowId) {
             throw new Error('customWorkflowId is required for custom workflow execution');
@@ -556,6 +560,168 @@ export class OrchestratorService {
   }
   
   /**
+   * 执行自适应验证流程
+   * 根据先前的验证结果和语义分析动态调整验证标准
+   */
+  private async executeAdaptiveValidation(params: any): Promise<any> {
+    const { expectationId, codeId, previousValidationId, adaptationStrategy } = params;
+    
+    if (!expectationId || !codeId) {
+      throw new Error('expectationId and codeId are required');
+    }
+    
+    this.logger.log(`Starting adaptive validation for expectation: ${expectationId}, code: ${codeId}`);
+    
+    const expectations = await this.clarifierService.getExpectationById(expectationId);
+    const code = await this.generatorService.getCodeById(codeId);
+    
+    if (!expectations || !code) {
+      throw new Error('Expectations or code not found');
+    }
+    
+    let validationContext: Record<string, any> = {
+      expectation: expectations,
+      code,
+      strategy: adaptationStrategy || 'balanced',
+      focusAreas: [],
+      weights: {
+        functionality: 1.0,
+        performance: 1.0,
+        security: 1.0,
+        maintainability: 1.0
+      }
+    };
+    
+    if (previousValidationId) {
+      const previousValidation = await this.validatorService.getValidationById(previousValidationId);
+      
+      if (!previousValidation) {
+        throw new Error(`Previous validation with id ${previousValidationId} not found`);
+      }
+      
+      this.logger.log(`Analyzing previous validation: ${previousValidationId}`);
+      
+      const semanticAnalysis = await this.semanticMediatorService.extractSemanticInsights(
+        previousValidation,
+        'identify validation patterns and improvement areas'
+      );
+      
+      validationContext = await this.adjustValidationContext(validationContext, semanticAnalysis);
+      
+      this.logger.log(`Adjusted validation context based on semantic analysis: ${JSON.stringify({
+        focusAreas: validationContext.focusAreas,
+        weights: validationContext.weights
+      })}`);
+    }
+    
+    let validation;
+    if (previousValidationId && validationContext.focusAreas.length > 0) {
+      validation = await this.validatorService.validateCodeIteratively(
+        expectationId,
+        codeId,
+        previousValidationId,
+        validationContext.focusAreas
+      );
+    } else {
+      validation = await this.validatorService.validateCodeWithSemanticInput(
+        expectationId,
+        codeId,
+        validationContext
+      );
+    }
+    
+    const feedback = await this.validatorService.generateValidationFeedback(validation._id.toString());
+    
+    await this.memoryService.storeMemory({
+      type: MemoryType.SYSTEM,
+      content: {
+        workflowId: WorkflowType.ADAPTIVE_VALIDATION,
+        expectationId,
+        codeId,
+        validationId: validation._id.toString(),
+        validationContext,
+        previousValidationId,
+        timestamp: new Date()
+      },
+      metadata: {
+        status: 'completed',
+        score: validation.score,
+        adaptationStrategy: validationContext.strategy,
+        focusAreas: validationContext.focusAreas
+      },
+      tags: ['workflow', 'adaptive_validation', expectationId, codeId]
+    });
+    
+    return {
+      status: 'completed',
+      validation,
+      feedback,
+      adaptedContext: validationContext
+    };
+  }
+  
+  /**
+   * 根据语义分析调整验证上下文
+   * @private
+   */
+  private async adjustValidationContext(
+    context: Record<string, any>,
+    semanticAnalysis: any
+  ): Promise<Record<string, any>> {
+    const updatedContext = { ...context };
+    
+    if (semanticAnalysis.improvementAreas && Array.isArray(semanticAnalysis.improvementAreas)) {
+      updatedContext.focusAreas = semanticAnalysis.improvementAreas;
+    } else if (semanticAnalysis.issues && Array.isArray(semanticAnalysis.issues)) {
+      updatedContext.focusAreas = semanticAnalysis.issues.map(issue => issue.area || issue.category);
+    }
+    
+    if (semanticAnalysis.suggestedWeights) {
+      updatedContext.weights = {
+        ...updatedContext.weights,
+        ...semanticAnalysis.suggestedWeights
+      };
+    } else {
+      switch (context.strategy) {
+        case 'functionality_first':
+          updatedContext.weights.functionality = 1.5;
+          updatedContext.weights.performance = 0.8;
+          break;
+        case 'performance_focus':
+          updatedContext.weights.performance = 1.5;
+          updatedContext.weights.maintainability = 0.8;
+          break;
+        case 'security_critical':
+          updatedContext.weights.security = 1.5;
+          updatedContext.weights.functionality = 1.2;
+          break;
+        case 'maintainability_focus':
+          updatedContext.weights.maintainability = 1.5;
+          updatedContext.weights.performance = 0.8;
+          break;
+      }
+      
+      if (semanticAnalysis.criticalIssues) {
+        semanticAnalysis.criticalIssues.forEach(issue => {
+          if (issue.category === 'security') updatedContext.weights.security += 0.3;
+          if (issue.category === 'performance') updatedContext.weights.performance += 0.2;
+          if (issue.category === 'functionality') updatedContext.weights.functionality += 0.2;
+          if (issue.category === 'maintainability') updatedContext.weights.maintainability += 0.1;
+        });
+      }
+    }
+    
+    const totalWeight = Object.values(updatedContext.weights).reduce((sum: number, weight: number) => sum + weight, 0) as number;
+    const normalizationFactor = 4.0 / totalWeight;
+    
+    Object.keys(updatedContext.weights).forEach(key => {
+      updatedContext.weights[key] *= normalizationFactor;
+    });
+    
+    return updatedContext;
+  }
+  
+  /**
    * 执行自定义工作流
    */
   private async executeCustomWorkflow(workflowId: string, params: any): Promise<any> {
@@ -650,5 +816,126 @@ export class OrchestratorService {
     execution.result = context;
     
     return context;
+  }
+  
+  /**
+   * 创建自定义工作流
+   */
+  async createCustomWorkflow(dto: CustomWorkflowDto): Promise<any> {
+    const workflowId = uuidv4();
+    
+    const workflow: CustomWorkflow = {
+      id: workflowId,
+      name: dto.name,
+      steps: dto.steps,
+      config: dto.config || {},
+      description: dto.description || '',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.customWorkflows.set(workflowId, workflow);
+    
+    this.logger.log(`Created custom workflow: ${workflow.name} with ID: ${workflowId}`);
+    
+    await this.memoryService.storeMemory({
+      type: MemoryType.SYSTEM,
+      content: {
+        workflowId,
+        name: workflow.name,
+        steps: workflow.steps,
+        config: workflow.config,
+        timestamp: new Date()
+      },
+      metadata: {
+        type: 'custom_workflow',
+        name: workflow.name
+      },
+      tags: ['workflow', 'custom', workflowId]
+    });
+    
+    return {
+      id: workflowId,
+      name: workflow.name,
+      stepsCount: workflow.steps.length,
+      createdAt: workflow.createdAt
+    };
+  }
+  
+  /**
+   * 获取自定义工作流列表
+   */
+  async getCustomWorkflows(): Promise<any[]> {
+    return Array.from(this.customWorkflows.values()).map(workflow => ({
+      id: workflow.id,
+      name: workflow.name,
+      stepsCount: workflow.steps.length,
+      description: workflow.description,
+      createdAt: workflow.createdAt
+    }));
+  }
+  
+  /**
+   * 获取工作流执行状态
+   */
+  async getWorkflowStatus(executionId: string): Promise<any> {
+    const execution = this.workflowExecutions.get(executionId);
+    
+    if (!execution) {
+      throw new NotFoundException(`Workflow execution with id ${executionId} not found`);
+    }
+    
+    return {
+      id: execution.id,
+      workflowId: execution.workflowId,
+      status: execution.status,
+      startTime: execution.startTime,
+      endTime: execution.endTime,
+      steps: execution.steps,
+      result: execution.result,
+      error: execution.error
+    };
+  }
+  
+  /**
+   * 取消工作流执行
+   */
+  async cancelWorkflow(executionId: string): Promise<any> {
+    const execution = this.workflowExecutions.get(executionId);
+    
+    if (!execution) {
+      throw new NotFoundException(`Workflow execution with id ${executionId} not found`);
+    }
+    
+    if (execution.status !== 'running') {
+      return {
+        success: false,
+        message: `Cannot cancel workflow execution with status: ${execution.status}`
+      };
+    }
+    
+    execution.status = 'cancelled';
+    execution.endTime = new Date();
+    
+    this.logger.log(`Cancelled workflow execution: ${executionId}`);
+    
+    await this.memoryService.storeMemory({
+      type: MemoryType.SYSTEM,
+      content: {
+        executionId,
+        workflowId: execution.workflowId,
+        status: 'cancelled',
+        timestamp: new Date()
+      },
+      metadata: {
+        status: 'cancelled'
+      },
+      tags: ['workflow', 'cancelled', execution.workflowId, executionId]
+    });
+    
+    return {
+      success: true,
+      message: 'Workflow execution cancelled successfully'
+    };
   }
 }

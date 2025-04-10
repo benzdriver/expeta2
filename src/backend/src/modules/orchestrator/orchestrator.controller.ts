@@ -89,4 +89,23 @@ export class OrchestratorController {
       }
     );
   }
+  
+  @Post('adaptive-validation')
+  async executeAdaptiveValidation(@Body() data: { 
+    expectationId: string, 
+    codeId: string,
+    previousValidationId?: string,
+    adaptationStrategy?: string
+  }) {
+    this.logger.log(`Starting adaptive validation for expectation: ${data.expectationId}`);
+    return this.orchestratorService.executeWorkflow(
+      WorkflowType.ADAPTIVE_VALIDATION, 
+      {
+        expectationId: data.expectationId,
+        codeId: data.codeId,
+        previousValidationId: data.previousValidationId,
+        adaptationStrategy: data.adaptationStrategy || 'balanced'
+      }
+    );
+  }
 }

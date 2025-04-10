@@ -30,6 +30,11 @@ interface TrackTransformationDto {
   targetModule: string;
   sourceData: any;
   transformedData: any;
+  options?: {
+    trackDifferences?: boolean;
+    analyzeTransformation?: boolean;
+    saveToMemory?: boolean;
+  };
 }
 
 interface EvaluateTransformationDto {
@@ -88,14 +93,23 @@ export class SemanticMediatorController {
   @Post('track-transformation')
   async trackSemanticTransformation(@Body() dto: TrackTransformationDto) {
     this.logger.debug(`Manually tracking transformation from ${dto.sourceModule} to ${dto.targetModule}`);
-    const { sourceModule, targetModule, sourceData, transformedData } = dto;
-    await this.semanticMediatorService.trackSemanticTransformation(
+    const { sourceModule, targetModule, sourceData, transformedData, options } = dto;
+    
+    const result = await this.semanticMediatorService.trackSemanticTransformation(
       sourceModule, 
       targetModule, 
       sourceData, 
-      transformedData
+      transformedData,
+      options
     );
-    return { success: true, message: 'Transformation tracked successfully' };
+    
+    return { 
+      success: true, 
+      message: 'Transformation tracked successfully',
+      transformationId: result.transformationId,
+      hasAnalysis: options?.analyzeTransformation !== false,
+      hasDifferences: options?.trackDifferences !== false
+    };
   }
 
   @Post('evaluate-transformation')
