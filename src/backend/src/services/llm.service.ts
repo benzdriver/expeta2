@@ -409,4 +409,51 @@ export class LlmService {
       throw new Error('Failed to parse LLM response as JSON');
     }
   }
+
+  /**
+   * 分析多轮对话的需求澄清过程
+   * 提供对话流程的深入分析，包括有效性评分、关键信息提取和改进建议
+   */
+  async analyzeMultiRoundDialogue(requirementText: string, dialogueHistory: string): Promise<any> {
+    this.logger.log('Analyzing multi-round dialogue process');
+    
+    const prompt = templates.MULTI_ROUND_DIALOGUE_ANALYSIS_PROMPT
+      .replace('{requirementText}', requirementText)
+      .replace('{dialogueHistory}', dialogueHistory);
+
+    const analysisText = await this.generateContent(prompt, {
+      systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
+      maxTokens: 6000,
+    });
+    
+    try {
+      return JSON.parse(analysisText);
+    } catch (error) {
+      this.logger.error(`Error parsing LLM response: ${error.message}`, error.stack);
+      throw new Error('Failed to parse LLM response as JSON');
+    }
+  }
+
+  /**
+   * 生成期望模型总结
+   * 基于期望模型生成简洁的总结，确保用户理解系统将要实现什么
+   */
+  async generateExpectationSummary(expectationModel: any): Promise<any> {
+    this.logger.log('Generating expectation model summary');
+    
+    const prompt = templates.EXPECTATION_SUMMARY_PROMPT
+      .replace('{expectationModel}', JSON.stringify(expectationModel, null, 2));
+
+    const summaryText = await this.generateContent(prompt, {
+      systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
+      maxTokens: 4000,
+    });
+    
+    try {
+      return JSON.parse(summaryText);
+    } catch (error) {
+      this.logger.error(`Error parsing LLM response: ${error.message}`, error.stack);
+      throw new Error('Failed to parse LLM response as JSON');
+    }
+  }
 }
