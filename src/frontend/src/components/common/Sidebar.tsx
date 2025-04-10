@@ -13,6 +13,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
     { id: 'code-generation', label: '代码生成', icon: 'code' },
     { id: 'validation', label: '验证结果', icon: 'verified' },
     { id: 'memory', label: '记忆系统', icon: 'database' },
+    { id: 'integration', label: '语义集成', icon: 'integration_instructions' },
     { id: 'settings', label: '系统设置', icon: 'settings' }
   ];
 
