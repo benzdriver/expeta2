@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { OrchestratorController } from './orchestrator.controller';
 import { OrchestratorService } from './orchestrator.service';
 import { ClarifierModule } from '../clarifier/clarifier.module';
@@ -13,7 +13,7 @@ import { SemanticMediatorModule } from '../semantic-mediator/semantic-mediator.m
     GeneratorModule,
     ValidatorModule,
     MemoryModule,
-    SemanticMediatorModule,
+    forwardRef(() => SemanticMediatorModule),
   ],
   controllers: [OrchestratorController],
   providers: [OrchestratorService],
