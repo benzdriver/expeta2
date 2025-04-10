@@ -579,19 +579,7 @@ export class OrchestratorService {
       throw new Error('Expectations or code not found');
     }
     
-    let validationContext: Record<string, any> = {
-      expectation: expectations,
-      code,
-      strategy: adaptationStrategy || 'balanced',
-      focusAreas: [],
-      weights: {
-        functionality: 1.0,
-        performance: 1.0,
-        security: 1.0,
-        maintainability: 1.0
-      }
-    };
-    
+    let previousValidations = [];
     if (previousValidationId) {
       const previousValidation = await this.validatorService.getValidationById(previousValidationId);
       
@@ -599,23 +587,39 @@ export class OrchestratorService {
         throw new Error(`Previous validation with id ${previousValidationId} not found`);
       }
       
-      this.logger.log(`Analyzing previous validation: ${previousValidationId}`);
+      previousValidations.push(previousValidationId);
       
-      const semanticAnalysis = await this.semanticMediatorService.extractSemanticInsights(
-        previousValidation,
-        'identify validation patterns and improvement areas'
-      );
-      
-      validationContext = await this.adjustValidationContext(validationContext, semanticAnalysis);
-      
-      this.logger.log(`Adjusted validation context based on semantic analysis: ${JSON.stringify({
-        focusAreas: validationContext.focusAreas,
-        weights: validationContext.weights
-      })}`);
+      const relatedValidations = await this.validatorService.getValidationsByCodeId(codeId);
+      if (relatedValidations && relatedValidations.length > 0) {
+        previousValidations = [
+          ...previousValidations,
+          ...relatedValidations
+            .filter(v => v._id.toString() !== previousValidationId)
+            .map(v => v._id.toString())
+        ].slice(0, 5); // 最多使用5个验证记录
+      }
     }
     
+    this.logger.log(`Generating enhanced validation context using semantic mediator`);
+    
+    const validationContext = await this.semanticMediatorService.generateValidationContext(
+      expectationId,
+      codeId,
+      previousValidations,
+      {
+        strategy: adaptationStrategy || 'balanced',
+        focusAreas: []
+      }
+    );
+    
+    this.logger.log(`Generated validation context: ${JSON.stringify({
+      strategy: validationContext.strategy,
+      focusAreas: validationContext.focusAreas,
+      weights: validationContext.weights
+    })}`);
+    
     let validation;
-    if (previousValidationId && validationContext.focusAreas.length > 0) {
+    if (previousValidationId && validationContext.focusAreas && validationContext.focusAreas.length > 0) {
       validation = await this.validatorService.validateCodeIteratively(
         expectationId,
         codeId,
@@ -623,7 +627,7 @@ export class OrchestratorService {
         validationContext.focusAreas
       );
     } else {
-      validation = await this.validatorService.validateCodeWithSemanticInput(
+      validation = await this.validatorService.validateWithAdaptiveContext(
         expectationId,
         codeId,
         validationContext
@@ -640,6 +644,7 @@ export class OrchestratorService {
         codeId,
         validationId: validation._id.toString(),
         validationContext,
+        previousValidations,
         previousValidationId,
         timestamp: new Date()
       },
@@ -647,16 +652,24 @@ export class OrchestratorService {
         status: 'completed',
         score: validation.score,
         adaptationStrategy: validationContext.strategy,
-        focusAreas: validationContext.focusAreas
+        focusAreas: validationContext.focusAreas,
+        semanticAnalysisApplied: true,
+        validationContextVersion: '2.0'
       },
-      tags: ['workflow', 'adaptive_validation', expectationId, codeId]
+      tags: ['workflow', 'adaptive_validation', 'semantic_validation', expectationId, codeId]
     });
     
     return {
       status: 'completed',
       validation,
       feedback,
-      adaptedContext: validationContext
+      adaptedContext: validationContext,
+      semanticAnalysis: validationContext.semanticAnalysis || {},
+      validationMetrics: {
+        previousValidationsCount: previousValidations.length,
+        focusAreasCount: validationContext.focusAreas?.length || 0,
+        adaptationStrategy: validationContext.strategy
+      }
     };
   }
   
