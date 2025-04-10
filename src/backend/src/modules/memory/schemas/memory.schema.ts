@@ -7,6 +7,7 @@ export enum MemoryType {
   CODE = 'code',
   VALIDATION = 'validation',
   SYSTEM = 'system',
+  SEMANTIC_TRANSFORMATION = 'semantic_transformation',
 }
 
 @Schema()
@@ -24,6 +25,9 @@ export class Memory extends Document {
   @Prop({ type: Object })
   metadata: Record<string, any>;
 
+  @Prop({ type: [String], default: [] })
+  tags: string[];
+
   @Prop({ required: true })
   createdAt: Date;
 
@@ -34,4 +38,5 @@ export class Memory extends Document {
 export const MemorySchema = SchemaFactory.createForClass(Memory);
 
 MemorySchema.index({ type: 1 });
+MemorySchema.index({ tags: 1 });
 MemorySchema.index({ 'metadata.title': 'text', 'content.text': 'text', 'content.description': 'text' });
