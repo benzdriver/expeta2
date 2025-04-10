@@ -43,6 +43,17 @@ interface EvaluateTransformationDto {
   expectedOutcome: string;
 }
 
+interface GenerateValidationContextDto {
+  expectationId: string;
+  codeId: string;
+  previousValidations?: string[];
+  options?: {
+    focusAreas?: string[];
+    strategy?: 'balanced' | 'strict' | 'lenient' | 'performance' | 'security' | 'custom';
+    customWeights?: Record<string, number>;
+  };
+}
+
 @Controller('semantic-mediator')
 export class SemanticMediatorController {
   private readonly logger = new Logger(SemanticMediatorController.name);
@@ -120,6 +131,19 @@ export class SemanticMediatorController {
       sourceData,
       transformedData,
       expectedOutcome
+    );
+  }
+  
+  @Post('generate-validation-context')
+  async generateValidationContext(@Body() dto: GenerateValidationContextDto) {
+    this.logger.log(`Generating validation context for expectation: ${dto.expectationId}, code: ${dto.codeId}`);
+    const { expectationId, codeId, previousValidations = [], options = {} } = dto;
+    
+    return this.semanticMediatorService.generateValidationContext(
+      expectationId,
+      codeId,
+      previousValidations,
+      options
     );
   }
 }
