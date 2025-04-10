@@ -164,6 +164,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           clarificationRound,
           timestamp: new Date().toISOString()
         });
+        
+        loggingService.info('ConversationFlow', `用户输入处理 - 阶段: ${currentStage}`, {
+          stage: currentStage,
+          clarificationRound,
+          inputLength: userInput.length,
+          expectationId: currentExpectation.id,
+          sessionId,
+          messageCount: messages.length,
+          semanticAnalysisComplete,
+          timestamp: new Date().toISOString()
+        });
       } catch (error) {
         console.error('Failed to log user input processing:', error);
       }
@@ -235,7 +246,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             complexity: conversationContext.complexity,
             initialRequirement: userInput,
             timestamp: new Date().toISOString(),
-            expectationId: currentExpectation.id
+            expectationId: currentExpectation.id,
+            conversationFlow: 'initial_to_clarification',
+            requirementUnderstanding: 'processing',
+            dialogueRound: 1
           });
         } catch (error) {
           console.error('Failed to log state change:', error);
@@ -292,7 +306,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             try {
               loggingService.logSessionStateChange(sessionId, prevStage, 'examples', {
                 clarificationRounds: clarificationRound,
-                detectedKeywords: conversationContext.detectedKeywords
+                detectedKeywords: conversationContext.detectedKeywords,
+                conversationFlow: 'clarification_to_examples',
+                requirementUnderstanding: 'gathering_examples',
+                dialogueRound: clarificationRound + 1
               });
             } catch (error) {
               console.error('Failed to log state change:', error);
@@ -311,7 +328,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             try {
               loggingService.logSessionStateChange(sessionId, prevStage, 'industry', {
                 clarificationRounds: clarificationRound,
-                detectedKeywords: conversationContext.detectedKeywords
+                detectedKeywords: conversationContext.detectedKeywords,
+                conversationFlow: 'clarification_to_industry',
+                requirementUnderstanding: 'gathering_industry_context',
+                dialogueRound: clarificationRound + 1
               });
             } catch (error) {
               console.error('Failed to log state change:', error);
@@ -1085,6 +1105,37 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           contentLength: content.length,
           messageType: type
         });
+        
+        loggingService.debug('ConversationFlow', `系统消息 - 类型: ${type}`, {
+          messageId: systemMessage.id,
+          messageType: type,
+          contentLength: content.length,
+          stage: currentStage,
+          clarificationRound,
+          expectationId: currentExpectation.id,
+          timestamp: new Date().toISOString()
+        });
+        
+        if (type === 'question') {
+          loggingService.info('ConversationFlow', '提出澄清问题', {
+            questionType: clarificationRound === 0 ? 'initial' : `round_${clarificationRound}`,
+            stage: currentStage,
+            expectationId: currentExpectation.id
+          });
+        } else if (type === 'summary') {
+          loggingService.info('ConversationFlow', '生成需求总结', {
+            stage: currentStage,
+            expectationId: currentExpectation.id,
+            semanticTagsCount: currentExpectation.semanticTags?.length || 0,
+            criteriaCount: currentExpectation.criteria?.length || 0
+          });
+        } else if (type === 'confirmation') {
+          loggingService.info('ConversationFlow', '请求用户确认理解', {
+            stage: currentStage,
+            expectationId: currentExpectation.id,
+            requirementUnderstanding: 'explicit_summary_shown'
+          });
+        }
       } catch (error) {
         console.error('Failed to log system message:', error);
       }
