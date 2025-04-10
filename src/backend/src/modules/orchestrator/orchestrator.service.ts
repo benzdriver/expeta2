@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { ClarifierService } from '../clarifier/clarifier.service';
 import { GeneratorService } from '../generator/generator.service';
 import { ValidatorService } from '../validator/validator.service';
@@ -12,6 +12,7 @@ export class OrchestratorService {
     private readonly generatorService: GeneratorService,
     private readonly validatorService: ValidatorService,
     private readonly memoryService: MemoryService,
+    @Inject(forwardRef(() => SemanticMediatorService))
     private readonly semanticMediatorService: SemanticMediatorService,
   ) {}
 
