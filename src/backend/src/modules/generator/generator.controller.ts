@@ -1,6 +1,13 @@
 import { Controller, Post, Body, Get, Param, Put, Logger } from '@nestjs/common';
 import { GeneratorService } from './generator.service';
-import { GenerateCodeWithSemanticInputDto, OptimizeCodeDto } from './dto';
+import { 
+  GenerateCodeWithSemanticInputDto, 
+  OptimizeCodeDto,
+  GenerateProjectStructureDto,
+  GenerateCodeWithArchitectureDto,
+  GenerateTestSuiteDto,
+  RefactorCodeDto
+} from './dto';
 
 @Controller('generator')
 export class GeneratorController {
@@ -30,6 +37,44 @@ export class GeneratorController {
     return this.generatorService.optimizeCode(
       data.codeId,
       data.semanticFeedback
+    );
+  }
+
+  @Post('project-structure')
+  async generateProjectStructure(@Body() data: GenerateProjectStructureDto) {
+    this.logger.log(`Received request to generate project structure for expectation: ${data.expectationId}`);
+    return this.generatorService.generateProjectStructure(
+      data.expectationId,
+      data.techStack,
+      data.options
+    );
+  }
+
+  @Post('generate-with-architecture')
+  async generateCodeWithArchitecture(@Body() data: GenerateCodeWithArchitectureDto) {
+    this.logger.log(`Received request to generate code with architecture for expectation: ${data.expectationId}`);
+    return this.generatorService.generateCodeWithArchitecture(
+      data.expectationId,
+      data.architectureGuide,
+      data.technicalRequirements
+    );
+  }
+
+  @Post('test-suite')
+  async generateTestSuite(@Body() data: GenerateTestSuiteDto) {
+    this.logger.log(`Received request to generate test suite for code: ${data.codeId}`);
+    return this.generatorService.generateTestSuite(
+      data.codeId,
+      data.testRequirements
+    );
+  }
+
+  @Post('refactor')
+  async refactorCode(@Body() data: RefactorCodeDto) {
+    this.logger.log(`Received request to refactor code: ${data.codeId}`);
+    return this.generatorService.refactorCode(
+      data.codeId,
+      data.refactoringGoals
     );
   }
 
