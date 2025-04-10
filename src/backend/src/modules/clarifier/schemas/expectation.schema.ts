@@ -15,8 +15,23 @@ export class Expectation extends Document {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Requirement', required: true })
   requirementId: string;
 
+  @Prop({ required: false })
+  title: string;
+
   @Prop({ type: Object, required: true })
-  model: ExpectationNode;
+  model: any; // Using 'any' to avoid type conflicts with Document
+
+  @Prop({ type: [String] })
+  criteria?: string[];
+
+  @Prop({ type: [String] })
+  semanticTags?: string[];
+
+  @Prop({ type: [Object] })
+  subExpectations?: any[];
+
+  @Prop({ type: Object })
+  metadata?: Record<string, any>;
 
   @Prop()
   createdAt: Date;
