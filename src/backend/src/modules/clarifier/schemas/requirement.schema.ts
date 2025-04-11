@@ -5,6 +5,8 @@ export interface Clarification {
   questionId: string;
   answer: string;
   timestamp: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export type RequirementStatus = 'initial' | 'clarifying' | 'expectations_generated' | 'completed';
@@ -37,7 +39,13 @@ export class Requirement extends Document {
   @Prop({ type: String, enum: ['initial', 'clarifying', 'expectations_generated', 'completed'], default: 'initial' })
   status: RequirementStatus;
 
-  @Prop({ type: [{ questionId: String, answer: String, timestamp: Date }] })
+  @Prop({ type: [{ 
+    questionId: String, 
+    answer: String, 
+    timestamp: Date,
+    createdAt: Date,
+    updatedAt: Date
+  }] })
   clarifications?: Clarification[];
 
   @Prop({ type: [{ 
@@ -48,6 +56,9 @@ export class Requirement extends Document {
     timestamp: Date 
   }] })
   dialogueLog?: DialogueMessage[];
+
+  @Prop({ type: Object })
+  metadata?: Record<string, any>;
 
   @Prop()
   createdAt: Date;
