@@ -67,6 +67,12 @@ export const orchestratorApi = {
     api.get(`/orchestrator/status/${requirementId}`),
   executeWorkflow: (workflowId: string, params: any) => 
     api.post('/orchestrator/execute-workflow', { workflowId, params }),
+  getWorkflowStatus: (executionId: string) =>
+    api.get(`/orchestrator/workflow-status/${executionId}`),
+  getModuleConnections: (workflowId: string) =>
+    api.get(`/orchestrator/module-connections/${workflowId}`),
+  cancelWorkflow: (executionId: string) =>
+    api.post('/orchestrator/cancel-workflow', { executionId }),
 };
 
 export const semanticMediatorApi = {
