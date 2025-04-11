@@ -911,6 +911,113 @@ export class OrchestratorService {
   }
   
   /**
+   * 获取模块间连接信息
+   * 用于可视化模块之间的语义交互
+   */
+  async getModuleConnections(workflowId: string): Promise<any> {
+    this.logger.log(`Getting module connections for workflow: ${workflowId}`);
+    
+    const executions = Array.from(this.workflowExecutions.values())
+      .filter(exec => exec.workflowId === workflowId);
+    
+    if (executions.length === 0) {
+      return this.generateMockModuleConnections();
+    }
+    
+    const connections = [];
+    const moduleInteractions = new Map();
+    
+    for (const execution of executions) {
+      if (!execution.steps) continue;
+      
+      for (const step of execution.steps) {
+        if (!step.name) continue;
+        
+        const [sourceModule, operation] = step.name.split('.');
+        if (!sourceModule || !operation) continue;
+        
+        let targetModule = this.determineTargetModule(sourceModule, operation);
+        if (!targetModule || targetModule === sourceModule) continue;
+        
+        const interactionKey = `${sourceModule}:${targetModule}:${operation}`;
+        const count = moduleInteractions.get(interactionKey) || 0;
+        moduleInteractions.set(interactionKey, count + 1);
+      }
+    }
+    
+    for (const [key, count] of moduleInteractions.entries()) {
+      const [source, target, operation] = key.split(':');
+      connections.push({
+        source,
+        target,
+        type: operation,
+        count
+      });
+    }
+    
+    return connections;
+  }
+  
+  /**
+   * 确定目标模块
+   * 基于源模块和操作类型推断目标模块
+   */
+  private determineTargetModule(sourceModule: string, operation: string): string | null {
+    const operationTargets = {
+      'clarifier': {
+        'generateExpectations': 'semantic_mediator',
+        'processClarificationAnswer': 'memory',
+        'analyzeClarificationProgress': 'orchestrator'
+      },
+      'generator': {
+        'generateCode': 'validator',
+        'generateCodeWithSemanticInput': 'validator',
+        'optimizeCode': 'validator'
+      },
+      'validator': {
+        'validateCode': 'semantic_mediator',
+        'validateCodeWithSemanticInput': 'orchestrator',
+        'generateValidationFeedback': 'clarifier'
+      },
+      'memory': {
+        'storeMemory': 'semantic_mediator',
+        'getRelatedMemories': 'semantic_mediator'
+      },
+      'semantic_mediator': {
+        'translateBetweenModules': 'orchestrator',
+        'enrichWithContext': 'generator',
+        'resolveSemanticConflicts': 'validator',
+        'extractSemanticInsights': 'clarifier'
+      },
+      'orchestrator': {
+        'processRequirement': 'clarifier',
+        'executeWorkflow': 'semantic_mediator'
+      }
+    };
+    
+    return operationTargets[sourceModule]?.[operation] || null;
+  }
+  
+  /**
+   * 生成模拟的模块连接数据
+   * 用于前端可视化测试
+   */
+  private generateMockModuleConnections(): any[] {
+    return [
+      { source: 'clarifier', target: 'semantic_mediator', type: 'expectation', count: 5 },
+      { source: 'semantic_mediator', target: 'generator', type: 'enriched_expectation', count: 3 },
+      { source: 'generator', target: 'validator', type: 'code', count: 2 },
+      { source: 'validator', target: 'semantic_mediator', type: 'validation_result', count: 2 },
+      { source: 'semantic_mediator', target: 'clarifier', type: 'feedback', count: 1 },
+      { source: 'memory', target: 'semantic_mediator', type: 'context', count: 4 },
+      { source: 'semantic_mediator', target: 'orchestrator', type: 'status_update', count: 7 },
+      { source: 'orchestrator', target: 'clarifier', type: 'command', count: 2 },
+      { source: 'orchestrator', target: 'generator', type: 'command', count: 2 },
+      { source: 'orchestrator', target: 'validator', type: 'command', count: 2 }
+    ];
+  }
+  
+  /**
    * 取消工作流执行
    */
   async cancelWorkflow(executionId: string): Promise<any> {

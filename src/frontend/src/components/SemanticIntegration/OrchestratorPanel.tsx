@@ -3,9 +3,10 @@ import { useExpeta } from '../../contexts/ExpetaContext';
 
 interface OrchestratorPanelProps {
   requirementId?: string;
+  onWorkflowExecuted?: (workflowId: string) => void;
 }
 
-const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId }) => {
+const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, onWorkflowExecuted }) => {
   const { 
     processRequirement, 
     executeWorkflow, 
@@ -42,6 +43,10 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId }) 
     try {
       const result = await executeWorkflow(selectedWorkflow, workflowParams);
       setProcessStatus(result);
+      
+      if (result.executionId && onWorkflowExecuted) {
+        onWorkflowExecuted(result.executionId);
+      }
     } catch (err) {
       console.error('Failed to execute workflow', err);
     }
