@@ -31,6 +31,11 @@ describe('GeneratorService', () => {
             expectationId: 'test-expectation-id',
             version: 1,
             status: 'generated',
+            semanticAnalysisUsed: false,
+            semanticAnalysisSummary: '',
+            techStack: {},
+            architecturePattern: '',
+            originalCodeId: null,
           },
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -53,6 +58,11 @@ describe('GeneratorService', () => {
                 expectationId: 'test-expectation-id',
                 version: 1,
                 status: 'generated',
+                semanticAnalysisUsed: false,
+                semanticAnalysisSummary: '',
+                techStack: {},
+                architecturePattern: '',
+                originalCodeId: null,
               },
             },
           ]),
@@ -73,12 +83,22 @@ describe('GeneratorService', () => {
             expectationId: 'test-expectation-id',
             version: 1,
             status: 'generated',
+            semanticAnalysisUsed: false,
+            semanticAnalysisSummary: '',
+            techStack: {},
+            architecturePattern: '',
+            originalCodeId: null,
           },
           save: jest.fn().mockResolvedValue({
             _id: 'test-code-id',
             expectationId: 'test-expectation-id',
             metadata: {
               status: 'approved',
+              semanticAnalysisUsed: false,
+              semanticAnalysisSummary: '',
+              techStack: {},
+              architecturePattern: '',
+              originalCodeId: null,
             },
           }),
         }),
@@ -552,28 +572,37 @@ describe('GeneratorService', () => {
 
   describe('optimizeCode', () => {
     it('should optimize code', async () => {
-      if (typeof service.optimizeCode === 'function') {
-        const codeId = 'test-code-id';
-        const semanticFeedback = {
-          suggestions: ['Improve performance', 'Enhance readability'],
-          priority: 'high',
-        };
+      const codeId = 'test-code-id';
+      const semanticFeedback = {
+        suggestions: ['Improve performance', 'Enhance readability'],
+        priority: 'high',
+      };
 
-        if (typeof (service as any).getPromptTemplate === 'function') {
-          jest.spyOn(service as any, 'getPromptTemplate').mockResolvedValueOnce(
-            'Mocked optimization prompt'
-          );
-        }
+      jest.spyOn(service as any, 'getPromptTemplate').mockResolvedValueOnce(
+        'Mocked optimization prompt'
+      );
 
-        const result = await service.optimizeCode(codeId, semanticFeedback);
+      const result = await service.optimizeCode(codeId, semanticFeedback);
 
-        expect(result).toBeDefined();
-        expect(result.expectationId).toBe('test-expectation-id');
-        expect(result.metadata.status).toBe('optimized');
-        expect(result.metadata.originalCodeId).toBe(codeId);
-        expect(llmService.generateContent).toHaveBeenCalled();
-        expect(memoryService.storeMemory).toHaveBeenCalled();
-      }
+      expect(result).toBeDefined();
+      expect(result.expectationId).toBe('test-expectation-id');
+      expect(result.metadata.status).toBe('optimized');
+      expect(result.metadata.originalCodeId).toBe(codeId);
+      expect(result.metadata.optimizationFeedback).toEqual(semanticFeedback);
+      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(memoryService.storeMemory).toHaveBeenCalled();
+    });
+
+    it('should throw an error if code is not found', async () => {
+      jest.spyOn(service, 'getCodeById').mockRejectedValueOnce(
+        new Error('Code with id non-existent-id not found')
+      );
+      const codeId = 'non-existent-id';
+      const semanticFeedback = { suggestions: ['Improve performance'] };
+
+      await expect(service.optimizeCode(codeId, semanticFeedback)).rejects.toThrow(
+        'Code with id non-existent-id not found'
+      );
     });
   });
 });
