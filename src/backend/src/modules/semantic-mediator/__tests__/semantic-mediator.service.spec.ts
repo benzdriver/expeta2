@@ -1,13 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SemanticMediatorService } from '../semantic-mediator.service';
 import { LlmService } from '../../../services/llm.service';
-import { MemoryService } from '../../memory/memory.service';
+import { MemoryService } from '../../../modules/memory/memory.service';
+import { MemoryType } from '../../../modules/memory/schemas/memory.schema';
 
 describe('SemanticMediatorService', () => {
-  it('should be defined', () => {
-    expect(true).toBeTruthy();
-  });
-});
+  let service: SemanticMediatorService;
+  let llmServiceMock: any;
+  let memoryServiceMock: any;
+
+  beforeEach(async () => {
+    llmServiceMock = {
       translateBetweenModules: jest.fn().mockResolvedValue({ translated: true, data: 'translated data' }),
       enrichWithContext: jest.fn().mockResolvedValue({ enriched: true, data: 'enriched data' }),
       resolveSemanticConflicts: jest.fn().mockResolvedValue({ resolved: true, data: 'resolved data' }),
