@@ -9,7 +9,6 @@ import { IntelligentCacheService } from '../components/intelligent-cache/intelli
 import { MonitoringSystemService } from '../components/monitoring-system/monitoring-system.service';
 import { HumanInTheLoopService } from '../components/human-in-the-loop/human-in-the-loop.service';
 
-
 describe('SemanticMediatorService', () => {
   let service: SemanticMediatorService;
   let mockLlmRouterService: any; // Use 'any' for simplicity in mock
