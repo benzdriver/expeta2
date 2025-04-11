@@ -10,7 +10,16 @@ export interface CodeFile {
 export interface CodeMetadata {
   expectationId: string;
   version: number;
-  status: 'draft' | 'generated' | 'validated' | 'approved';
+  status: 'draft' | 'generated' | 'validated' | 'approved' | 'structure_generated' | 'architecture_generated' | 'tests_added' | 'refactored' | 'optimized';
+  semanticAnalysisUsed?: boolean;
+  semanticAnalysisSummary?: string;
+  techStack?: any;
+  architecturePattern?: string;
+  originalCodeId?: string;
+  generationOptions?: any;
+  refactoringGoals?: any;
+  testRequirements?: any;
+  optimizationFeedback?: any;
 }
 
 @Schema()
