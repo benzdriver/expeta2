@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useExpeta } from '../../contexts/ExpetaContext';
 import './OrchestratorPanel.css';
 import loggingService from '../../services/logging.service';
+import './OrchestratorPanel.css';
 
 interface OrchestratorPanelProps {
   requirementId?: string;
@@ -31,6 +32,11 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
     expectationId?: string;
     codeId?: string;
     options?: Record<string, unknown>;
+    includeSemanticAnalysis?: boolean;
+    optimizationLevel?: string;
+    analysisDepth?: string;
+    trackTransformations?: boolean;
+    validationStrategy?: string;
   }
   
   const [processStatus, setProcessStatus] = useState<ProcessStatus | null>(null);
@@ -84,10 +90,11 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
     
     try {
       const result = await executeWorkflow(selectedWorkflow, workflowParams);
-      setProcessStatus(result);
+      const processResult = result as unknown as ProcessStatus;
+      setProcessStatus(processResult);
       
-      if (result.executionId && onWorkflowExecuted) {
-        onWorkflowExecuted(result.executionId);
+      if (processResult.executionId && onWorkflowExecuted) {
+        onWorkflowExecuted(processResult.executionId);
       }
     } catch (err: unknown) {
       const error = err instanceof Error ? err : { message: String(err) };
