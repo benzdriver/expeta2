@@ -94,6 +94,8 @@ interface ExpetaContextType {
   
   processRequirement: (requirementId: string) => Promise<any>;
   executeWorkflow: (workflowId: string, params: any) => Promise<any>;
+  getWorkflowStatus: (workflowId: string) => Promise<any>;
+  getModuleConnections: (workflowId: string) => Promise<any>;
   
   translateBetweenModules: (sourceModule: string, targetModule: string, data: any) => Promise<any>;
   enrichWithContext: (module: string, data: any, contextQuery: string) => Promise<any>;
@@ -339,6 +341,20 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
     });
   };
 
+  const getWorkflowStatus = async (workflowId: string): Promise<any> => {
+    return handleApiCall(async () => {
+      const response = await orchestratorApi.getWorkflowStatus(workflowId);
+      return response.data;
+    });
+  };
+
+  const getModuleConnections = async (workflowId: string): Promise<any> => {
+    return handleApiCall(async () => {
+      const response = await orchestratorApi.getModuleConnections(workflowId);
+      return response.data;
+    });
+  };
+
   const value = {
     requirements,
     currentRequirement,
@@ -362,6 +378,8 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
     
     processRequirement,
     executeWorkflow,
+    getWorkflowStatus,
+    getModuleConnections,
     
     translateBetweenModules,
     enrichWithContext,
