@@ -1,26 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ChatInterface.css';
-import loggingService from '../../services/logging.service';
 import type { Message } from '../../services/logging.service';
 import type { Expectation, ConversationStage, ConversationContext, ChatInterfaceProps } from './types';
 
-const createFallbackLogger = () => ({
-  startSession: () => { /* empty */ },
-  endSession: () => { /* empty */ },
-  info: () => { /* empty */ },
-  debug: () => { /* empty */ },
-  warn: () => { /* empty */ },
-  error: () => { /* empty */ },
-  logSessionMessage: () => { /* empty */ },
-  logSessionStateChange: () => { /* empty */ }
-});
-
 const logger = (() => {
   try {
-    return loggingService;
+    return require('../../services/logging.service').default;
   } catch (e) {
     console.error('Failed to load logging service:', e);
-    return createFallbackLogger();
+    return {
+      startSession: () => {},
+      endSession: () => {},
+      info: () => {},
+      debug: () => {},
+      warn: () => {},
+      error: () => {},
+      logSessionMessage: () => {},
+      logSessionStateChange: () => {}
+    };
   }
 })();
 
@@ -29,7 +26,7 @@ const ConversationLogger = React.lazy(() => import('./ConversationLogger'));
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   initialMessages = [], 
   onSendMessage,
-  _onExpectationCreated,
+  onExpectationCreated,
   enableLogging = true,
   sessionId = `session-${Date.now()}`
 }) => {
@@ -45,7 +42,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [_currentStage, _setCurrentStage] = useState<ConversationStage>('initial');
-  const [_currentExpectation, _setCurrentExpectation] = useState<Partial<Expectation>>({
+  const [currentExpectation, setCurrentExpectation] = useState<Partial<Expectation>>({
     id: `exp-${Date.now()}`,
     criteria: [],
     semanticTags: [],
@@ -53,7 +50,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     subExpectations: []
   });
   const [_clarificationRound, _setClarificationRound] = useState(0);
-  const [_semanticAnalysisComplete, _setSemanticAnalysisComplete] = useState(false);
+  const [semanticAnalysisComplete, setSemanticAnalysisComplete] = useState(false);
   const [_conversationContext, setConversationContext] = useState<ConversationContext>({
     detectedKeywords: [],
     userPreferences: {},
@@ -115,10 +112,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         logger.logSessionMessage(sessionId, newUserMessage);
         logger.logSessionStateChange(sessionId, _currentStage, _currentStage, {
           userInput: inputValue,
-          clarificationRound: _clarificationRound
+          _clarificationRound
         });
-      } catch (error: unknown) {
-        logger.error('ChatInterface', 'Failed to log user message:', error instanceof Error ? error : { message: String(error) });
+      } catch (error) {
+        console.error('Failed to log user message:', error);
       }
     }
 
@@ -129,24 +126,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (enableLogging) {
       try {
         logger.debug('ConversationFlow', '处理用户输入', {
-          currentStage: _currentStage,
+          _currentStage,
           inputLength: userInput.length,
-          clarificationRound: _clarificationRound,
+          _clarificationRound,
           timestamp: new Date().toISOString()
         });
         
         logger.info('ConversationFlow', `用户输入处理 - 阶段: ${_currentStage}`, {
           stage: _currentStage,
-          clarificationRound: _clarificationRound,
+          _clarificationRound,
           inputLength: userInput.length,
-          expectationId: _currentExpectation.id,
+          expectationId: currentExpectation.id,
           sessionId,
           messageCount: messages.length,
-          semanticAnalysisComplete: _semanticAnalysisComplete,
+          semanticAnalysisComplete,
           timestamp: new Date().toISOString()
         });
-      } catch (error: unknown) {
-        logger.error('ChatInterface', 'Failed to log user input processing:', error instanceof Error ? error : { message: String(error) });
+      } catch (error) {
+        console.error('Failed to log user input processing:', error);
       }
     }
     
@@ -169,7 +166,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         sender: 'system',
         content: `感谢您的输入。基于我们的对话，我对您的需求理解如下：\n\n${newUnderstanding}\n\n这个理解是否准确？如果有任何需要修正或补充的地方，请告诉我。`,
         timestamp: new Date(),
-        type: 'regular'
+        type: 'understanding_summary'
       };
       
       setMessages(prev => [...prev, systemResponse]);
@@ -179,14 +176,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       if (enableLogging) {
         try {
           logger.logSessionMessage(sessionId, systemResponse);
-          logger.logSessionStateChange(sessionId, _currentStage, 'clarifying', {
-            clarificationRound: newRound,
+          logger.logSessionStateChange(sessionId, _currentStage, 'clarification', {
+            _clarificationRound: newRound,
             understandingSummaryGenerated: true,
             understandingLength: newUnderstanding.length
           });
-        } catch (error: unknown) {
-          logger.error('ChatInterface', 'Failed to log system response:', error instanceof Error ? error : { message: String(error) });
-
+        } catch (error) {
+          console.error('Failed to log system response:', error);
         }
       }
       
@@ -216,8 +212,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           totalKeywords: [...new Set([..._conversationContext.detectedKeywords, ...keywords])].length,
           timestamp: new Date().toISOString()
         });
-      } catch (error: unknown) {
-        logger.error('ChatInterface', 'Failed to log conversation context update:', error instanceof Error ? error : { message: String(error) });
+      } catch (error) {
+        console.error('Failed to log conversation context update:', error);
       }
     }
   };
@@ -269,7 +265,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const renderMessageContent = (message: Message): JSX.Element => {
-    if (message.content.includes('基于我们的对话，我对您的需求理解如下')) {
+    if (message.type === 'understanding_summary') {
       return (
         <div className="understanding-summary">
           {message.content.split('\n\n').map((section, sectionIndex) => {
@@ -291,10 +287,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             }
           })}
           <div className="understanding-actions">
-            <button className="confirm-button" onClick={() => _confirmUnderstanding(true)}>
+            <button className="confirm-button" onClick={() => confirmUnderstanding(true)}>
               确认理解正确
             </button>
-            <button className="edit-button" onClick={() => _confirmUnderstanding(false)}>
+            <button className="edit-button" onClick={() => confirmUnderstanding(false)}>
               需要修正
             </button>
           </div>
@@ -323,16 +319,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return <p>{message.content}</p>;
   };
 
-  const _confirmUnderstanding = (isCorrect: boolean) => {
+  const confirmUnderstanding = (isCorrect: boolean) => {
     if (enableLogging) {
       try {
         logger.info('ConversationFlow', `用户${isCorrect ? '确认' : '修正'}理解`, {
-          clarificationRound: _clarificationRound,
+          _clarificationRound,
           isCorrect,
           timestamp: new Date().toISOString()
         });
-      } catch (error: unknown) {
-        logger.error('ChatInterface', 'Failed to log understanding confirmation:', error instanceof Error ? error : { message: String(error) });
+      } catch (error) {
+        console.error('Failed to log understanding confirmation:', error);
       }
     }
     
@@ -362,7 +358,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         
         if (enableLogging) {
           try {
-            loggingService.logSessionMessage(sessionId, nextStageMessage);
+            logger.logSessionMessage(sessionId, nextStageMessage);
           } catch (error) {
             console.error('Failed to log next stage message:', error);
           }
@@ -382,7 +378,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       if (enableLogging) {
         try {
-          loggingService.logSessionMessage(sessionId, correctionPromptMessage);
+          logger.logSessionMessage(sessionId, correctionPromptMessage);
         } catch (error) {
           console.error('Failed to log correction prompt message:', error);
         }
@@ -394,96 +390,91 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     _setShowLogger(!_showLogger);
   };
 
-  try {
-    return (
-      <React.Fragment>
-        {enableLogging && _showLogger && (
-          <React.Suspense fallback={<div>Loading logger...</div>}>
-            <ConversationLogger sessionId={sessionId} visible={_showLogger} onClose={toggleLogger} />
-          </React.Suspense>
-        )}
-        
-        <section className="chat-section">
-          <div className="section-header">
-            <h2>交互式澄清</h2>
-            <div className="section-actions">
-              <button className="secondary-button" onClick={toggleLogger}>
-                <span className="material-symbols-rounded">monitoring</span>
-                <span>日志</span>
-              </button>
-              <button className="secondary-button">
-                <span className="material-symbols-rounded">history</span>
-                <span>历史记录</span>
-              </button>
-              <button className="secondary-button">
-                <span className="material-symbols-rounded">settings</span>
-                <span>设置</span>
-              </button>
-            </div>
+  return (
+    <React.Fragment>
+      {enableLogging && _showLogger && (
+        <React.Suspense fallback={<div>Loading logger...</div>}>
+          <ConversationLogger sessionId={sessionId} visible={_showLogger} onClose={toggleLogger} />
+        </React.Suspense>
+      )}
+      
+      <section className="chat-section">
+        <div className="section-header">
+          <h2>交互式澄清</h2>
+          <div className="section-actions">
+            <button className="secondary-button" onClick={toggleLogger}>
+              <span className="material-symbols-rounded">monitoring</span>
+              <span>日志</span>
+            </button>
+            <button className="secondary-button">
+              <span className="material-symbols-rounded">history</span>
+              <span>历史记录</span>
+            </button>
+            <button className="secondary-button">
+              <span className="material-symbols-rounded">settings</span>
+              <span>设置</span>
+            </button>
           </div>
-          <div className="conversation-status">
-            <div className="status-item">
-              <span className="status-label">当前阶段:</span>
-              <span className="status-value">{
-                _currentStage === 'initial' ? '初始理解' :
-                _currentStage === 'clarification' ? '需求澄清' :
-                _currentStage === 'refinement' ? '细节完善' :
-                _currentStage === 'confirmation' ? '最终确认' : '未知'
-              }</span>
-            </div>
-            <div className="status-item">
-              <span className="status-label">澄清轮次:</span>
-              <span className="status-value">{_clarificationRound}</span>
-            </div>
-            <div className="status-item">
-              <span className="status-label">会话ID:</span>
-              <span className="status-value">{sessionId.substring(0, 8)}...</span>
-            </div>
+        </div>
+        <div className="conversation-status">
+          <div className="status-item">
+            <span className="status-label">当前阶段:</span>
+            <span className="status-value">{
+              _currentStage === 'initial' ? '初始理解' :
+              _currentStage === 'clarification' ? '需求澄清' :
+              _currentStage === 'refining' ? '细节完善' :
+              _currentStage === 'finalizing' ? '最终确认' : '未知'
+            }</span>
           </div>
-          <div className="chat-container">
-            <div className="chat-messages">
-              {messages.map(message => (
-                <div 
-                  key={message.id} 
-                  className={`message ${message.sender === 'user' ? 'user-message' : 'system-message'} ${message.type ? `message-${message.type}` : ''}`}
-                >
-                  <div className="message-content">
-                    {renderMessageContent(message)}
-                  </div>
-                  <div className="message-time">{formatTime(message.timestamp)}</div>
+          <div className="status-item">
+            <span className="status-label">澄清轮次:</span>
+            <span className="status-value">{_clarificationRound}</span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">会话ID:</span>
+            <span className="status-value">{sessionId.substring(0, 8)}...</span>
+          </div>
+        </div>
+        <div className="chat-container">
+          <div className="chat-messages">
+            {messages.map(message => (
+              <div 
+                key={message.id} 
+                className={`message ${message.sender === 'user' ? 'user-message' : 'system-message'} ${message.type ? `message-${message.type}` : ''}`}
+              >
+                <div className="message-content">
+                  {renderMessageContent(message)}
                 </div>
-              ))}
-              
-              {isTyping && (
-                <div className="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-            <div className="chat-input">
-              <textarea 
-                ref={textareaRef}
-                placeholder="输入您的回复..." 
-                rows={1}
-                value={inputValue}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-              />
-              <button className="send-button" onClick={handleSendMessage} disabled={isTyping}>
-                <span className="material-symbols-rounded">send</span>
-              </button>
-            </div>
+                <div className="message-time">{formatTime(message.timestamp)}</div>
+              </div>
+            ))}
+            
+            {isTyping && (
+              <div className="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
-        </section>
-      </React.Fragment>
-    );
-  } catch (error: unknown) {
-    logger.error('ChatInterface', 'Error in rendering ChatInterface:', error instanceof Error ? error : { message: String(error) });
-    return <div>Error rendering chat interface. Please check logs for details.</div>;
-  }
+          <div className="chat-input">
+            <textarea 
+              ref={textareaRef}
+              placeholder="输入您的回复..." 
+              rows={1}
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+            />
+            <button className="send-button" onClick={handleSendMessage} disabled={isTyping}>
+              <span className="material-symbols-rounded">send</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </React.Fragment>
+  );
 };
 
 export default ChatInterface;
