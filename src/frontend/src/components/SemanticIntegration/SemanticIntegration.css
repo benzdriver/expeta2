@@ -300,3 +300,21 @@
   font-family: monospace;
   font-size: 13px;
 }
+
+.integration-container {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+}
+
+.control-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.visualization-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
