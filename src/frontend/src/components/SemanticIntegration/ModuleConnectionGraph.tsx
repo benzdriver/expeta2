@@ -1,14 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useExpeta } from '../../contexts/ExpetaContext';
+import './ModuleConnectionGraph.css';
 
 interface ModuleConnectionGraphProps {
   workflowId?: string;
   showSemanticFlow?: boolean;
+  onToggleSemanticFlow?: (show: boolean) => void;
 }
 
 const ModuleConnectionGraph: React.FC<ModuleConnectionGraphProps> = ({ 
   workflowId,
-  showSemanticFlow = true
+  showSemanticFlow = true,
+  onToggleSemanticFlow
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { getModuleConnections, isLoading } = useExpeta();
@@ -33,6 +36,29 @@ const ModuleConnectionGraph: React.FC<ModuleConnectionGraphProps> = ({
     if (!workflowId) return;
     
     try {
+      const data = await getModuleConnections(workflowId);
+      
+      if (data && Array.isArray(data)) {
+        setConnections(data);
+      } else {
+        const mockConnections = [
+          { source: 'clarifier', target: 'semantic_mediator', type: 'expectation', count: 5 },
+          { source: 'semantic_mediator', target: 'generator', type: 'enriched_expectation', count: 3 },
+          { source: 'generator', target: 'validator', type: 'code', count: 2 },
+          { source: 'validator', target: 'semantic_mediator', type: 'validation_result', count: 2 },
+          { source: 'semantic_mediator', target: 'clarifier', type: 'feedback', count: 1 },
+          { source: 'memory', target: 'semantic_mediator', type: 'context', count: 4 },
+          { source: 'semantic_mediator', target: 'orchestrator', type: 'status_update', count: 7 },
+          { source: 'orchestrator', target: 'clarifier', type: 'command', count: 2 },
+          { source: 'orchestrator', target: 'generator', type: 'command', count: 2 },
+          { source: 'orchestrator', target: 'validator', type: 'command', count: 2 },
+        ];
+        
+        setConnections(mockConnections);
+        console.warn('API returned unexpected data format, using mock data instead');
+      }
+    } catch (err) {
+      console.error('Failed to fetch module connections', err);
       
       const mockConnections = [
         { source: 'clarifier', target: 'semantic_mediator', type: 'expectation', count: 5 },
@@ -48,8 +74,6 @@ const ModuleConnectionGraph: React.FC<ModuleConnectionGraphProps> = ({
       ];
       
       setConnections(mockConnections);
-    } catch (err) {
-      console.error('Failed to fetch module connections', err);
     }
   };
   
@@ -209,7 +233,7 @@ const ModuleConnectionGraph: React.FC<ModuleConnectionGraphProps> = ({
             <input 
               type="checkbox" 
               checked={showSemanticFlow} 
-              onChange={e => setShowSemanticFlow(e.target.checked)}
+              onChange={e => onToggleSemanticFlow && onToggleSemanticFlow(e.target.checked)}
             />
             显示语义流
           </label>
