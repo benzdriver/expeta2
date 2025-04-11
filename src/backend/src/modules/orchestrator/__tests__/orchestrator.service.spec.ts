@@ -78,7 +78,8 @@ describe('OrchestratorService', () => {
           codeId: 'code-789',
           expectationId: 'exp-456',
           score: 0.85,
-          issues: [],
+          status: 'passed',
+          details: [],
         },
       ]),
       validateCode: jest.fn().mockResolvedValue({
@@ -86,35 +87,40 @@ describe('OrchestratorService', () => {
         codeId: 'code-789',
         expectationId: 'exp-456',
         score: 0.85,
-        issues: [],
+        status: 'passed',
+        details: [],
       }),
       getValidationById: jest.fn().mockResolvedValue({
         _id: 'val-123',
         codeId: 'code-789',
         expectationId: 'exp-456',
         score: 0.85,
-        issues: [],
+        status: 'passed',
+        details: [],
       }),
       validateCodeWithSemanticInput: jest.fn().mockResolvedValue({
         _id: 'val-124',
         codeId: 'code-789',
         expectationId: 'exp-456',
         score: 0.9,
-        issues: [],
+        status: 'passed',
+        details: [],
       }),
       validateCodeIteratively: jest.fn().mockResolvedValue({
         _id: 'val-125',
         codeId: 'code-789',
         expectationId: 'exp-456',
         score: 0.95,
-        issues: [],
+        status: 'passed',
+        details: [],
       }),
       validateWithAdaptiveContext: jest.fn().mockResolvedValue({
         _id: 'val-126',
         codeId: 'code-789',
         expectationId: 'exp-456',
         score: 0.92,
-        issues: [],
+        status: 'passed',
+        details: [],
       }),
       generateValidationFeedback: jest.fn().mockResolvedValue({
         validationId: 'val-126',
@@ -310,14 +316,22 @@ describe('OrchestratorService', () => {
           codeId: 'code-789',
           expectationId: 'exp-456',
           score: 0.7,
-          issues: [{ id: 'issue-1', description: 'Test issue' }],
+          status: 'partial',
+          details: [{ 
+            expectationId: 'exp-456-sub', 
+            status: 'failed', 
+            score: 0.7, 
+            message: 'Test issue',
+            semanticInsights: 'Needs improvement'
+          }],
         })
         .mockResolvedValueOnce({
           _id: 'val-124',
           codeId: 'code-790',
           expectationId: 'exp-456',
           score: 0.95,
-          issues: [],
+          status: 'passed',
+          details: [],
         });
 
       const result = await service.executeWorkflow(workflowId, params);
