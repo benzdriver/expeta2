@@ -23,6 +23,7 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
     message?: string;
     nextStep?: string;
     suggestedQuestions?: Array<{ text: string; id?: string }>;
+    executionId?: string;
   }
   
   interface WorkflowParams {
