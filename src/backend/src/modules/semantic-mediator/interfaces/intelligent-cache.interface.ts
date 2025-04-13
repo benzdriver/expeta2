@@ -15,7 +15,7 @@ export interface IIntelligentCache {
     sourceDescriptor: any,
     targetDescriptor: any,
     transformationPath: any,
-    metadata?: any
+    metadata?: any,
   ): Promise<string>;
 
   /**
@@ -28,7 +28,7 @@ export interface IIntelligentCache {
   retrieveTransformationPath(
     sourceDescriptor: any,
     targetDescriptor: any,
-    similarityThreshold?: number
+    similarityThreshold?: number,
   ): Promise<any>;
 
   /**
@@ -37,10 +37,7 @@ export interface IIntelligentCache {
    * @param metadata 元数据
    * @returns 是否成功
    */
-  updateUsageStatistics(
-    pathId: string,
-    metadata?: any
-  ): Promise<boolean>;
+  updateUsageStatistics(pathId: string, metadata?: any): Promise<boolean>;
 
   /**
    * 获取最常用的转换路径

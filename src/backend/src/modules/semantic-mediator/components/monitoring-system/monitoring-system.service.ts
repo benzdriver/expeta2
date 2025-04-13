@@ -12,9 +12,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
   private readonly logger = new Logger(MonitoringSystemService.name);
   private readonly debugSessions: Map<string, any> = new Map();
 
-  constructor(
-    private readonly memoryService: MemoryService,
-  ) {}
+  constructor(private readonly memoryService: MemoryService) {}
 
   /**
    * 记录转换事件
@@ -23,9 +21,9 @@ export class MonitoringSystemService implements IMonitoringSystem {
    */
   async logTransformationEvent(event: any): Promise<string> {
     this.logger.debug('Logging transformation event');
-    
+
     const eventId = `transformation_event_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
+
     await this.memoryService.storeMemory({
       type: MemoryType.SYSTEM,
       content: {
@@ -36,7 +34,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
       },
       tags: ['monitoring', 'transformation_event'],
     });
-    
+
     this.logger.debug(`Transformation event logged with ID: ${eventId}`);
     return eventId;
   }
@@ -49,9 +47,9 @@ export class MonitoringSystemService implements IMonitoringSystem {
    */
   async logError(error: Error, context?: any): Promise<string> {
     this.logger.debug('Logging error');
-    
+
     const errorId = `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
+
     await this.memoryService.storeMemory({
       type: MemoryType.SYSTEM,
       content: {
@@ -67,7 +65,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
       },
       tags: ['monitoring', 'error'],
     });
-    
+
     this.logger.debug(`Error logged with ID: ${errorId}`);
     return errorId;
   }
@@ -79,9 +77,9 @@ export class MonitoringSystemService implements IMonitoringSystem {
    */
   async recordPerformanceMetrics(metrics: any): Promise<boolean> {
     this.logger.debug('Recording performance metrics');
-    
+
     const metricsId = `metrics_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
+
     await this.memoryService.storeMemory({
       type: MemoryType.SYSTEM,
       content: {
@@ -92,7 +90,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
       },
       tags: ['monitoring', 'performance_metrics'],
     });
-    
+
     this.logger.debug('Performance metrics recorded');
     return true;
   }
@@ -105,26 +103,27 @@ export class MonitoringSystemService implements IMonitoringSystem {
    */
   async getTransformationHistory(filters?: any, limit: number = 50): Promise<any[]> {
     this.logger.debug(`Getting transformation history (limit: ${limit})`);
-    
+
     const memories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM, limit);
-    
-    const filteredMemories = memories.filter(memory => {
-      const hasTags = memory.tags && 
-        memory.tags.includes('monitoring') && 
+
+    const filteredMemories = memories.filter((memory) => {
+      const hasTags =
+        memory.tags &&
+        memory.tags.includes('monitoring') &&
         memory.tags.includes('transformation_event');
-      
+
       let matchesFilters = true;
       if (filters && Object.keys(filters).length > 0) {
         matchesFilters = Object.entries(filters).every(([key, value]) => {
           return memory.metadata && memory.metadata[key] === value;
         });
       }
-      
+
       return hasTags && matchesFilters;
     });
-    
-    const history = filteredMemories.map(memory => memory.content);
-    
+
+    const history = filteredMemories.map((memory) => memory.content);
+
     this.logger.debug(`Retrieved ${history.length} transformation events`);
     return history;
   }
@@ -137,26 +136,25 @@ export class MonitoringSystemService implements IMonitoringSystem {
    */
   async getErrorHistory(filters?: any, limit: number = 50): Promise<any[]> {
     this.logger.debug(`Getting error history (limit: ${limit})`);
-    
+
     const memories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM, limit);
-    
-    const filteredMemories = memories.filter(memory => {
-      const hasTags = memory.tags && 
-        memory.tags.includes('monitoring') && 
-        memory.tags.includes('error');
-      
+
+    const filteredMemories = memories.filter((memory) => {
+      const hasTags =
+        memory.tags && memory.tags.includes('monitoring') && memory.tags.includes('error');
+
       let matchesFilters = true;
       if (filters && Object.keys(filters).length > 0) {
         matchesFilters = Object.entries(filters).every(([key, value]) => {
           return memory.metadata && memory.metadata[key] === value;
         });
       }
-      
+
       return hasTags && matchesFilters;
     });
-    
-    const history = filteredMemories.map(memory => memory.content);
-    
+
+    const history = filteredMemories.map((memory) => memory.content);
+
     this.logger.debug(`Retrieved ${history.length} error events`);
     return history;
   }
@@ -168,27 +166,28 @@ export class MonitoringSystemService implements IMonitoringSystem {
    */
   async getPerformanceReport(timeRange?: { start: Date; end: Date }): Promise<any> {
     this.logger.debug('Generating performance report');
-    
+
     const memories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM);
-    
-    const filteredMemories = memories.filter(memory => {
-      const hasTags = memory.tags && 
-        memory.tags.includes('monitoring') && 
+
+    const filteredMemories = memories.filter((memory) => {
+      const hasTags =
+        memory.tags &&
+        memory.tags.includes('monitoring') &&
         memory.tags.includes('performance_metrics');
-      
+
       let isInTimeRange = true;
       if (timeRange) {
         const createdAt = memory.createdAt || new Date(0);
         isInTimeRange = createdAt >= timeRange.start && createdAt <= timeRange.end;
       }
-      
+
       return hasTags && isInTimeRange;
     });
-    
-    const metrics = filteredMemories.map(memory => memory.content.metrics);
-    
+
+    const metrics = filteredMemories.map((memory) => memory.content.metrics);
+
     const aggregatedMetrics = this.aggregateMetrics(metrics);
-    
+
     this.logger.debug('Performance report generated');
     return {
       timeRange,
@@ -204,9 +203,9 @@ export class MonitoringSystemService implements IMonitoringSystem {
    */
   async createDebugSession(context?: any): Promise<string> {
     this.logger.debug('Creating debug session');
-    
+
     const sessionId = `debug_session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
+
     const session = {
       id: sessionId,
       startTime: new Date().toISOString(),
@@ -214,9 +213,9 @@ export class MonitoringSystemService implements IMonitoringSystem {
       context: context || {},
       data: [],
     };
-    
+
     this.debugSessions.set(sessionId, session);
-    
+
     await this.memoryService.storeMemory({
       type: MemoryType.SYSTEM,
       content: {
@@ -225,7 +224,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
       },
       tags: ['monitoring', 'debug_session'],
     });
-    
+
     this.logger.debug(`Debug session created with ID: ${sessionId}`);
     return sessionId;
   }
@@ -237,16 +236,16 @@ export class MonitoringSystemService implements IMonitoringSystem {
    */
   async endDebugSession(sessionId: string): Promise<boolean> {
     this.logger.debug(`Ending debug session: ${sessionId}`);
-    
+
     const session = this.debugSessions.get(sessionId);
     if (!session) {
       this.logger.warn(`Debug session not found: ${sessionId}`);
       return false;
     }
-    
+
     session.status = 'completed';
     session.endTime = new Date().toISOString();
-    
+
     await this.memoryService.storeMemory({
       type: MemoryType.SYSTEM,
       content: {
@@ -255,7 +254,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
       },
       tags: ['monitoring', 'debug_session'],
     });
-    
+
     this.logger.debug(`Debug session ended: ${sessionId}`);
     return true;
   }
@@ -268,20 +267,20 @@ export class MonitoringSystemService implements IMonitoringSystem {
    */
   async logDebugData(sessionId: string, data: any): Promise<boolean> {
     this.logger.debug(`Logging debug data for session: ${sessionId}`);
-    
+
     const session = this.debugSessions.get(sessionId);
     if (!session) {
       this.logger.warn(`Debug session not found: ${sessionId}`);
       return false;
     }
-    
+
     const debugEntry = {
       timestamp: new Date().toISOString(),
       data,
     };
-    
+
     session.data.push(debugEntry);
-    
+
     await this.memoryService.storeMemory({
       type: MemoryType.SYSTEM,
       content: {
@@ -291,7 +290,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
       },
       tags: ['monitoring', 'debug_data'],
     });
-    
+
     this.logger.debug(`Debug data logged for session: ${sessionId}`);
     return true;
   }
@@ -303,43 +302,45 @@ export class MonitoringSystemService implements IMonitoringSystem {
    */
   async getDebugSessionData(sessionId: string): Promise<any> {
     this.logger.debug(`Getting debug session data: ${sessionId}`);
-    
+
     const session = this.debugSessions.get(sessionId);
     if (!session) {
       const allMemories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM);
-      
-      const sessionMemories = allMemories.filter(memory => 
-        memory.tags && 
-        memory.tags.includes('monitoring') && 
-        memory.tags.includes('debug_session') &&
-        memory.content && 
-        memory.content.id === sessionId
+
+      const sessionMemories = allMemories.filter(
+        (memory) =>
+          memory.tags &&
+          memory.tags.includes('monitoring') &&
+          memory.tags.includes('debug_session') &&
+          memory.content &&
+          memory.content.id === sessionId,
       );
-      
+
       if (sessionMemories.length === 0) {
         this.logger.warn(`Debug session not found: ${sessionId}`);
         return null;
       }
-      
+
       const sessionData = sessionMemories[0].content;
-      
+
       const allDataMemories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM);
-      
-      const dataMemories = allDataMemories.filter(memory => 
-        memory.tags && 
-        memory.tags.includes('monitoring') && 
-        memory.tags.includes('debug_data') &&
-        memory.content && 
-        memory.content.sessionId === sessionId
+
+      const dataMemories = allDataMemories.filter(
+        (memory) =>
+          memory.tags &&
+          memory.tags.includes('monitoring') &&
+          memory.tags.includes('debug_data') &&
+          memory.content &&
+          memory.content.sessionId === sessionId,
       );
-      
+
       sessionData.data = dataMemories
-        .map(memory => memory.content.entry)
+        .map((memory) => memory.content.entry)
         .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      
+
       return sessionData;
     }
-    
+
     this.logger.debug(`Retrieved debug session data: ${sessionId}`);
     return session;
   }
@@ -355,28 +356,28 @@ export class MonitoringSystemService implements IMonitoringSystem {
         count: 0,
       };
     }
-    
+
     const result: any = {
       count: metrics.length,
       averages: {},
       min: {},
       max: {},
     };
-    
+
     const allKeys = new Set<string>();
-    metrics.forEach(metric => {
-      Object.keys(metric).forEach(key => {
+    metrics.forEach((metric) => {
+      Object.keys(metric).forEach((key) => {
         if (typeof metric[key] === 'number') {
           allKeys.add(key);
         }
       });
     });
-    
-    allKeys.forEach(key => {
+
+    allKeys.forEach((key) => {
       const values = metrics
-        .filter(metric => typeof metric[key] === 'number')
-        .map(metric => metric[key]);
-      
+        .filter((metric) => typeof metric[key] === 'number')
+        .map((metric) => metric[key]);
+
       if (values.length > 0) {
         const sum = values.reduce((a, b) => a + b, 0);
         result.averages[key] = sum / values.length;
@@ -384,7 +385,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
         result.max[key] = Math.max(...values);
       }
     });
-    
+
     return result;
   }
 }
