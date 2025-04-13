@@ -15,7 +15,7 @@ export interface ITransformationEngine {
   generateTransformationPath(
     sourceDescriptor: SemanticDescriptor,
     targetDescriptor: SemanticDescriptor,
-    context?: any
+    context?: any,
   ): Promise<any>;
 
   /**
@@ -25,11 +25,7 @@ export interface ITransformationEngine {
    * @param context 上下文信息
    * @returns 转换后的数据
    */
-  executeTransformation(
-    data: any,
-    transformationPath: any,
-    context?: any
-  ): Promise<any>;
+  executeTransformation(data: any, transformationPath: any, context?: any): Promise<any>;
 
   /**
    * 验证转换结果
@@ -41,7 +37,7 @@ export interface ITransformationEngine {
   validateTransformation(
     result: any,
     targetDescriptor: SemanticDescriptor,
-    context?: any
+    context?: any,
   ): Promise<{
     valid: boolean;
     issues?: any[];
@@ -53,10 +49,7 @@ export interface ITransformationEngine {
    * @param metrics 性能指标
    * @returns 优化后的转换路径
    */
-  optimizeTransformationPath(
-    transformationPath: any,
-    metrics?: any
-  ): Promise<any>;
+  optimizeTransformationPath(transformationPath: any, metrics?: any): Promise<any>;
 
   /**
    * 获取可用的转换策略
@@ -70,5 +63,8 @@ export interface ITransformationEngine {
    * @param strategy 策略实现
    * @returns 是否成功
    */
-  registerTransformationStrategy(name: string, strategy: Function): Promise<boolean>;
+  registerTransformationStrategy(
+    name: string,
+    strategy: (data: unknown, transformationPath: unknown, context?: unknown) => Promise<unknown>,
+  ): Promise<boolean>;
 }

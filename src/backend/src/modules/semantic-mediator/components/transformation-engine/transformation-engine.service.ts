@@ -12,7 +12,10 @@ import { MemoryType } from '../../../memory/schemas/memory.schema';
 @Injectable()
 export class TransformationEngineService implements ITransformationEngine {
   private readonly logger = new Logger(TransformationEngineService.name);
-  private readonly transformationStrategies: Map<string, Function> = new Map();
+  private readonly transformationStrategies: Map<
+    string,
+    (data: unknown, transformationPath: unknown, context?: unknown) => Promise<unknown>
+  > = new Map();
 
   constructor(
     private readonly llmService: LlmService,
@@ -34,7 +37,7 @@ export class TransformationEngineService implements ITransformationEngine {
     context?: any,
   ): Promise<any> {
     this.logger.debug('Generating transformation path');
-    
+
     const prompt = `
 生成从源数据结构到目标数据结构的转换路径：
 
@@ -60,16 +63,13 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmService.generateContent(
-        prompt,
-        {
-          temperature: 0.2,
-          maxTokens: 2000,
-        }
-      );
-      
+      const response = await this.llmService.generateContent(prompt, {
+        temperature: 0.2,
+        maxTokens: 2000,
+      });
+
       const transformationPath = JSON.parse(response);
-      
+
       await this.memoryService.storeMemory({
         type: MemoryType.SEMANTIC_TRANSFORMATION,
         content: {
@@ -82,7 +82,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
         },
         tags: ['transformation_engine', 'path_generation'],
       });
-      
+
       this.logger.debug('Transformation path generated successfully');
       return transformationPath;
     } catch (error) {
@@ -98,34 +98,32 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param context 上下文信息
    * @returns 转换后的数据
    */
-  async executeTransformation(
-    data: any,
-    transformationPath: any,
-    context?: any,
-  ): Promise<any> {
+  async executeTransformation(data: any, transformationPath: any, context?: any): Promise<any> {
     this.logger.debug('Executing transformation');
-    
+
     const startTime = Date.now();
     let result: any;
-    
+
     try {
       const strategyName = transformationPath.recommendedStrategy || 'default';
-      
+
       if (!this.transformationStrategies.has(strategyName)) {
         this.logger.warn(`Transformation strategy '${strategyName}' not found, using default`);
       }
-      
-      const strategy = this.transformationStrategies.get(strategyName) || this.transformationStrategies.get('default');
-      
+
+      const strategy =
+        this.transformationStrategies.get(strategyName) ||
+        this.transformationStrategies.get('default');
+
       if (!strategy) {
         throw new Error('No transformation strategy available, not even default strategy');
       }
-      
+
       result = await strategy(data, transformationPath, context);
-      
+
       const endTime = Date.now();
       const executionTime = endTime - startTime;
-      
+
       await this.memoryService.storeMemory({
         type: MemoryType.SEMANTIC_TRANSFORMATION,
         content: {
@@ -139,7 +137,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
         },
         tags: ['transformation_engine', 'execution'],
       });
-      
+
       this.logger.debug(`Transformation executed successfully in ${executionTime}ms`);
       return result;
     } catch (error) {
@@ -164,7 +162,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
     issues?: any[];
   }> {
     this.logger.debug('Validating transformation result');
-    
+
     const prompt = `
 验证转换结果是否符合目标结构描述：
 
@@ -184,16 +182,13 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmService.generateContent(
-        prompt,
-        {
-          temperature: 0.1,
-          maxTokens: 1500,
-        }
-      );
-      
+      const response = await this.llmService.generateContent(prompt, {
+        temperature: 0.1,
+        maxTokens: 1500,
+      });
+
       const validationResult = JSON.parse(response);
-      
+
       await this.memoryService.storeMemory({
         type: MemoryType.SEMANTIC_TRANSFORMATION,
         content: {
@@ -206,7 +201,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
         },
         tags: ['transformation_engine', 'validation'],
       });
-      
+
       this.logger.debug(`Validation completed: ${validationResult.valid ? 'Valid' : 'Invalid'}`);
       return validationResult;
     } catch (error) {
@@ -221,12 +216,9 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param metrics 性能指标
    * @returns 优化后的转换路径
    */
-  async optimizeTransformationPath(
-    transformationPath: any,
-    metrics?: any,
-  ): Promise<any> {
+  async optimizeTransformationPath(transformationPath: any, metrics?: any): Promise<any> {
     this.logger.debug('Optimizing transformation path');
-    
+
     const prompt = `
 优化以下转换路径：
 
@@ -244,16 +236,13 @@ ${metrics ? `性能指标：\n${JSON.stringify(metrics, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmService.generateContent(
-        prompt,
-        {
-          temperature: 0.2,
-          maxTokens: 2000,
-        }
-      );
-      
+      const response = await this.llmService.generateContent(prompt, {
+        temperature: 0.2,
+        maxTokens: 2000,
+      });
+
       const optimizedPath = JSON.parse(response);
-      
+
       await this.memoryService.storeMemory({
         type: MemoryType.SEMANTIC_TRANSFORMATION,
         content: {
@@ -265,7 +254,7 @@ ${metrics ? `性能指标：\n${JSON.stringify(metrics, null, 2)}\n` : ''}
         },
         tags: ['transformation_engine', 'optimization'],
       });
-      
+
       this.logger.debug('Transformation path optimized successfully');
       return optimizedPath;
     } catch (error) {
@@ -289,15 +278,18 @@ ${metrics ? `性能指标：\n${JSON.stringify(metrics, null, 2)}\n` : ''}
    * @param strategy 策略实现
    * @returns 是否成功
    */
-  async registerTransformationStrategy(name: string, strategy: Function): Promise<boolean> {
+  async registerTransformationStrategy(
+    name: string,
+    strategy: (data: unknown, transformationPath: unknown, context?: unknown) => Promise<unknown>,
+  ): Promise<boolean> {
     this.logger.debug(`Registering transformation strategy: ${name}`);
-    
+
     if (this.transformationStrategies.has(name)) {
       this.logger.warn(`Transformation strategy '${name}' already exists, overwriting`);
     }
-    
+
     this.transformationStrategies.set(name, strategy);
-    
+
     this.logger.debug(`Transformation strategy '${name}' registered successfully`);
     return true;
   }
@@ -307,13 +299,13 @@ ${metrics ? `性能指标：\n${JSON.stringify(metrics, null, 2)}\n` : ''}
    */
   private registerDefaultStrategies(): void {
     this.logger.debug('Registering default transformation strategies');
-    
+
     this.transformationStrategies.set('default', this.defaultTransformationStrategy.bind(this));
-    
+
     this.transformationStrategies.set('llm', this.llmTransformationStrategy.bind(this));
-    
+
     this.transformationStrategies.set('direct_mapping', this.directMappingStrategy.bind(this));
-    
+
     this.logger.debug('Default transformation strategies registered');
   }
 
@@ -330,27 +322,27 @@ ${metrics ? `性能指标：\n${JSON.stringify(metrics, null, 2)}\n` : ''}
     context?: any,
   ): Promise<any> {
     this.logger.debug('Executing default transformation strategy');
-    
+
     const result: any = {};
-    
+
     if (transformationPath.mappings && Array.isArray(transformationPath.mappings)) {
       for (const mapping of transformationPath.mappings) {
         const { source, target, transform } = mapping;
-        
+
         let value = this.getNestedValue(data, source);
-        
+
         if (transform) {
           value = await this.applyTransformation(value, transform, context);
         }
-        
+
         this.setNestedValue(result, target, value);
       }
     }
-    
+
     if (transformationPath.transformations && Array.isArray(transformationPath.transformations)) {
       for (const transformation of transformationPath.transformations) {
         const { type, params } = transformation;
-        
+
         switch (type) {
           case 'merge':
             this.mergeObjects(result, params);
@@ -366,7 +358,7 @@ ${metrics ? `性能指标：\n${JSON.stringify(metrics, null, 2)}\n` : ''}
         }
       }
     }
-    
+
     return result;
   }
 
@@ -383,7 +375,7 @@ ${metrics ? `性能指标：\n${JSON.stringify(metrics, null, 2)}\n` : ''}
     context?: any,
   ): Promise<any> {
     this.logger.debug('Executing LLM transformation strategy');
-    
+
     const prompt = `
 根据以下转换路径，将源数据转换为目标格式：
 
@@ -399,14 +391,11 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmService.generateContent(
-        prompt,
-        {
-          temperature: 0.1,
-          maxTokens: 2000,
-        }
-      );
-      
+      const response = await this.llmService.generateContent(prompt, {
+        temperature: 0.1,
+        maxTokens: 2000,
+      });
+
       return JSON.parse(response);
     } catch (error) {
       this.logger.error(`Error in LLM transformation strategy: ${error.message}`);
@@ -427,19 +416,19 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
     context?: any,
   ): Promise<any> {
     this.logger.debug('Executing direct mapping strategy');
-    
+
     const result: any = {};
-    
+
     if (transformationPath.mappings && Array.isArray(transformationPath.mappings)) {
       for (const mapping of transformationPath.mappings) {
         const { source, target } = mapping;
-        
+
         const value = this.getNestedValue(data, source);
-        
+
         this.setNestedValue(result, target, value);
       }
     }
-    
+
     return result;
   }
 
@@ -452,15 +441,15 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
   private getNestedValue(obj: any, path: string): any {
     const keys = path.split('.');
     let value = obj;
-    
+
     for (const key of keys) {
       if (value === null || value === undefined) {
         return undefined;
       }
-      
+
       value = value[key];
     }
-    
+
     return value;
   }
 
@@ -473,17 +462,17 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
   private setNestedValue(obj: any, path: string, value: any): void {
     const keys = path.split('.');
     let current = obj;
-    
+
     for (let i = 0; i < keys.length - 1; i++) {
       const key = keys[i];
-      
+
       if (!current[key] || typeof current[key] !== 'object') {
         current[key] = {};
       }
-      
+
       current = current[key];
     }
-    
+
     current[keys[keys.length - 1]] = value;
   }
 
@@ -496,7 +485,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    */
   private async applyTransformation(value: any, transform: any, context?: any): Promise<any> {
     const { type, params } = transform;
-    
+
     switch (type) {
       case 'format':
         return this.formatValue(value, params);
@@ -518,19 +507,18 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    */
   private formatValue(value: any, params: any): any {
     const { format } = params;
-    
+
     if (!format) {
       return value;
     }
-    
+
     switch (format) {
       case 'uppercase':
         return typeof value === 'string' ? value.toUpperCase() : value;
       case 'lowercase':
         return typeof value === 'string' ? value.toLowerCase() : value;
       case 'capitalize':
-        return typeof value === 'string' ? 
-          value.charAt(0).toUpperCase() + value.slice(1) : value;
+        return typeof value === 'string' ? value.charAt(0).toUpperCase() + value.slice(1) : value;
       case 'trim':
         return typeof value === 'string' ? value.trim() : value;
       default:
@@ -546,11 +534,11 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    */
   private convertValue(value: any, params: any): any {
     const { targetType } = params;
-    
+
     if (!targetType) {
       return value;
     }
-    
+
     switch (targetType) {
       case 'string':
         return String(value);
@@ -576,11 +564,11 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    */
   private async transformWithLlm(value: any, params: any, context?: any): Promise<any> {
     const { instruction } = params;
-    
+
     if (!instruction) {
       return value;
     }
-    
+
     const prompt = `
 根据以下指令转换值：
 
@@ -596,14 +584,11 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmService.generateContent(
-        prompt,
-        {
-          temperature: 0.1,
-          maxTokens: 1000,
-        }
-      );
-      
+      const response = await this.llmService.generateContent(prompt, {
+        temperature: 0.1,
+        maxTokens: 1000,
+      });
+
       try {
         return JSON.parse(response);
       } catch {
@@ -622,18 +607,18 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    */
   private mergeObjects(result: any, params: any): void {
     const { sources } = params;
-    
+
     if (!sources || !Array.isArray(sources)) {
       return;
     }
-    
+
     for (const source of sources) {
       const { path, target } = source;
-      
+
       if (!path || !target) {
         continue;
       }
-      
+
       const value = this.getNestedValue(result, path);
       this.setNestedValue(result, target, value);
     }
@@ -646,27 +631,27 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    */
   private filterObject(result: any, params: any): void {
     const { paths } = params;
-    
+
     if (!paths || !Array.isArray(paths)) {
       return;
     }
-    
+
     for (const path of paths) {
       const keys = path.split('.');
       let current = result;
       let parent = null;
       let lastKey = '';
-      
+
       for (let i = 0; i < keys.length - 1; i++) {
         if (!current || typeof current !== 'object') {
           break;
         }
-        
+
         parent = current;
         lastKey = keys[i];
         current = current[keys[i]];
       }
-      
+
       if (parent && lastKey) {
         delete parent[lastKey];
       }
@@ -682,13 +667,13 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    */
   private computeValue(result: any, params: any, sourceData: any, context?: any): void {
     const { target, expression, inputs } = params;
-    
+
     if (!target || !expression) {
       return;
     }
-    
+
     const inputValues: any = {};
-    
+
     if (inputs && typeof inputs === 'object') {
       for (const [key, path] of Object.entries(inputs)) {
         if (typeof path === 'string') {
@@ -696,11 +681,12 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
         }
       }
     }
-    
-    this.computeExpressionWithLlm(result, target, expression, inputValues, context)
-      .catch(error => {
+
+    this.computeExpressionWithLlm(result, target, expression, inputValues, context).catch(
+      (error) => {
         this.logger.error(`Error computing expression: ${error.message}`);
-      });
+      },
+    );
   }
 
   /**
@@ -733,21 +719,18 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmService.generateContent(
-        prompt,
-        {
-          temperature: 0.1,
-          maxTokens: 500,
-        }
-      );
-      
+      const response = await this.llmService.generateContent(prompt, {
+        temperature: 0.1,
+        maxTokens: 500,
+      });
+
       let value;
       try {
         value = JSON.parse(response);
       } catch {
         value = response.trim();
       }
-      
+
       this.setNestedValue(result, target, value);
     } catch (error) {
       this.logger.error(`Error computing expression with LLM: ${error.message}`);

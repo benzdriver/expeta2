@@ -10,11 +10,14 @@ import { MemoryService } from '../../../memory/memory.service';
  */
 @Injectable()
 export class SemanticRegistryService implements ISemanticRegistry {
-  private dataSources: Map<string, {
-    moduleId: string;
-    descriptor: SemanticDescriptor;
-    accessMethod: Function;
-  }> = new Map();
+  private dataSources: Map<
+    string,
+    {
+      moduleId: string;
+      descriptor: SemanticDescriptor;
+      accessMethod: (params?: unknown) => Promise<unknown>;
+    }
+  > = new Map();
 
   constructor(
     private readonly llmService: LlmService,
@@ -31,10 +34,10 @@ export class SemanticRegistryService implements ISemanticRegistry {
   async registerDataSource(
     moduleId: string,
     semanticDescriptor: SemanticDescriptor,
-    accessMethod: Function,
+    accessMethod: (params?: unknown) => Promise<unknown>,
   ): Promise<string> {
     const sourceId = `${moduleId}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
+
     this.dataSources.set(sourceId, {
       moduleId,
       descriptor: semanticDescriptor,
@@ -64,7 +67,7 @@ export class SemanticRegistryService implements ISemanticRegistry {
   async updateDataSource(
     sourceId: string,
     semanticDescriptor?: SemanticDescriptor,
-    accessMethod?: Function,
+    accessMethod?: (params?: unknown) => Promise<unknown>,
   ): Promise<boolean> {
     const existingSource = this.dataSources.get(sourceId);
     if (!existingSource) {
@@ -145,10 +148,7 @@ export class SemanticRegistryService implements ISemanticRegistry {
     const potentialSources: string[] = [];
 
     for (const [sourceId, source] of this.dataSources.entries()) {
-      const similarity = await this.calculateSemanticSimilarity(
-        source.descriptor,
-        intent,
-      );
+      const similarity = await this.calculateSemanticSimilarity(source.descriptor, intent);
 
       if (similarity >= threshold) {
         potentialSources.push(sourceId);
@@ -206,16 +206,13 @@ ${JSON.stringify(targetIntent, null, 2)}
 `;
 
     try {
-      const response = await this.llmService.generateContent(
-        prompt,
-        {
-          temperature: 0.1,
-          maxTokens: 10,
-        }
-      );
+      const response = await this.llmService.generateContent(prompt, {
+        temperature: 0.1,
+        maxTokens: 10,
+      });
 
       const similarityScore = parseFloat(response.trim());
-      
+
       return isNaN(similarityScore) ? 0 : Math.max(0, Math.min(1, similarityScore));
     } catch (error) {
       console.error('计算语义相似度时出错:', error);
