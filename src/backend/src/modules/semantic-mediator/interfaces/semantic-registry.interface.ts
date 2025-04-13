@@ -15,7 +15,7 @@ export interface ISemanticRegistry {
   registerDataSource(
     moduleId: string,
     semanticDescriptor: SemanticDescriptor,
-    accessMethod: Function
+    accessMethod: (params?: unknown) => Promise<unknown>,
   ): Promise<string>;
 
   /**
@@ -28,7 +28,7 @@ export interface ISemanticRegistry {
   updateDataSource(
     sourceId: string,
     semanticDescriptor?: SemanticDescriptor,
-    accessMethod?: Function
+    accessMethod?: (params?: unknown) => Promise<unknown>,
   ): Promise<boolean>;
 
   /**
@@ -66,5 +66,8 @@ export interface ISemanticRegistry {
    * @param targetIntent 目标意图
    * @returns 相似度分数
    */
-  calculateSemanticSimilarity(sourceDescriptor: SemanticDescriptor, targetIntent: any): Promise<number>;
+  calculateSemanticSimilarity(
+    sourceDescriptor: SemanticDescriptor,
+    targetIntent: any,
+  ): Promise<number>;
 }
