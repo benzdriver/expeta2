@@ -6,6 +6,7 @@ import { Requirement } from '../schemas/requirement.schema';
 import { Expectation } from '../schemas/expectation.schema';
 import { LlmService } from '../../../services/llm.service';
 import { MemoryService } from '../../memory/memory.service';
+import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediator.service';
 import { CreateRequirementDto } from '../dto';
 
 describe('ClarifierService', () => {
@@ -14,6 +15,7 @@ describe('ClarifierService', () => {
   let expectationModel: Model<Expectation>;
   let llmService: LlmService;
   let memoryService: MemoryService;
+  let semanticMediatorService: SemanticMediatorService;
 
   beforeEach(async () => {
     const mockRequirementModel = {
@@ -232,6 +234,79 @@ describe('ClarifierService', () => {
       }),
     };
 
+    const mockSemanticMediatorService = {
+      translateBetweenModules: jest.fn().mockImplementation((sourceModule, targetModule, data) => {
+        if (sourceModule === 'clarifier' && targetModule === 'expectation_generator' && data.translationQuery) {
+          return Promise.resolve({
+            id: 'root',
+            name: 'Root Expectation',
+            description: 'Root expectation description',
+            children: [],
+          });
+        }
+        return Promise.resolve({});
+      }),
+      enrichWithContext: jest.fn().mockImplementation((module, data, query) => {
+        if (module === 'clarifier' && query.includes('判断是否需要更多澄清')) {
+          return Promise.resolve({
+            needMoreClarification: true,
+            summary: 'Need more clarification on performance requirements',
+            missingAspects: ['performance', 'security'],
+            dialogueEffectiveness: {
+              score: 70,
+              strengths: ['Good initial understanding'],
+              weaknesses: ['Missing technical details'],
+            },
+          });
+        }
+        return Promise.resolve({});
+      }),
+      resolveSemanticConflicts: jest.fn().mockResolvedValue({}),
+      extractSemanticInsights: jest.fn().mockImplementation((data, query) => {
+        if (query.includes('生成5个关键澄清问题')) {
+          return Promise.resolve([
+            {
+              id: 'functional-1',
+              text: 'What are the primary features you need?',
+              category: 'functional',
+              priority: 'high',
+            },
+            {
+              id: 'non-functional-1',
+              text: 'What performance requirements do you have?',
+              category: 'non-functional',
+              priority: 'medium',
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      }),
+      trackSemanticTransformation: jest.fn().mockImplementation((sourceModule, targetModule, sourceData, transformedData) => {
+        if (sourceModule === 'expectation' && targetModule === 'summary') {
+          return Promise.resolve({
+            transformedData: {
+              mainGoal: 'Create a responsive web application',
+              coreFunctions: ['User authentication', 'Data visualization'],
+              nonFunctionalFeatures: ['Fast loading times', 'Intuitive UI'],
+              constraints: ['Must work on mobile devices'],
+              userImportance: 'Critical for business operations',
+              semanticCoherence: { score: 85, analysis: 'Good coherence between components' },
+              completenessScore: 90,
+              summary: 'A responsive web application with authentication and data visualization'
+            },
+            transformationMetadata: {
+              transformationId: 'transform-123',
+              timestamp: new Date().toISOString(),
+              transformationType: 'expectation_summary'
+            }
+          });
+        }
+        return Promise.resolve({});
+      }),
+      evaluateSemanticTransformation: jest.fn().mockResolvedValue({}),
+      generateValidationContext: jest.fn().mockResolvedValue({}),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClarifierService,
@@ -251,6 +326,10 @@ describe('ClarifierService', () => {
           provide: MemoryService,
           useValue: mockMemoryService,
         },
+        {
+          provide: SemanticMediatorService,
+          useValue: mockSemanticMediatorService,
+        },
       ],
     }).compile();
 
@@ -259,6 +338,7 @@ describe('ClarifierService', () => {
     expectationModel = module.get<Model<Expectation>>(getModelToken(Expectation.name));
     llmService = module.get<LlmService>(LlmService);
     memoryService = module.get<MemoryService>(MemoryService);
+    semanticMediatorService = module.get<SemanticMediatorService>(SemanticMediatorService);
   });
 
   it('should be defined', () => {
@@ -328,7 +408,7 @@ describe('ClarifierService', () => {
   });
 
   describe('generateClarificationQuestions', () => {
-    it('should generate clarification questions', async () => {
+    it('should generate clarification questions using semantic mediator', async () => {
       const requirementText = 'Test requirement text';
 
       const result = await service.generateClarificationQuestions(requirementText);
@@ -338,7 +418,17 @@ describe('ClarifierService', () => {
       expect(result.length).toBe(2);
       expect(result[0].id).toBe('functional-1');
       expect(result[0].category).toBe('functional');
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      
+      expect(semanticMediatorService.extractSemanticInsights).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: requirementText,
+          sessionId: expect.any(String),
+          timestamp: expect.any(String)
+        }),
+        expect.stringContaining('生成5个关键澄清问题')
+      );
+      
+      expect(llmService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('分析以下需求，并生成5个关键澄清问题'),
         expect.any(Object)
       );
@@ -346,7 +436,7 @@ describe('ClarifierService', () => {
   });
 
   describe('processClarificationAnswer', () => {
-    it('should process a clarification answer', async () => {
+    it('should process a clarification answer using semantic mediator', async () => {
       const requirementId = 'test-id';
       const questionId = 'test-question-id';
       const answer = 'Test answer';
@@ -356,16 +446,31 @@ describe('ClarifierService', () => {
       expect(result).toBeDefined();
       expect(result.needMoreClarification).toBe(true);
       expect(result.summary).toBe('Need more clarification on performance requirements');
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      
+      expect(semanticMediatorService.enrichWithContext).toHaveBeenCalledWith(
+        'clarifier',
+        expect.objectContaining({
+          text: expect.any(String),
+          clarifications: expect.any(Array),
+          metadata: expect.any(Object),
+          status: 'clarifying',
+          sessionId: expect.any(String),
+          timestamp: expect.any(String)
+        }),
+        expect.stringContaining('判断是否需要更多澄清')
+      );
+      
+      expect(llmService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('分析以下需求及其澄清问题和答案'),
         expect.any(Object)
       );
+      
       expect(memoryService.updateRequirement).toHaveBeenCalled();
     });
   });
 
   describe('generateExpectations', () => {
-    it('should generate expectations from requirements', async () => {
+    it('should generate expectations using semantic mediator', async () => {
       const requirementId = 'test-id';
 
       const result = await service.generateExpectations(requirementId);
@@ -373,9 +478,24 @@ describe('ClarifierService', () => {
       expect(result).toBeDefined();
       expect(result._id).toBe('test-expectation-id');
       expect(result.requirementId).toBe('test-id');
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      
+      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalledWith(
+        'clarifier',
+        'expectation_generator',
+        expect.objectContaining({
+          requirementId,
+          text: expect.any(String),
+          clarifications: expect.any(Array),
+          status: expect.any(String),
+          metadata: expect.any(Object),
+          translationQuery: expect.stringContaining('生成结构化的纯语义期望模型')
+        })
+      );
+      
+      expect(llmService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('基于以下需求及其澄清信息，生成结构化的纯语义期望模型')
       );
+      
       expect(memoryService.storeExpectation).toHaveBeenCalled();
     });
   });
@@ -419,7 +539,7 @@ describe('ClarifierService', () => {
   });
 
   describe('analyzeMultiRoundDialogue', () => {
-    it('should analyze multi-round dialogue', async () => {
+    it('should analyze multi-round dialogue using semantic mediator', async () => {
       jest.spyOn(requirementModel, 'findById').mockReturnValueOnce({
         exec: jest.fn().mockResolvedValue({
           _id: 'test-id',
@@ -464,11 +584,94 @@ describe('ClarifierService', () => {
       expect(result).toBeDefined();
       expect(result.dialogueEffectiveness).toBeDefined();
       expect(result.dialogueEffectiveness.score).toBe(85);
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      
+      expect(semanticMediatorService.resolveSemanticConflicts).toHaveBeenCalledWith(
+        'requirement',
+        expect.objectContaining({
+          id: requirementId,
+          title: 'Test Requirement',
+          text: 'Test requirement text',
+          clarifications: expect.any(Array),
+          dialogueLog: expect.any(Array),
+          sessionId: expect.any(String)
+        }),
+        'dialogue_analysis',
+        expect.objectContaining({
+          analysisType: 'multi_round_dialogue',
+          criteria: expect.any(Array),
+          expectedFormat: expect.any(Object)
+        })
+      );
+      
+      expect(llmService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('分析以下多轮对话的需求澄清过程'),
         expect.any(Object)
       );
     });
+  it('should generate expectation summary using semantic mediator', async () => {
+    const expectationId = 'test-expectation-id';
+    
+    const mockExpectation = {
+      _id: expectationId,
+      title: 'Test Expectation',
+      model: {
+        id: 'root',
+        name: 'Root Expectation',
+        description: 'Root expectation description',
+        children: []
+      },
+      requirementId: 'test-requirement-id',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      metadata: {},
+      toObject: jest.fn().mockReturnValue({
+        _id: expectationId,
+        title: 'Test Expectation',
+        model: {
+          id: 'root',
+          name: 'Root Expectation',
+          description: 'Root expectation description',
+          children: []
+        },
+        requirementId: 'test-requirement-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        metadata: {}
+      })
+    };
+    
+    jest.spyOn(expectationModel, 'findById').mockReturnValueOnce({
+      exec: jest.fn().mockResolvedValue(mockExpectation)
+    } as any);
+    
+    const result = await service.generateExpectationSummary(expectationId);
+    
+    expect(result).toBeDefined();
+    expect(result.mainGoal).toBe('Create a responsive web application');
+    expect(result.coreFunctions).toHaveLength(2);
+    expect(result.nonFunctionalFeatures).toHaveLength(2);
+    
+    expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalledWith(
+      'expectation',
+      'summary',
+      expect.objectContaining({
+        expectationId: expectationId,
+        model: expect.any(Object),
+        requirementId: expect.any(String),
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+        metadata: expect.any(Object)
+      }),
+      expect.any(Object)
+    );
+    
+    expect(llmService.generateContent).not.toHaveBeenCalledWith(
+      expect.stringContaining('生成期望模型摘要'),
+      expect.any(Object)
+    );
+  });
+
+
 
     it('should throw an error if there are not enough dialogue rounds', async () => {
       jest.spyOn(requirementModel, 'findById').mockReturnValueOnce({
