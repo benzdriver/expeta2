@@ -1,64 +1,39 @@
-# This config was automatically generated from your source code
-# Stacks detected: deps:node:src/backend,test:jest:
 version: 2.1
-orbs:
-  node: circleci/node@5
-jobs:
-  test-node:
-    # Install node dependencies and run tests
-    executor: node/default
-    working_directory: ~/project/src/backend
-    environment:
-      JEST_JUNIT_OUTPUT_DIR: ./test-results/
-    steps:
-      - checkout:
-          path: ~/project
-      - node/install-packages:
-          pkg-manager: npm
-      - run:
-          command: npm install jest-junit
-      - run:
-          name: Run tests
-          command: npm run test --ci --runInBand --reporters=default --reporters=jest-junit
-      - store_test_results:
-          path: ./test-results/
-  build-node:
-    # Build node project
-    executor: node/default
-    working_directory: ~/project/src/backend
-    steps:
-      - checkout:
-          path: ~/project
-      - node/install-packages:
-          pkg-manager: npm
-      - run:
-          command: npm run build
-      - run:
-          name: Create the ~/artifacts directory if it doesn't exist
-          command: mkdir -p ~/artifacts
-      # Copy output to artifacts dir
-      - run:
-          name: Copy artifacts
-          command: cp -R build dist public .output .next .docusaurus ~/artifacts 2>/dev/null || true
-      - store_artifacts:
-          path: ~/artifacts
-          destination: node-build
-  deploy:
-    # This is an example deploy job, not actually used by the workflow
+executors:
+  node-executor:
     docker:
-      - image: cimg/base:stable
+      - image: cimg/node:18.20.5
+    working_directory: ~/project
+jobs:
+  install-backend:
+    executor: node-executor
     steps:
-      # Replace this with steps to deploy to users
+      - checkout
       - run:
-          name: deploy
-          command: '#e.g. ./deploy.sh'
+          name: Install Backend Dependencies
+          command: |
+            cd backend
+            npm install
+      - save_cache:
+          paths:
+            - backend/node_modules
+          key: backend-npm-cache-{{ checksum "backend/package-lock.json" }}
+  install-frontend:
+    executor: node-executor
+    steps:
+      - checkout
+      - run:
+          name: Install Frontend Dependencies
+          command: |
+            cd frontend
+            npm install
+      - save_cache:
+          paths:
+            - frontend/node_modules
+          key: frontend-npm-cache-{{ checksum "frontend/package-lock.json" }}
 workflows:
-  build-and-test:
+  version: 2
+  install-dependencies:
     jobs:
-      - test-node
-      - build-node:
-          requires:
-            - test-node
-    # - deploy:
-    #     requires:
-    #       - build-node
+      - install-backend
+      - install-frontend
