@@ -43,7 +43,6 @@ interface LlmRequestOptions {
   maxTokens?: number;
   systemPrompt?: string;
   provider?: 'anthropic' | 'openai';
-
 }
 
 @Injectable()
@@ -93,7 +92,7 @@ export class LlmRouterService {
   }
 
   async generateContent(prompt: string, options: LlmRequestOptions = {}): Promise<string> {
-    const cacheKey = this.generateCacheKey(prompt, options);
+    const cacheKey = this.generateCacheKey(prompt, options, options.provider); // Include provider override in cache key if present
     const cachedResult = this.getFromCache(cacheKey);
 
     if (cachedResult) {
@@ -101,27 +100,71 @@ export class LlmRouterService {
       return cachedResult;
     }
 
-    const provider = this.primaryProvider; // Start with the primary provider
+    let providerToUse: 'anthropic' | 'openai' | null = null;
+    if (options.provider && (options.provider === 'anthropic' || options.provider === 'openai')) {
+      if (options.provider === 'anthropic' && this.anthropicApiKey) {
+        providerToUse = 'anthropic';
+      } else if (options.provider === 'openai' && this.openaiApiKey) {
+        providerToUse = 'openai';
+      } else {
+        this.logger.warn(
+          `Requested provider ${options.provider} is not available (missing API key). Falling back to default logic.`,
+        );
+      }
+    }
+
+    const effectiveProvider = providerToUse || this.primaryProvider; // Use specified provider or default primary
     const model =
       options.model ||
-      (provider === 'anthropic' ? this.defaultAnthropicModel : this.defaultOpenaiModel);
+      (effectiveProvider === 'anthropic' ? this.defaultAnthropicModel : this.defaultOpenaiModel);
     const temperature = options.temperature || this.defaultTemperature;
     const maxTokens =
       options.maxTokens ||
-      (provider === 'anthropic' ? this.defaultAnthropicMaxTokens : this.defaultMaxTokens);
-    const systemPrompt = options.systemPrompt || 'You are a helpful assistant.'; // More generic default
+      (effectiveProvider === 'anthropic' ? this.defaultAnthropicMaxTokens : this.defaultMaxTokens);
+    const systemPrompt = options.systemPrompt || 'You are a helpful assistant.';
 
+    if (providerToUse) {
+      this.logger.debug(`Attempting LLM call with specified provider: ${providerToUse}`);
+      try {
+        const result = await this.callProvider(
+          providerToUse,
+          prompt,
+          systemPrompt,
+          model,
+          temperature,
+          maxTokens,
+        );
+        this.addToCache(cacheKey, result); // Use the potentially provider-specific cache key
+        return result;
+      } catch (error) {
+        this.logger.error(`Specified provider (${providerToUse}) failed: ${error.message}`);
+        throw new Error(
+          `LLM generation failed with specified provider (${providerToUse}): ${error.message}`,
+        );
+      }
+    }
+
+    this.logger.debug(`Attempting LLM call with primary provider: ${this.primaryProvider}`);
     try {
-      this.logger.debug(`Attempting LLM call with primary provider: ${this.primaryProvider}`);
+      if (
+        (this.primaryProvider === 'anthropic' && !this.anthropicApiKey) ||
+        (this.primaryProvider === 'openai' && !this.openaiApiKey)
+      ) {
+        throw new Error(
+          `Primary provider (${this.primaryProvider}) is configured but API key is missing.`,
+        );
+      }
+
       const result = await this.callProvider(
         this.primaryProvider,
         prompt,
         systemPrompt,
-        model,
+        model, // Use model determined based on primary provider
         temperature,
-        maxTokens,
+        maxTokens, // Use maxTokens determined based on primary provider
       );
-      this.addToCache(cacheKey, result); // Cache the successful result
+      const primaryCacheKey = this.generateCacheKey(prompt, options, this.primaryProvider);
+      this.addToCache(primaryCacheKey, result);
       return result;
     } catch (primaryError) {
       this.logger.warn(
