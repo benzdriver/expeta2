@@ -9,7 +9,7 @@ import { SemanticMediatorModule } from '../semantic-mediator/semantic-mediator.m
 
 @Module({
   imports: [
-    ClarifierModule,
+    forwardRef(() => ClarifierModule), // Added forwardRef
     GeneratorModule,
     ValidatorModule,
     MemoryModule,
