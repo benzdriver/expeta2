@@ -152,7 +152,6 @@ export class ValidatorService {
 
     logger.debug('Sending validation prompt to LLM service');
     const validationResultText = await this.llmRouterService.generateContent(validationPrompt);
-
     let validationResult;
     try {
       validationResult = JSON.parse(validationResultText);
@@ -545,7 +544,6 @@ export class ValidatorService {
 
     logger.debug('Sending adaptive validation prompt to LLM service');
     const validationResultText = await this.llmRouterService.generateContent(validationPrompt);
-
     let validationResult;
     try {
       validationResult = JSON.parse(validationResultText);

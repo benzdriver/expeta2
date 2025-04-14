@@ -3,7 +3,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { ClarifierService } from '../clarifier.service';
 import { Requirement } from '../schemas/requirement.schema';
 import { Expectation } from '../schemas/expectation.schema';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { SemanticMediatorModule } from '../../semantic-mediator/semantic-mediator.module';
 import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediator.service';
@@ -65,7 +65,7 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
           useValue: mockExpectationModel,
         },
         {
-          provide: LlmService,
+          provide: LlmRouterService,
           useValue: mockLlmService,
         },
         {
