@@ -65,6 +65,11 @@ describe('LlmRouterService', () => {
   });
 
   describe('generateContent', () => {
+    beforeEach(() => {
+      (httpService.post as jest.Mock).mockReset();
+    });
+
+
     const prompt = 'Test prompt';
     const options = { temperature: 0.7 };
 
