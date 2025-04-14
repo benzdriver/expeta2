@@ -332,10 +332,17 @@ export class OrchestratorService {
 
   /**
    * 执行语义验证流程
+   * 使用语义分析解决期望和代码之间的冲突，并进行验证
    */
   private async executeSemanticValidation(params: any): Promise<any> {
-    const { expectationId, codeId } = params;
-
+    const { 
+      expectationId, 
+      codeId, 
+      conflictResolutionOptions,
+      validationOptions,
+      extractInsights,
+      trackTransformation
+    } = params;
     if (!expectationId || !codeId) {
       throw new Error('Both expectationId and codeId are required');
     }
@@ -346,7 +353,8 @@ export class OrchestratorService {
     if (!expectations || !code) {
       throw new Error('Expectations or code not found');
     }
-
+    
+    
     this.logger.log(`Resolving semantic conflicts between expectations and code`);
     const semanticResolution = await this.semanticMediatorService.resolveSemanticConflicts(
       'expectations',
@@ -354,27 +362,87 @@ export class OrchestratorService {
       'code',
       code,
     );
-
+    
+    let semanticInsights = null;
+    if (extractInsights) {
+      this.logger.log(`Extracting semantic insights from resolution`);
+      semanticInsights = await this.semanticMediatorService.extractSemanticInsights(
+        semanticResolution,
+        `Semantic conflicts between expectations ${expectationId} and code ${codeId}`
+      );
+    }
+    
     this.logger.log(`Validating code with semantic resolution`);
     const validation = await this.validatorService.validateCodeWithSemanticInput(
       expectationId,
       codeId,
-      semanticResolution,
+      {
+        ...semanticResolution,
+        semanticInsights,
+        ...validationOptions
+      }
     );
-
+    
+    if (trackTransformation !== false) {
+      await this.semanticMediatorService.trackSemanticTransformation(
+        'expectations',
+        'validation',
+        expectations,
+        validation,
+        {
+          trackDifferences: true,
+          analyzeTransformation: true,
+          saveToMemory: true
+        }
+      );
+    }
+    
+    await this.memoryService.storeMemory({
+      type: MemoryType.SYSTEM,
+      content: {
+        workflowId: WorkflowType.SEMANTIC_VALIDATION,
+        expectationId,
+        codeId,
+        validationId: validation._id.toString(),
+        semanticResolution,
+        semanticInsights,
+        timestamp: new Date()
+      },
+      metadata: {
+        status: 'completed',
+        score: validation.score,
+        hasSemanticRelationship: true,
+        hasSemanticInsights: !!semanticInsights,
+        semanticValidationVersion: '2.0'
+      },
+      tags: ['workflow', 'semantic_validation', expectationId, codeId]
+    });
     return {
       status: 'completed',
       validation,
       semanticResolution,
+      semanticInsights,
+      validationMetrics: {
+        score: validation.score,
+        semanticConflictsResolved: semanticResolution?.resolvedConflicts?.length || 0,
+        semanticAnalysisApplied: true
+      }
     };
   }
 
   /**
    * 执行语义丰富流程
+   * 使用上下文信息和语义分析增强模块数据
    */
   private async executeSemanticEnrichment(params: any): Promise<any> {
-    const { moduleType, dataId, contextQuery } = params;
-
+    const { 
+      moduleType, 
+      dataId, 
+      contextQuery,
+      enrichmentOptions,
+      transformationOptions,
+      extractInsights
+    } = params;
     if (!moduleType || !dataId || !contextQuery) {
       throw new Error('moduleType, dataId and contextQuery are required');
     }
@@ -391,6 +459,9 @@ export class OrchestratorService {
       case 'code':
         originalData = await this.generatorService.getCodeById(dataId);
         break;
+      case 'validation':
+        originalData = await this.validatorService.getValidationById(dataId);
+        break;
       default:
         throw new Error(`Unsupported module type: ${moduleType}`);
     }
@@ -400,23 +471,78 @@ export class OrchestratorService {
     }
 
     this.logger.log(`Enriching ${moduleType} data with context: ${contextQuery}`);
+    
     const enrichedData = await this.semanticMediatorService.enrichWithContext(
       moduleType,
       originalData,
       contextQuery,
     );
-
-    await this.semanticMediatorService.trackSemanticTransformation(
+    
+    const transformOptions = {
+      trackDifferences: true,
+      analyzeTransformation: true,
+      saveToMemory: true,
+      ...transformationOptions
+    };
+    
+    const transformationRecord = await this.semanticMediatorService.trackSemanticTransformation(
       moduleType,
       `${moduleType}_enriched`,
       originalData,
       enrichedData,
+      transformOptions
     );
-
+    
+    let semanticInsights = null;
+    if (extractInsights) {
+      this.logger.log(`Extracting semantic insights from enriched data`);
+      semanticInsights = await this.semanticMediatorService.extractSemanticInsights(
+        enrichedData,
+        contextQuery
+      );
+    }
+    
+    const transformationEvaluation = await this.semanticMediatorService.evaluateSemanticTransformation(
+      originalData,
+      enrichedData,
+      `Enrichment of ${moduleType} data with context: ${contextQuery}`
+    );
+    
+    await this.memoryService.storeMemory({
+      type: MemoryType.SYSTEM,
+      content: {
+        workflowId: WorkflowType.SEMANTIC_ENRICHMENT,
+        moduleType,
+        dataId,
+        contextQuery,
+        enrichedDataId: enrichedData._id?.toString(),
+        transformationRecord,
+        semanticInsights,
+        transformationEvaluation,
+        timestamp: new Date()
+      },
+      metadata: {
+        status: 'completed',
+        moduleType,
+        contextQuery,
+        hasInsights: !!semanticInsights,
+        enrichmentQuality: transformationEvaluation.totalQuality || 0
+      },
+      tags: ['workflow', 'semantic_enrichment', moduleType, dataId]
+    });
     return {
       status: 'completed',
       originalData,
       enrichedData,
+      transformationRecord,
+      semanticInsights,
+      transformationEvaluation,
+      enrichmentMetrics: {
+        semanticPreservation: transformationEvaluation.semanticPreservation || 0,
+        informationCompleteness: transformationEvaluation.informationCompleteness || 0,
+        contextRelevance: transformationEvaluation.contextRelevance || 0,
+        totalQuality: transformationEvaluation.totalQuality || 0
+      }
     };
   }
 
@@ -576,8 +702,16 @@ export class OrchestratorService {
    * 根据先前的验证结果和语义分析动态调整验证标准
    */
   private async executeAdaptiveValidation(params: any): Promise<any> {
-    const { expectationId, codeId, previousValidationId, adaptationStrategy } = params;
-
+    const { 
+      expectationId, 
+      codeId, 
+      previousValidationId, 
+      adaptationStrategy,
+      customWeights,
+      focusAreas,
+      semanticAnalysisOptions
+    } = params;
+    
     if (!expectationId || !codeId) {
       throw new Error('expectationId and codeId are required');
     }
@@ -616,25 +750,26 @@ export class OrchestratorService {
     }
 
     this.logger.log(`Generating enhanced validation context using semantic mediator`);
-
+    
+    const validationContextOptions = {
+      strategy: adaptationStrategy || 'balanced',
+      focusAreas: focusAreas || [],
+      customWeights: customWeights || {}
+    };
     const validationContext = await this.semanticMediatorService.generateValidationContext(
       expectationId,
       codeId,
       previousValidations,
-      {
-        strategy: adaptationStrategy || 'balanced',
-        focusAreas: [],
-      },
+      validationContextOptions
     );
-
-    this.logger.log(
-      `Generated validation context: ${JSON.stringify({
-        strategy: validationContext.strategy,
-        focusAreas: validationContext.focusAreas,
-        weights: validationContext.weights,
-      })}`,
-    );
-
+    
+    this.logger.log(`Generated validation context: ${JSON.stringify({
+      strategy: validationContext.strategy,
+      focusAreas: validationContext.focusAreas,
+      weights: validationContext.weights,
+      semanticContext: Object.keys(validationContext.semanticContext || {})
+    })}`);
+    
     let validation;
     if (
       previousValidationId &&
@@ -654,11 +789,14 @@ export class OrchestratorService {
         validationContext,
       );
     }
-
-    const feedback = await this.validatorService.generateValidationFeedback(
-      validation._id.toString(),
+    
+    const feedback = await this.validatorService.generateValidationFeedback(validation._id.toString());
+    
+    const semanticInsights = await this.semanticMediatorService.extractSemanticInsights(
+      validation,
+      `Validation results for code ${codeId} against expectations ${expectationId}`
     );
-
+    
     await this.memoryService.storeMemory({
       type: MemoryType.SYSTEM,
       content: {
@@ -669,7 +807,8 @@ export class OrchestratorService {
         validationContext,
         previousValidations,
         previousValidationId,
-        timestamp: new Date(),
+        semanticInsights,
+        timestamp: new Date()
       },
       metadata: {
         status: 'completed',
@@ -678,21 +817,43 @@ export class OrchestratorService {
         focusAreas: validationContext.focusAreas,
         semanticAnalysisApplied: true,
         validationContextVersion: '2.0',
+        hasSemanticInsights: true
       },
       tags: ['workflow', 'adaptive_validation', 'semantic_validation', expectationId, codeId],
     });
-
+    
+    if (semanticAnalysisOptions?.trackTransformation !== false) {
+      await this.semanticMediatorService.trackSemanticTransformation(
+        'validator',
+        'orchestrator',
+        validation,
+        {
+          expectationId,
+          codeId,
+          validationContext,
+          previousValidations
+        },
+        {
+          trackDifferences: semanticAnalysisOptions?.trackDifferences !== false,
+          analyzeTransformation: semanticAnalysisOptions?.analyzeTransformation !== false,
+          saveToMemory: true
+        }
+      );
+    }
+    
     return {
       status: 'completed',
       validation,
       feedback,
       adaptedContext: validationContext,
-      semanticAnalysis: validationContext.semanticAnalysis || {},
+      semanticInsights,
+      semanticAnalysis: validationContext.semanticContext || {},
       validationMetrics: {
         previousValidationsCount: previousValidations.length,
         focusAreasCount: validationContext.focusAreas?.length || 0,
         adaptationStrategy: validationContext.strategy,
-      },
+        semanticContextApplied: true
+      }
     };
   }
 

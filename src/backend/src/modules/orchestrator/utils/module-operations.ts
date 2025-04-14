@@ -180,6 +180,7 @@ export async function executeSemanticMediatorOperation(
         params.targetModule,
         params.sourceData,
         params.transformedData,
+        params.options
       );
 
     case 'evaluateSemanticTransformation':
@@ -188,7 +189,30 @@ export async function executeSemanticMediatorOperation(
         params.transformedData,
         params.expectedOutcome,
       );
-
+    
+    case 'generateValidationContext':
+      return semanticMediatorService.generateValidationContext(
+        params.expectationId,
+        params.codeId,
+        params.previousValidations,
+        params.options
+      );
+    
+    case 'analyzeSemanticDifferences':
+      return semanticMediatorService.analyzeSemanticDifferences(
+        params.sourceData,
+        params.transformedData,
+        params.sourceModule,
+        params.targetModule
+      );
+    
+    case 'generateTransformationAnalysis':
+      return semanticMediatorService.generateTransformationAnalysis(
+        params.sourceModule,
+        params.targetModule,
+        params.sourceData,
+        params.transformedData
+      );
     default:
       throw new Error(`Unknown SemanticMediator operation: ${operation}`);
   }
