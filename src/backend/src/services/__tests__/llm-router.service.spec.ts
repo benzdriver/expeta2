@@ -53,7 +53,6 @@ describe('LlmRouterService', () => {
     httpService = module.get<HttpService>(HttpService);
 
 
-    jest.spyOn(httpService, 'post');
     jest.clearAllMocks();
   });
 
