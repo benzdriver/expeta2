@@ -12,12 +12,12 @@ jobs:
       - run:
           name: Install Backend Dependencies
           command: |
-            cd backend
+            cd src/backend
             npm install
       - save_cache:
           paths:
-            - backend/node_modules
-          key: backend-npm-cache-{{ checksum "backend/package-lock.json" }}
+            - src/backend/node_modules
+          key: backend-npm-cache-{{ checksum "src/backend/package-lock.json" }}
   install-frontend:
     executor: node-executor
     steps:
@@ -25,12 +25,12 @@ jobs:
       - run:
           name: Install Frontend Dependencies
           command: |
-            cd frontend
+            cd src/frontend
             npm install
       - save_cache:
           paths:
-            - frontend/node_modules
-          key: frontend-npm-cache-{{ checksum "frontend/package-lock.json" }}
+            - src/frontend/node_modules
+          key: frontend-npm-cache-{{ checksum "src/frontend/package-lock.json" }}
 workflows:
   version: 2
   install-dependencies:
