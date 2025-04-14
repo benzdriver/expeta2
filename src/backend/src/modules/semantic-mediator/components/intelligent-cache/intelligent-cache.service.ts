@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IIntelligentCache } from '../../interfaces/intelligent-cache.interface';
 import { MemoryService } from '../../../memory/memory.service';
-import { LlmService } from '../../../../services/llm.service';
+import { LlmRouterService } from '../../../../services/llm-router.service';
 import { MemoryType } from '../../../memory/schemas/memory.schema';
 
 /**
@@ -15,7 +15,7 @@ export class IntelligentCacheService implements IIntelligentCache {
 
   constructor(
     private readonly memoryService: MemoryService,
-    private readonly llmService: LlmService,
+    private readonly llmService: LlmRouterService,
   ) {}
 
   /**

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ITransformationEngine } from '../../interfaces/transformation-engine.interface';
 import { SemanticDescriptor } from '../../interfaces/semantic-descriptor.interface';
-import { LlmService } from '../../../../services/llm.service';
+import { LlmRouterService } from '../../../../services/llm-router.service';
 import { MemoryService } from '../../../memory/memory.service';
 import { MemoryType } from '../../../memory/schemas/memory.schema';
 
@@ -18,7 +18,7 @@ export class TransformationEngineService implements ITransformationEngine {
   > = new Map();
 
   constructor(
-    private readonly llmService: LlmService,
+    private readonly llmService: LlmRouterService,
     private readonly memoryService: MemoryService,
   ) {
     this.registerDefaultStrategies();
