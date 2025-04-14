@@ -1876,7 +1876,7 @@ export class SemanticMediatorService {
       throw new Error(`Failed to analyze feedback patterns: ${error.message}`);
     }
   }
-
+  
   /**
    * 将数据转换为指定的模式
    * @param data 源数据
