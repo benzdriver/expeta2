@@ -133,6 +133,18 @@ describe('LlmRouterService', () => {
       config: { headers: {} as any },
     } as AxiosResponse);
 
+
+    it('should call the mock httpService.post', async () => {
+      (httpService.post as jest.Mock).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
+
+      try {
+        await service.generateContent('simple prompt', { provider: 'anthropic' });
+      } catch (e) {
+      }
+
+      expect(httpService.post).toHaveBeenCalled();
+    });
+
     it('should call Anthropic API successfully and return response', async () => {
       (httpService.post as jest.Mock).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
 
