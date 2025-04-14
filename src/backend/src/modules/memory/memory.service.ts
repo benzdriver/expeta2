@@ -1001,15 +1001,29 @@ export class MemoryService {
         extractSemanticInsights: async (data: any, query: string) => {
           return { insights: ['mock-insight-1', 'mock-insight-2'] };
         },
-        trackSemanticTransformation: async (sourceModule: string, targetModule: string, originalData: any, transformedData: any) => {
+        trackSemanticTransformation: async (
+          sourceModule: string,
+          targetModule: string,
+          originalData: any,
+          transformedData: any,
+        ) => {
           return { tracked: true };
         },
-        generateValidationContext: async (expectationId: string, codeId: string, additionalContext: any[], options: any) => {
+        generateValidationContext: async (
+          expectationId: string,
+          codeId: string,
+          additionalContext: any[],
+          options: any,
+        ) => {
           return { validationContext: { semanticExpectations: ['mock-expectation'] } };
         },
-        evaluateTransformation: async (sourceData: any, transformedData: any, expectedOutcome: string) => {
+        evaluateTransformation: async (
+          sourceData: any,
+          transformedData: any,
+          expectedOutcome: string,
+        ) => {
           return { score: 0.9, feedback: 'Mock feedback' };
-        }
+        },
       };
     }
 
@@ -1045,7 +1059,7 @@ export class MemoryService {
         evaluateSemanticTransformation: async (source: any, target: any, constraint: string) => {
           this.logger.warn('Using fallback implementation of evaluateSemanticTransformation');
           return { semanticPreservation: 100 };
-        }
+        },
       };
     }
   }

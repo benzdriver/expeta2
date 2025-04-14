@@ -131,35 +131,35 @@ export class ValidatorService {
       [], // No previous validations
       {
         strategy: 'balanced',
-        focusAreas: [] // No specific focus areas
-      }
+        focusAreas: [], // No specific focus areas
+      },
     );
-    
+
     logger.debug('Enriching semantic input with context');
     const enrichedSemanticInput = await this.semanticMediatorService.enrichWithContext(
       'validator',
       semanticInput,
-      `expectation:${expectationId} code:${codeId}`
+      `expectation:${expectationId} code:${codeId}`,
     );
-    
+
     const enhancedValidationContext = {
       expectation: expectation.model,
       code: {
         files: code.files,
-        features: validationContext.semanticContext?.codeFeatures || {}
+        features: validationContext.semanticContext?.codeFeatures || {},
       },
       semanticInput: enrichedSemanticInput,
       semanticRelationship: validationContext.semanticContext?.semanticRelationship || {},
-      validationType: 'semantic'
+      validationType: 'semantic',
     };
-    
+
     logger.debug('Transforming validation context to prompt using semantic mediator');
     const transformedPrompt = await this.semanticMediatorService.translateBetweenModules(
       'validator',
       'llm',
-      enhancedValidationContext
+      enhancedValidationContext,
     );
-    
+
     logger.debug('Sending transformed validation prompt to LLM service');
     const validationResultText = await this.llmRouterService.generateContent(transformedPrompt);
     let validationResult;
@@ -179,8 +179,8 @@ export class ValidatorService {
       {
         trackDifferences: true,
         analyzeTransformation: true,
-        saveToMemory: true
-      }
+        saveToMemory: true,
+      },
     );
 
     const validation = new this.validationModel({
@@ -193,7 +193,7 @@ export class ValidatorService {
         semanticAnalysis: validationResult.semanticAnalysis,
         usedSemanticInput: true,
         validationContext: validationContext.semanticContext || {},
-        validatedAt: new Date().toISOString()
+        validatedAt: new Date().toISOString(),
       },
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -240,11 +240,13 @@ export class ValidatorService {
       weights?: Record<string, number>;
       previousValidations?: string[];
       iterative?: boolean;
-    } = {}
+    } = {},
   ): Promise<Validation> {
     const logger = new Logger('ValidatorService');
-    logger.log(`Performing semantic mediation validation - expectation: ${expectationId}, code: ${codeId}`);
-    
+    logger.log(
+      `Performing semantic mediation validation - expectation: ${expectationId}, code: ${codeId}`,
+    );
+
     logger.debug('Generating comprehensive validation context using semantic mediator');
     const validationContext = await this.semanticMediatorService.generateValidationContext(
       expectationId,
@@ -253,10 +255,10 @@ export class ValidatorService {
       {
         strategy: options.strategy || 'balanced',
         focusAreas: options.focusAreas,
-        customWeights: options.weights
-      }
+        customWeights: options.weights,
+      },
     );
-    
+
     logger.debug('Transforming validation context to prompt using semantic mediator');
     const transformedPrompt = await this.semanticMediatorService.translateBetweenModules(
       'validator',
@@ -266,22 +268,24 @@ export class ValidatorService {
         codeId,
         validationContext,
         validationType: 'semantic_mediation',
-        iterative: options.iterative || false
-      }
+        iterative: options.iterative || false,
+      },
     );
-    
+
     logger.debug('Sending transformed validation prompt to LLM service');
     const validationResultText = await this.llmRouterService.generateContent(transformedPrompt);
-    
+
     let validationResult;
     try {
       validationResult = JSON.parse(validationResultText);
-      logger.debug(`Successfully parsed semantic mediation validation result with status: ${validationResult.status}`);
+      logger.debug(
+        `Successfully parsed semantic mediation validation result with status: ${validationResult.status}`,
+      );
     } catch (error) {
       logger.error(`Failed to parse semantic mediation validation result: ${error.message}`);
       throw new Error(`Failed to parse semantic mediation validation result: ${error.message}`);
     }
-    
+
     await this.semanticMediatorService.trackSemanticTransformation(
       'llm',
       'validator',
@@ -290,10 +294,10 @@ export class ValidatorService {
       {
         trackDifferences: true,
         analyzeTransformation: true,
-        saveToMemory: true
-      }
+        saveToMemory: true,
+      },
     );
-    
+
     const validation = new this.validationModel({
       expectationId,
       codeId,
@@ -306,15 +310,15 @@ export class ValidatorService {
         validationContext,
         validatedAt: new Date().toISOString(),
         validationType: 'semantic_mediation',
-        iterative: options.iterative || false
+        iterative: options.iterative || false,
       },
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    
+
     logger.debug('Saving semantic mediation validation result to database');
     const savedValidation = await validation.save();
-    
+
     logger.debug('Storing semantic mediation validation in memory service');
     await this.memoryService.storeMemory({
       type: MemoryType.VALIDATION,
@@ -329,14 +333,16 @@ export class ValidatorService {
           strategy: options.strategy || 'balanced',
           focusAreas: options.focusAreas,
           weights: options.weights,
-          iterative: options.iterative || false
+          iterative: options.iterative || false,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      tags: ['validation', 'semantic_mediation', expectationId, codeId]
+      tags: ['validation', 'semantic_mediation', expectationId, codeId],
     });
-    
-    logger.log(`Successfully performed semantic mediation validation - status: ${validationResult.status}, score: ${validationResult.score}`);
+
+    logger.log(
+      `Successfully performed semantic mediation validation - status: ${validationResult.status}, score: ${validationResult.score}`,
+    );
     return savedValidation;
   }
 
@@ -571,13 +577,15 @@ export class ValidatorService {
    * 将任意策略字符串映射到有效的验证策略
    * 私有辅助方法，确保策略值符合语义中介器的要求
    */
-  private mapToValidStrategy(strategy: string): 'balanced' | 'strict' | 'lenient' | 'performance' | 'security' | 'custom' {
+  private mapToValidStrategy(
+    strategy: string,
+  ): 'balanced' | 'strict' | 'lenient' | 'performance' | 'security' | 'custom' {
     const validStrategies = ['balanced', 'strict', 'lenient', 'performance', 'security', 'custom'];
-    
+
     if (!strategy || !validStrategies.includes(strategy)) {
       return 'balanced'; // 默认使用平衡策略
     }
-    
+
     return strategy as 'balanced' | 'strict' | 'lenient' | 'performance' | 'security' | 'custom';
   }
 
@@ -627,12 +635,12 @@ export class ValidatorService {
         metadata: v.metadata,
       }));
     }
-    
+
     let enhancedContext = { ...validationContext };
     if (!validationContext.semanticContext) {
       logger.debug('Generating semantic validation context using semantic mediator');
       const validStrategy = this.mapToValidStrategy(validationContext.strategy);
-      
+
       const generatedContext = await this.semanticMediatorService.generateValidationContext(
         expectationId,
         codeId,
@@ -640,36 +648,36 @@ export class ValidatorService {
         {
           strategy: validStrategy,
           focusAreas: validationContext.focusAreas,
-          customWeights: validationContext.weights
-        }
+          customWeights: validationContext.weights,
+        },
       );
-      
+
       enhancedContext = {
         ...validationContext,
-        semanticContext: generatedContext.semanticContext
+        semanticContext: generatedContext.semanticContext,
       };
     }
-    
+
     const adaptiveValidationData = {
       expectation: expectation.model,
       code: {
-        files: code.files
+        files: code.files,
       },
       validationContext: enhancedContext,
       previousValidations: previousValidationsData,
-      validationType: 'adaptive'
+      validationType: 'adaptive',
     };
-    
+
     logger.debug('Transforming validation data to prompt using semantic mediator');
     const transformedPrompt = await this.semanticMediatorService.translateBetweenModules(
       'validator',
       'llm',
-      adaptiveValidationData
+      adaptiveValidationData,
     );
-    
+
     logger.debug('Sending adaptive validation prompt to LLM service');
     const validationResultText = await this.llmRouterService.generateContent(transformedPrompt);
-    
+
     let validationResult;
     try {
       validationResult = JSON.parse(validationResultText);
@@ -680,7 +688,7 @@ export class ValidatorService {
       logger.error(`Failed to parse adaptive validation result: ${error.message}`);
       throw new Error(`Failed to parse adaptive validation result: ${error.message}`);
     }
-    
+
     await this.semanticMediatorService.trackSemanticTransformation(
       'llm',
       'validator',
@@ -689,10 +697,10 @@ export class ValidatorService {
       {
         trackDifferences: true,
         analyzeTransformation: true,
-        saveToMemory: true
-      }
+        saveToMemory: true,
+      },
     );
-    
+
     const validation = new this.validationModel({
       expectationId,
       codeId,
@@ -727,7 +735,7 @@ export class ValidatorService {
           strategy: enhancedContext.strategy,
           focusAreas: enhancedContext.focusAreas,
           weights: enhancedContext.weights,
-          semanticContext: enhancedContext.semanticContext ? true : false
+          semanticContext: enhancedContext.semanticContext ? true : false,
         },
         timestamp: new Date().toISOString(),
       },

@@ -188,7 +188,6 @@ export class GeneratorService {
     logger.debug('Sending prompt to LLM service');
     const generatedCodeText = await this.llmRouterService.generateContent(codeGenerationPrompt);
 
-
     let generatedCode;
     try {
       generatedCode = JSON.parse(generatedCodeText);
