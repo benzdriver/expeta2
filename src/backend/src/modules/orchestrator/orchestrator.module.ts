@@ -12,7 +12,7 @@ import { SemanticMediatorModule } from '../semantic-mediator/semantic-mediator.m
     forwardRef(() => ClarifierModule), // Added forwardRef
     GeneratorModule,
     ValidatorModule,
-    MemoryModule,
+    forwardRef(() => MemoryModule),
     forwardRef(() => SemanticMediatorModule),
   ],
   controllers: [OrchestratorController],
