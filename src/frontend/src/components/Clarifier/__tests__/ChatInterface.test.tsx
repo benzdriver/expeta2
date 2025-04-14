@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import '@testing-library/jest-dom';
 import ChatInterface from '../ChatInterface';
 import { ConversationStage } from '../types';
+import loggingService from '../../../services/logging.service';
 
 jest.mock('../../../services/logging.service', () => ({
   __esModule: true,
@@ -52,10 +53,10 @@ describe('ChatInterface Component', () => {
     const onSendMessage = jest.fn();
     const onExpectationCreated = jest.fn();
     
-    let currentStage: ConversationStage = 'initial';
-    let clarificationRound = 0;
+    const _currentStage: ConversationStage = 'initial';
+    const _clarificationRound = 0;
     
-    const { rerender } = render(
+    render(
       <ChatInterface 
         onSendMessage={onSendMessage} 
         onExpectationCreated={onExpectationCreated}
@@ -113,13 +114,13 @@ describe('ChatInterface Component', () => {
       expect(messages.length).toBeGreaterThan(6);
     });
     
-    const mockLoggingService = require('../../../services/logging.service').default;
+    const mockLoggingService = jest.mocked(loggingService);
     expect(mockLoggingService.logSessionStateChange).toHaveBeenCalled();
     expect(mockLoggingService.logSessionMessage).toHaveBeenCalled();
   });
 
   test('logs session events properly with detailed tracking', () => {
-    const mockLoggingService = require('../../../services/logging.service').default;
+    const mockLoggingService = jest.mocked(loggingService);
     render(<ChatInterface sessionId="test-session-123" enableLogging={true} />);
     
     expect(mockLoggingService.startSession).toHaveBeenCalledWith(
@@ -178,7 +179,7 @@ describe('ChatInterface Component', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
       
       await waitFor(() => {
-        expect(screen.getByPlaceholderText('输入您的回复...')).toHaveValue('');
+        expect((input as HTMLInputElement).value).toBe('');
       });
     }
     

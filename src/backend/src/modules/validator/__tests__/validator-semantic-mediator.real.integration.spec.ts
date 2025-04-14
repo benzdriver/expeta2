@@ -17,10 +17,10 @@ import { HumanInTheLoopService } from '../../semantic-mediator/components/human-
 describe('ValidatorService and SemanticMediatorService Real Integration', () => {
   let validatorService: ValidatorService;
   let semanticMediatorService: SemanticMediatorService;
-  let memoryService: MemoryService;
-  let llmRouterService: LlmRouterService;
+  let _memoryService: MemoryService;
+  let _llmRouterService: LlmRouterService;
   let moduleRef: TestingModule;
-  
+
   const expectationId = 'test-expectation-id';
   const codeId = 'test-code-id';
 
@@ -29,35 +29,35 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
       registerEntity: jest.fn().mockResolvedValue({}),
       findEntity: jest.fn().mockResolvedValue({}),
     };
-    
+
     const transformationEngineService = {
       generateTransformationPath: jest.fn().mockResolvedValue({}),
       executeTransformation: jest.fn().mockResolvedValue({}),
       validateTransformation: jest.fn().mockResolvedValue({ valid: true }),
     };
-    
+
     const intelligentCacheService = {
       retrieveTransformationPath: jest.fn().mockResolvedValue(null),
       storeTransformationPath: jest.fn().mockResolvedValue({}),
       updateUsageStatistics: jest.fn().mockResolvedValue({}),
     };
-    
+
     const monitoringSystemService = {
       logTransformationEvent: jest.fn().mockResolvedValue({}),
       logError: jest.fn().mockResolvedValue({}),
     };
-    
+
     const humanInTheLoopService = {
       requestReview: jest.fn().mockResolvedValue({}),
       submitFeedback: jest.fn().mockResolvedValue({}),
     };
-    
-    const ValidationModelMock = function() {
+
+    const ValidationModelMock = function () {
       return {
         save: jest.fn().mockResolvedValue({}),
       };
     };
-    
+
     ValidationModelMock.create = jest.fn().mockReturnValue({
       save: jest.fn().mockResolvedValue({}),
     });
@@ -69,28 +69,32 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
     ValidationModelMock.findById = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue(null),
     });
-    
+
     const mockMemoryService = {
       getMemoryByType: jest.fn().mockImplementation((type: MemoryType) => {
         if (type === MemoryType.EXPECTATION) {
-          return Promise.resolve([{
-            content: {
-              _id: { toString: () => expectationId },
-              model: 'Create a function that adds two numbers and returns the result',
+          return Promise.resolve([
+            {
+              content: {
+                _id: { toString: () => expectationId },
+                model: 'Create a function that adds two numbers and returns the result',
+              },
             },
-          }]);
+          ]);
         } else if (type === MemoryType.CODE) {
-          return Promise.resolve([{
-            content: {
-              _id: { toString: () => codeId },
-              files: [
-                {
-                  path: 'add.js',
-                  content: 'function add(a, b) { return a + b; }',
-                },
-              ],
+          return Promise.resolve([
+            {
+              content: {
+                _id: { toString: () => codeId },
+                files: [
+                  {
+                    path: 'add.js',
+                    content: 'function add(a, b) { return a + b; }',
+                  },
+                ],
+              },
             },
-          }]);
+          ]);
         }
         return Promise.resolve([]);
       }),
@@ -99,9 +103,9 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
           content: {
             _id: 'related-memory-id',
             type: 'test-memory',
-            data: 'Test related memory data'
-          }
-        }
+            data: 'Test related memory data',
+          },
+        },
       ]),
       storeMemory: jest.fn().mockResolvedValue({
         content: {
@@ -113,7 +117,7 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
     const mockLlmRouterService = {
       generateContent: jest.fn().mockResolvedValue('{"status":"passed","score":90,"details":[]}'),
     };
-    
+
     moduleRef = await Test.createTestingModule({
       providers: [
         ValidatorService,
@@ -132,8 +136,8 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
 
     validatorService = moduleRef.get<ValidatorService>(ValidatorService);
     semanticMediatorService = moduleRef.get<SemanticMediatorService>(SemanticMediatorService);
-    memoryService = moduleRef.get<MemoryService>(MemoryService);
-    llmRouterService = moduleRef.get<LlmRouterService>(LlmRouterService);
+    _memoryService = moduleRef.get<MemoryService>(MemoryService);
+    _llmRouterService = moduleRef.get<LlmRouterService>(LlmRouterService);
   });
 
   afterEach(async () => {
@@ -145,20 +149,18 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
 
   describe('Real Integration between ValidatorService and SemanticMediatorService', () => {
     it('should use semantic mediator to generate validation context', async () => {
-      const generateValidationContextSpy = jest.spyOn(
-        semanticMediatorService,
-        'generateValidationContext',
-      ).mockResolvedValue({
-        semanticContext: {
-          codeFeatures: { complexity: 'low' },
-          semanticRelationship: { alignment: 'high' }
-        }
-      });
-      
-      const translateBetweenModulesSpy = jest.spyOn(
-        semanticMediatorService,
-        'translateBetweenModules',
-      ).mockResolvedValue('test prompt');
+      const generateValidationContextSpy = jest
+        .spyOn(semanticMediatorService, 'generateValidationContext')
+        .mockResolvedValue({
+          semanticContext: {
+            codeFeatures: { complexity: 'low' },
+            semanticRelationship: { alignment: 'high' },
+          },
+        });
+
+      const translateBetweenModulesSpy = jest
+        .spyOn(semanticMediatorService, 'translateBetweenModules')
+        .mockResolvedValue('test prompt');
 
       const result = await validatorService.validateCodeWithSemanticInput(expectationId, codeId, {
         semanticContext: 'Test semantic context',
@@ -171,20 +173,18 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
     });
 
     it('should use semantic mediator for adaptive context validation', async () => {
-      const generateValidationContextSpy = jest.spyOn(
-        semanticMediatorService,
-        'generateValidationContext',
-      ).mockResolvedValue({
-        semanticContext: {
-          codeFeatures: { complexity: 'low' },
-          semanticRelationship: { alignment: 'high' }
-        }
-      });
-      
-      const translateBetweenModulesSpy = jest.spyOn(
-        semanticMediatorService,
-        'translateBetweenModules',
-      ).mockResolvedValue('test prompt');
+      const generateValidationContextSpy = jest
+        .spyOn(semanticMediatorService, 'generateValidationContext')
+        .mockResolvedValue({
+          semanticContext: {
+            codeFeatures: { complexity: 'low' },
+            semanticRelationship: { alignment: 'high' },
+          },
+        });
+
+      const translateBetweenModulesSpy = jest
+        .spyOn(semanticMediatorService, 'translateBetweenModules')
+        .mockResolvedValue('test prompt');
 
       const result = await validatorService.validateWithAdaptiveContext(expectationId, codeId, {
         strategy: 'balanced',
@@ -197,25 +197,22 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
     });
 
     it('should use semantic mediator for full semantic mediation validation', async () => {
-      const generateValidationContextSpy = jest.spyOn(
-        semanticMediatorService,
-        'generateValidationContext',
-      ).mockResolvedValue({
-        semanticContext: {
-          codeFeatures: { complexity: 'low' },
-          semanticRelationship: { alignment: 'high' }
-        }
-      });
-      
-      const translateBetweenModulesSpy = jest.spyOn(
-        semanticMediatorService,
-        'translateBetweenModules',
-      ).mockResolvedValue('test prompt');
-      
-      const trackSemanticTransformationSpy = jest.spyOn(
-        semanticMediatorService,
-        'trackSemanticTransformation',
-      ).mockResolvedValue({});
+      const generateValidationContextSpy = jest
+        .spyOn(semanticMediatorService, 'generateValidationContext')
+        .mockResolvedValue({
+          semanticContext: {
+            codeFeatures: { complexity: 'low' },
+            semanticRelationship: { alignment: 'high' },
+          },
+        });
+
+      const translateBetweenModulesSpy = jest
+        .spyOn(semanticMediatorService, 'translateBetweenModules')
+        .mockResolvedValue('test prompt');
+
+      const trackSemanticTransformationSpy = jest
+        .spyOn(semanticMediatorService, 'trackSemanticTransformation')
+        .mockResolvedValue({});
 
       const result = await validatorService.validateWithSemanticMediation(expectationId, codeId, {
         strategy: 'balanced',

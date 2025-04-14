@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import loggingService from '../services/logging.service';
 
 interface CodeGenerationOption {
   id: string;
@@ -70,12 +71,12 @@ const CodeGeneration: React.FC = () => {
   const [selectedFrameworks, setSelectedFrameworks] = useState<string[]>([]);
   const [selectedArchitecture, setSelectedArchitecture] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('standard');
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<GeneratedCode | null>(null);
-  const [isCopied, setIsCopied] = useState<boolean>(false);
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState<boolean>(false);
-  const [codeQuality, setCodeQuality] = useState<number>(80);
-  const [codeComments, setCodeComments] = useState<boolean>(true);
+  const [isCopied, setIsCopied] = useState(false);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [codeQuality, setCodeQuality] = useState(80);
+  const [codeComments, setCodeComments] = useState(true);
   const [semanticContext, setSemanticContext] = useState<{
     industry: string;
     domain: string;
@@ -87,7 +88,7 @@ const CodeGeneration: React.FC = () => {
     complexity: 'medium',
     priority: 'medium'
   });
-  const [showTemplateFeatures, setShowTemplateFeatures] = useState<boolean>(false);
+  const [showTemplateFeatures, setShowTemplateFeatures] = useState(false);
   const [selectedTemplateDetails, setSelectedTemplateDetails] = useState<CodeTemplate | null>(null);
   const codeRef = useRef<HTMLPreElement>(null);
   
@@ -550,9 +551,9 @@ const CodeGeneration: React.FC = () => {
     
     const getTemplateCode = (
       baseCode: string, 
-      template: string = 'standard', 
-      quality: number = 80,
-      includeComments: boolean = true
+      template = 'standard', 
+      quality = 80,
+      includeComments = true
     ): string => {
       if (!includeComments) {
         baseCode = baseCode.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -844,7 +845,7 @@ export default UserService;`;
           setTimeout(() => setIsCopied(false), 2000);
         })
         .catch(err => {
-          console.error('Failed to copy code: ', err);
+          loggingService.error('CodeGeneration', 'Failed to copy code', err);
         });
     }
   };
@@ -1308,7 +1309,7 @@ export default UserService;`;
               ) : (
                 <div className="empty-state">
                   <span className="material-symbols-rounded">code</span>
-                  <p>选择期望和选项，然后点击"生成代码"按钮</p>
+                  <p>选择期望和选项，然后点击&quot;生成代码&quot;按钮</p>
                 </div>
               )}
             </div>

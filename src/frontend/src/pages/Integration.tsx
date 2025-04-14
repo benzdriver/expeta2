@@ -6,10 +6,10 @@ import ModuleConnectionGraph from '../components/SemanticIntegration/ModuleConne
 import '../components/SemanticIntegration/SemanticIntegration.css';
 
 const Integration: React.FC = () => {
-  const [selectedRequirementId, setSelectedRequirementId] = useState<string>('');
-  const [initialData, setInitialData] = useState<any>(null);
-  const [activeWorkflowId, setActiveWorkflowId] = useState<string>('');
-  const [showSemanticFlow, setShowSemanticFlow] = useState<boolean>(true);
+  const [selectedRequirementId, _setSelectedRequirementId] = useState<string>('');
+  const [initialData, _setInitialData] = useState<any>(null);
+  const [activeWorkflowId, _setActiveWorkflowId] = useState<string>('');
+  const [showSemanticFlow, _setShowSemanticFlow] = useState<boolean>(true);
   
   return (
     <div className="page-container">
@@ -23,7 +23,7 @@ const Integration: React.FC = () => {
           <div className="control-panels">
             <OrchestratorPanel 
               requirementId={selectedRequirementId} 
-              onWorkflowExecuted={(workflowId) => setActiveWorkflowId(workflowId)} 
+              onWorkflowExecuted={(workflowId) => _setActiveWorkflowId(workflowId)} 
             />
             <SemanticMediatorPanel initialData={initialData} />
           </div>
@@ -33,7 +33,7 @@ const Integration: React.FC = () => {
             <ModuleConnectionGraph 
               workflowId={activeWorkflowId} 
               showSemanticFlow={showSemanticFlow}
-              onToggleSemanticFlow={(show) => setShowSemanticFlow(show)}
+              onToggleSemanticFlow={(show) => _setShowSemanticFlow(show)}
             />
           </div>
         </div>

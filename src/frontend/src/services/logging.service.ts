@@ -25,7 +25,7 @@ export interface LogEntry {
   level: LogLevel;
   module: string;
   message: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 /**
@@ -37,7 +37,7 @@ export interface SessionLog {
   endTime?: Date;
   messages: Message[];
   logs: LogEntry[];
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 /**
@@ -48,11 +48,14 @@ export class LoggingService {
   private static instance: LoggingService;
   private logs: LogEntry[] = [];
   private sessions: Map<string, SessionLog> = new Map();
-  private consoleEnabled: boolean = true;
-  private storageEnabled: boolean = true;
-  private maxLogSize: number = 1000;
+  private consoleEnabled = true;
+  private storageEnabled = true;
+  private maxLogSize = 1000;
 
-  private constructor() {}
+  private constructor() {
+    this.logs = [];
+    this.sessions = new Map();
+  }
 
   /**
    * 获取日志服务单例
@@ -67,41 +70,41 @@ export class LoggingService {
   /**
    * 记录调试级别日志
    */
-  public debug(module: string, message: string, data?: any): void {
+  public debug(module: string, message: string, data?: Record<string, unknown> | Error): void {
     this.log(LogLevel.DEBUG, module, message, data);
   }
 
   /**
    * 记录信息级别日志
    */
-  public info(module: string, message: string, data?: any): void {
+  public info(module: string, message: string, data?: Record<string, unknown> | Error): void {
     this.log(LogLevel.INFO, module, message, data);
   }
 
   /**
    * 记录警告级别日志
    */
-  public warn(module: string, message: string, data?: any): void {
+  public warn(module: string, message: string, data?: Record<string, unknown> | Error): void {
     this.log(LogLevel.WARN, module, message, data);
   }
 
   /**
    * 记录错误级别日志
    */
-  public error(module: string, message: string, data?: any): void {
+  public error(module: string, message: string, data?: Record<string, unknown> | Error): void {
     this.log(LogLevel.ERROR, module, message, data);
   }
 
   /**
    * 记录日志
    */
-  private log(level: LogLevel, module: string, message: string, data?: any): void {
+  private log(level: LogLevel, module: string, message: string, data?: Record<string, unknown> | Error): void {
     const logEntry: LogEntry = {
       timestamp: new Date(),
       level,
       module,
       message,
-      data
+      data: data instanceof Error ? { error: data.message, stack: data.stack } : data
     };
 
     this.logs.push(logEntry);
@@ -190,7 +193,7 @@ export class LoggingService {
   /**
    * 启动新会话
    */
-  public startSession(sessionId: string, metadata: Record<string, any> = {}): void {
+  public startSession(sessionId: string, metadata: Record<string, unknown> = {}): void {
     const session: SessionLog = {
       sessionId,
       startTime: new Date(),
@@ -240,7 +243,7 @@ export class LoggingService {
     sessionId: string, 
     previousState: string, 
     newState: string, 
-    data?: any
+    data?: Record<string, unknown>
   ): void {
     const session = this.sessions.get(sessionId);
     if (session) {

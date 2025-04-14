@@ -51,6 +51,7 @@ export interface ChatInterfaceProps {
   initialMessages?: Message[];
   onSendMessage?: (message: string) => void;
   onExpectationCreated?: (expectation: Expectation) => void;
+  _onExpectationCreated?: (expectation: Expectation) => void;
   enableLogging?: boolean;
   sessionId?: string;
 }

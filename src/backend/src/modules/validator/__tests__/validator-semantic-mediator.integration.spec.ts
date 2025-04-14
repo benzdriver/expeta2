@@ -1,8 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { ValidatorService } from '../validator.service';
 import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediator.service';
 import { Model } from 'mongoose';
-import { Validation, ValidationSchema } from '../schemas/validation.schema';
+import { Validation } from '../schemas/validation.schema';
 import { getModelToken } from '@nestjs/mongoose';
 import { MemoryService } from '../../memory/memory.service';
 import { LlmRouterService } from '../../../services/llm-router.service';
@@ -31,20 +31,20 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
       generateValidationContext: jest.fn().mockResolvedValue({
         semanticContext: {
           codeFeatures: { complexity: 'low' },
-          semanticRelationship: { alignment: 'high' }
-        }
+          semanticRelationship: { alignment: 'high' },
+        },
       }),
       enrichWithContext: jest.fn().mockImplementation((_, data) => Promise.resolve(data)),
       translateBetweenModules: jest.fn().mockResolvedValue('test prompt'),
       trackSemanticTransformation: jest.fn().mockResolvedValue({}),
     } as any;
 
-    const ValidationModelMock = function() {
+    const ValidationModelMock = function () {
       return {
         save: jest.fn().mockResolvedValue({}),
       };
     };
-    
+
     ValidationModelMock.create = jest.fn().mockReturnValue({
       save: jest.fn().mockResolvedValue({}),
     });
@@ -56,7 +56,7 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
     ValidationModelMock.findById = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue(null),
     });
-    
+
     validationModel = ValidationModelMock as any;
 
     const moduleRef = await Test.createTestingModule({

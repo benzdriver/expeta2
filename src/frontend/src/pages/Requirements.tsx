@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ChatInterface from '../components/Clarifier/ChatInterface';
+import loggingService from '../services/logging.service';
 
 interface Requirement {
   id: string;
@@ -11,7 +12,7 @@ interface Requirement {
 }
 
 const Requirements: React.FC = () => {
-  const [requirements, setRequirements] = useState<Requirement[]>([
+  const [requirements, _setRequirements] = useState<Requirement[]>([
     {
       id: 'req-001',
       title: '用户管理系统',
@@ -58,7 +59,7 @@ const Requirements: React.FC = () => {
   ];
 
   const handleSendMessage = (message: string) => {
-    console.log('Sending message:', message);
+    loggingService.info('Requirements', 'Sending message', { message });
   };
 
   return (
