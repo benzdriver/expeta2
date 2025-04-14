@@ -1450,7 +1450,6 @@ export class SemanticMediatorService {
 
     return Array.from(areas);
   }
-<<<<<<< HEAD
 
   /**
    * 注册数据源
