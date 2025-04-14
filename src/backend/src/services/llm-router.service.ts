@@ -42,6 +42,8 @@ interface LlmRequestOptions {
   temperature?: number;
   maxTokens?: number;
   systemPrompt?: string;
+  provider?: 'anthropic' | 'openai';
+
 }
 
 @Injectable()
