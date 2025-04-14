@@ -5,14 +5,14 @@ import { GeneratorService } from './generator.service';
 import { Code, CodeSchema } from './schemas/code.schema';
 import { LlmModule } from '../../services/llm.module';
 import { MemoryModule } from '../memory/memory.module';
+import { SemanticMediatorModule } from '../semantic-mediator/semantic-mediator.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Code.name, schema: CodeSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Code.name, schema: CodeSchema }]),
     LlmModule,
     MemoryModule,
+    SemanticMediatorModule,
   ],
   controllers: [GeneratorController],
   providers: [GeneratorService],
