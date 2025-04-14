@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { LlmService } from '../../services/llm.service';
+import { LlmRouterService } from '../../services/llm-router.service';
 import { MemoryService } from '../memory/memory.service';
 import { MemoryType } from '../memory/schemas/memory.schema';
 
@@ -10,21 +10,19 @@ import { TransformationEngineService } from './components/transformation-engine/
 import { IntelligentCacheService } from './components/intelligent-cache/intelligent-cache.service';
 import { MonitoringSystemService } from './components/monitoring-system/monitoring-system.service';
 import { HumanInTheLoopService } from './components/human-in-the-loop/human-in-the-loop.service';
-import { ResolverService } from './components/resolver/resolver.service';
 
 @Injectable()
 export class SemanticMediatorService {
   private readonly logger = new Logger(SemanticMediatorService.name);
 
   constructor(
-    private readonly llmService: LlmService,
+    private readonly llmRouterService: LlmRouterService,
     private readonly memoryService: MemoryService,
     private readonly semanticRegistry: SemanticRegistryService,
     private readonly transformationEngine: TransformationEngineService,
     private readonly intelligentCache: IntelligentCacheService,
     private readonly monitoringSystem: MonitoringSystemService,
     private readonly humanInTheLoop: HumanInTheLoopService,
-    private readonly resolver: ResolverService,
   ) {}
 
   /**
@@ -58,7 +56,7 @@ export class SemanticMediatorService {
         description: `Data for ${targetModule} module`,
         attributes: {
           data: {
-            type: 'object',
+            type: 'object', // Assuming target is generally an object, adjust if needed
             description: `Data content for ${targetModule}`,
           },
         },
@@ -70,7 +68,7 @@ export class SemanticMediatorService {
       const cachedPath = await this.intelligentCache.retrieveTransformationPath(
         sourceDescriptor,
         targetDescriptor,
-        0.8, // 高相似度阈值
+        0.8, // High similarity threshold
       );
 
       if (cachedPath) {
@@ -143,7 +141,6 @@ export class SemanticMediatorService {
       return result;
     } catch (error) {
       this.logger.error(`Error translating between modules: ${error.message}`, error.stack);
-
       await this.monitoringSystem.logError(error, {
         operation: 'translateBetweenModules',
         sourceModule,
@@ -185,7 +182,6 @@ export class SemanticMediatorService {
         this.logger.debug(`No related memories found for query: ${contextQuery}`);
         return data;
       }
-
       const originalData = {
         ...data,
         _relatedMemories: relatedMemories.map((m) => m.content),
@@ -207,7 +203,7 @@ export class SemanticMediatorService {
 
       const transformationPath = {
         source: sourceDescriptor,
-        target: sourceDescriptor, // 丰富操作不改变实体类型
+        target: sourceDescriptor, // Enrichment doesn't change entity type
         steps: [
           {
             type: 'context_enrichment',
@@ -215,7 +211,7 @@ export class SemanticMediatorService {
             memoryCount: relatedMemories.length,
           },
         ],
-        recommendedStrategy: 'llm_enrichment',
+        recommendedStrategy: 'llm_enrichment', // Or another appropriate strategy
       };
 
       const result = await this.transformationEngine.executeTransformation(
@@ -241,46 +237,78 @@ export class SemanticMediatorService {
 
   /**
    * 解决不同模块之间的语义冲突
-   * 增强版本：使用专用的Resolver组件
    */
   async resolveSemanticConflicts(
     moduleA: string,
     dataA: any,
     moduleB: string,
     dataB: any,
-    options?: {
-      forceStrategy?: string;
-      context?: any;
-      cacheResults?: boolean;
-    },
   ): Promise<any> {
     try {
       this.logger.debug(`Resolving semantic conflicts between ${moduleA} and ${moduleB}`);
 
-      const result = await this.resolver.resolveConflicts(
-        moduleA,
-        dataA,
-        moduleB,
-        dataB,
-        options,
-      );
-
-      await this.trackSemanticTransformation(
-        moduleA,
-        moduleB,
-        dataA,
-        result.resolvedData,
-        {
-          trackDifferences: true,
-          analyzeTransformation: true,
-          saveToMemory: true,
+      const descriptorA: SemanticDescriptor = {
+        entity: moduleA,
+        description: `Data from ${moduleA} module`,
+        attributes: {
+          data: {
+            type: typeof dataA,
+            description: `Data content from ${moduleA}`,
+          },
         },
+        metadata: {
+          module: moduleA,
+        },
+      };
+
+      const descriptorB: SemanticDescriptor = {
+        entity: moduleB,
+        description: `Data from ${moduleB} module`,
+        attributes: {
+          data: {
+            type: typeof dataB,
+            description: `Data content from ${moduleB}`,
+          },
+        },
+        metadata: {
+          module: moduleB,
+        },
+      };
+
+      const transformationPath = {
+        source: {
+          type: 'composite',
+          components: [descriptorA, descriptorB],
+        },
+        target: {
+          type: 'resolved', // Target is the resolved state
+          components: [descriptorA, descriptorB], // Based on both inputs
+        },
+        steps: [
+          {
+            type: 'conflict_resolution',
+            modules: [moduleA, moduleB],
+          },
+        ],
+        recommendedStrategy: 'semantic_conflict_resolution', // Or another appropriate strategy
+      };
+
+      const result = await this.transformationEngine.executeTransformation(
+        { moduleA: dataA, moduleB: dataB }, // Pass both data sources
+        transformationPath,
+        { moduleA, moduleB }, // Context for the transformation
       );
 
-      return result.resolvedData;
+      await this.monitoringSystem.logTransformationEvent({
+        type: 'conflict_resolution',
+        moduleA,
+        moduleB,
+        timestamp: new Date().toISOString(),
+      });
+
+      return result;
     } catch (error) {
       this.logger.error(`Error resolving semantic conflicts: ${error.message}`, error.stack);
-
       await this.monitoringSystem.logError(error, {
         operation: 'resolveSemanticConflicts',
         moduleA,
@@ -428,9 +456,8 @@ export class SemanticMediatorService {
         sourceData,
         transformedData,
         timestamp: new Date(),
-        transformationId,
+        transformationId, // Keep transformationId from HEAD
       };
-
       await this.monitoringSystem.logTransformationEvent({
         type: 'semantic_transformation_tracking',
         sourceModule,
@@ -441,7 +468,6 @@ export class SemanticMediatorService {
 
       if (trackOptions.trackDifferences) {
         this.logger.debug('Analyzing semantic differences between source and transformed data');
-
         const diffTransformPath = {
           source: sourceDescriptor,
           target: targetDescriptor,
@@ -452,13 +478,13 @@ export class SemanticMediatorService {
               targetModule,
             },
           ],
-          recommendedStrategy: 'semantic_diff',
+          recommendedStrategy: 'semantic_diff', // Or another appropriate strategy
         };
 
         const differenceAnalysis = await this.transformationEngine.executeTransformation(
-          { source: sourceData, target: transformedData },
+          { source: sourceData, target: transformedData }, // Pass both data sources
           diffTransformPath,
-          { sourceModule, targetModule },
+          { sourceModule, targetModule }, // Context
         );
 
         transformationRecord['differences'] = differenceAnalysis;
@@ -466,7 +492,6 @@ export class SemanticMediatorService {
 
       if (trackOptions.analyzeTransformation) {
         this.logger.debug('Generating transformation analysis report');
-
         const analysisTransformPath = {
           source: sourceDescriptor,
           target: targetDescriptor,
@@ -477,13 +502,13 @@ export class SemanticMediatorService {
               targetModule,
             },
           ],
-          recommendedStrategy: 'transformation_analysis',
+          recommendedStrategy: 'transformation_analysis', // Or another appropriate strategy
         };
 
         const transformationAnalysis = await this.transformationEngine.executeTransformation(
-          { source: sourceData, target: transformedData },
+          { source: sourceData, target: transformedData }, // Pass both data sources
           analysisTransformPath,
-          { sourceModule, targetModule },
+          { sourceModule, targetModule }, // Context
         );
 
         transformationRecord['analysis'] = transformationAnalysis;
@@ -497,7 +522,7 @@ export class SemanticMediatorService {
         await this.intelligentCache.storeTransformationPath(
           sourceDescriptor,
           targetDescriptor,
-          {
+          { // Assuming transformationPath was generated earlier if not cached
             sourceModule,
             targetModule,
             transformationId,
@@ -518,14 +543,14 @@ export class SemanticMediatorService {
             timestamp: new Date(),
             hasAnalysis: trackOptions.analyzeTransformation,
             hasDifferences: trackOptions.trackDifferences,
-            transformationId,
+            transformationId, // Keep transformationId from HEAD
           },
           tags: [
             'semantic_transformation',
             sourceModule,
             targetModule,
             `${sourceModule}_to_${targetModule}`,
-            transformationId,
+            transformationId, // Keep transformationId from HEAD
           ],
         });
       }
@@ -581,8 +606,7 @@ export class SemanticMediatorService {
         - potentialIssues: 数组，每个元素描述一个潜在问题或风险
         - overallAssessment: 字符串，总体评估
       `;
-
-      const analysisText = await this.llmService.generateContent(differencePrompt, {
+      const analysisText = await this.llmRouterService.generateContent(differencePrompt, {
         systemPrompt: '你是一个专业的语义分析专家，擅长分析数据转换过程中的语义变化。',
       });
 
@@ -635,8 +659,7 @@ export class SemanticMediatorService {
         - innovations: 数组，转换过程中的创新点
         - recommendations: 数组，改进建议
       `;
-
-      const analysisText = await this.llmService.generateContent(analysisPrompt, {
+      const analysisText = await this.llmRouterService.generateContent(analysisPrompt, { // Use llmRouterService
         systemPrompt: '你是一个专业的语义转换分析专家，擅长评估模块间数据转换的质量和特点。',
       });
 
@@ -780,7 +803,6 @@ export class SemanticMediatorService {
         });
         throw new Error('Expectation or Code not found');
       }
-
       await this.monitoringSystem.logDebugData(debugSessionId, {
         stage: 'data_retrieval',
         expectation: {
@@ -830,7 +852,6 @@ export class SemanticMediatorService {
           .filter((memory) => previousValidations.includes(memory.content._id.toString()))
           .map((memory) => memory.content);
       }
-
       await this.monitoringSystem.logDebugData(debugSessionId, {
         stage: 'previous_validations',
         count: previousValidationsData.length,
@@ -928,7 +949,6 @@ export class SemanticMediatorService {
           validationHistory: this.summarizeValidationHistory(previousValidationsData),
         },
       };
-
       await this.intelligentCache.storeTransformationPath(
         expectationDescriptor,
         codeDescriptor,
@@ -996,8 +1016,7 @@ export class SemanticMediatorService {
         
         以JSON格式返回分析结果。
       `;
-
-      const featuresText = await this.llmService.generateContent(featuresPrompt, {
+      const featuresText = await this.llmRouterService.generateContent(featuresPrompt, {
         systemPrompt: '你是一个专业的代码分析专家，擅长分析代码的结构和特征。',
       });
 
@@ -1039,8 +1058,7 @@ export class SemanticMediatorService {
         
         以JSON格式返回分析结果。
       `;
-
-      const relationshipText = await this.llmService.generateContent(relationshipPrompt, {
+      const relationshipText = await this.llmRouterService.generateContent(relationshipPrompt, {
         systemPrompt: '你是一个专业的语义分析专家，擅长分析代码与需求之间的关系。',
       });
 
@@ -1872,7 +1890,7 @@ export class SemanticMediatorService {
         返回转换后的JSON数据。
       `;
       
-      const translatedText = await this.llmService.generateContent(translationPrompt, {
+      const translatedText = await this.llmRouterService.generateContent(translationPrompt, { // Use llmRouterService
         systemPrompt: '你是一个专业的数据转换专家，擅长将数据从一种模式转换为另一种模式，同时保持语义一致性。',
       });
       

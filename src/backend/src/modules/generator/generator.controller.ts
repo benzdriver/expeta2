@@ -1,18 +1,18 @@
 import { Controller, Post, Body, Get, Param, Put, Logger } from '@nestjs/common';
 import { GeneratorService } from './generator.service';
-import { 
-  GenerateCodeWithSemanticInputDto, 
+import {
+  GenerateCodeWithSemanticInputDto,
   OptimizeCodeDto,
   GenerateProjectStructureDto,
   GenerateCodeWithArchitectureDto,
   GenerateTestSuiteDto,
-  RefactorCodeDto
+  RefactorCodeDto,
 } from './dto';
 
 @Controller('generator')
 export class GeneratorController {
   private readonly logger = new Logger(GeneratorController.name);
-  
+
   constructor(private readonly generatorService: GeneratorService) {}
 
   @Post('generate')
@@ -23,59 +23,56 @@ export class GeneratorController {
 
   @Post('generate-with-semantic')
   async generateCodeWithSemanticInput(@Body() data: GenerateCodeWithSemanticInputDto) {
-    this.logger.log(`Received request to generate code with semantic input for expectation: ${data.expectationId}`);
+    this.logger.log(
+      `Received request to generate code with semantic input for expectation: ${data.expectationId}`,
+    );
     return this.generatorService.generateCodeWithSemanticInput(
       data.expectationId,
       data.semanticAnalysis,
-      data.options
+      data.options,
     );
   }
 
   @Post('optimize')
   async optimizeCode(@Body() data: OptimizeCodeDto) {
     this.logger.log(`Received request to optimize code: ${data.codeId}`);
-    return this.generatorService.optimizeCode(
-      data.codeId,
-      data.semanticFeedback
-    );
+    return this.generatorService.optimizeCode(data.codeId, data.semanticFeedback);
   }
 
   @Post('project-structure')
   async generateProjectStructure(@Body() data: GenerateProjectStructureDto) {
-    this.logger.log(`Received request to generate project structure for expectation: ${data.expectationId}`);
+    this.logger.log(
+      `Received request to generate project structure for expectation: ${data.expectationId}`,
+    );
     return this.generatorService.generateProjectStructure(
       data.expectationId,
       data.techStack,
-      data.options
+      data.options,
     );
   }
 
   @Post('generate-with-architecture')
   async generateCodeWithArchitecture(@Body() data: GenerateCodeWithArchitectureDto) {
-    this.logger.log(`Received request to generate code with architecture for expectation: ${data.expectationId}`);
+    this.logger.log(
+      `Received request to generate code with architecture for expectation: ${data.expectationId}`,
+    );
     return this.generatorService.generateCodeWithArchitecture(
       data.expectationId,
       data.architectureGuide,
-      data.technicalRequirements
+      data.technicalRequirements,
     );
   }
 
   @Post('test-suite')
   async generateTestSuite(@Body() data: GenerateTestSuiteDto) {
     this.logger.log(`Received request to generate test suite for code: ${data.codeId}`);
-    return this.generatorService.generateTestSuite(
-      data.codeId,
-      data.testRequirements
-    );
+    return this.generatorService.generateTestSuite(data.codeId, data.testRequirements);
   }
 
   @Post('refactor')
   async refactorCode(@Body() data: RefactorCodeDto) {
     this.logger.log(`Received request to refactor code: ${data.codeId}`);
-    return this.generatorService.refactorCode(
-      data.codeId,
-      data.refactoringGoals
-    );
+    return this.generatorService.refactorCode(data.codeId, data.refactoringGoals);
   }
 
   @Get('code/:expectationId')

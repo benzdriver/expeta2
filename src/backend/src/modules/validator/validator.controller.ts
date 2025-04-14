@@ -29,7 +29,7 @@ interface ValidateWithAdaptiveContextDto {
 @Controller('validator')
 export class ValidatorController {
   private readonly logger = new Logger(ValidatorController.name);
-  
+
   constructor(private readonly validatorService: ValidatorService) {}
 
   @Post('validate')
@@ -40,22 +40,26 @@ export class ValidatorController {
 
   @Post('validate-with-semantic')
   async validateCodeWithSemanticInput(@Body() data: ValidateWithSemanticInputDto) {
-    this.logger.log(`Validating code with semantic input - expectation: ${data.expectationId}, code: ${data.codeId}`);
+    this.logger.log(
+      `Validating code with semantic input - expectation: ${data.expectationId}, code: ${data.codeId}`,
+    );
     return this.validatorService.validateCodeWithSemanticInput(
       data.expectationId,
       data.codeId,
-      data.semanticInput
+      data.semanticInput,
     );
   }
 
   @Post('validate-iteratively')
   async validateCodeIteratively(@Body() data: ValidateIterativelyDto) {
-    this.logger.log(`Validating code iteratively - expectation: ${data.expectationId}, code: ${data.codeId}, previous: ${data.previousValidationId}`);
+    this.logger.log(
+      `Validating code iteratively - expectation: ${data.expectationId}, code: ${data.codeId}, previous: ${data.previousValidationId}`,
+    );
     return this.validatorService.validateCodeIteratively(
       data.expectationId,
       data.codeId,
       data.previousValidationId,
-      data.iterationFocus
+      data.iterationFocus,
     );
   }
 
@@ -82,14 +86,16 @@ export class ValidatorController {
     this.logger.debug(`Fetching validation by ID: ${id}`);
     return this.validatorService.getValidationById(id);
   }
-  
+
   @Post('validate-with-adaptive-context')
   async validateWithAdaptiveContext(@Body() data: ValidateWithAdaptiveContextDto) {
-    this.logger.log(`Validating with adaptive context - expectation: ${data.expectationId}, code: ${data.codeId}`);
+    this.logger.log(
+      `Validating with adaptive context - expectation: ${data.expectationId}, code: ${data.codeId}`,
+    );
     return this.validatorService.validateWithAdaptiveContext(
       data.expectationId,
       data.codeId,
-      data.validationContext
+      data.validationContext,
     );
   }
 }

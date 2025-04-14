@@ -108,84 +108,98 @@ describe('GeneratorService', () => {
     const mockLlmRouterService = {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('生成相应的代码实现')) {
-          return Promise.resolve(JSON.stringify({
-            files: [
-              {
-                path: 'test.js',
-                content: 'console.log("test")',
-                language: 'javascript',
-              },
-            ],
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              files: [
+                {
+                  path: 'test.js',
+                  content: 'console.log("test")',
+                  language: 'javascript',
+                },
+              ],
+            }),
+          );
         } else if (prompt.includes('基于以下期望模型和语义分析结果')) {
-          return Promise.resolve(JSON.stringify({
-            files: [
-              {
-                path: 'enhanced.js',
-                content: 'console.log("enhanced")',
-                language: 'javascript',
-              },
-            ],
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              files: [
+                {
+                  path: 'enhanced.js',
+                  content: 'console.log("enhanced")',
+                  language: 'javascript',
+                },
+              ],
+            }),
+          );
         } else if (prompt.includes('生成项目结构')) {
-          return Promise.resolve(JSON.stringify({
-            files: [
-              {
-                path: 'structure.js',
-                content: 'console.log("structure")',
-                language: 'javascript',
-              },
-            ],
-            explanation: 'Project structure explanation',
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              files: [
+                {
+                  path: 'structure.js',
+                  content: 'console.log("structure")',
+                  language: 'javascript',
+                },
+              ],
+              explanation: 'Project structure explanation',
+            }),
+          );
         } else if (prompt.includes('基于架构指南和技术要求生成代码')) {
-          return Promise.resolve(JSON.stringify({
-            files: [
-              {
-                path: 'architecture.js',
-                content: 'console.log("architecture")',
-                language: 'javascript',
-              },
-            ],
-            explanation: 'Architecture explanation',
-            componentRelationships: [{ source: 'A', target: 'B' }],
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              files: [
+                {
+                  path: 'architecture.js',
+                  content: 'console.log("architecture")',
+                  language: 'javascript',
+                },
+              ],
+              explanation: 'Architecture explanation',
+              componentRelationships: [{ source: 'A', target: 'B' }],
+            }),
+          );
         } else if (prompt.includes('为已生成的代码创建测试套件')) {
-          return Promise.resolve(JSON.stringify({
-            files: [
-              {
-                path: 'test.test.js',
-                content: 'test("should work", () => {})',
-                language: 'javascript',
-              },
-            ],
-            coverage: { statements: 80, branches: 70, functions: 90, lines: 85 },
-            strategy: 'Unit and integration tests',
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              files: [
+                {
+                  path: 'test.test.js',
+                  content: 'test("should work", () => {})',
+                  language: 'javascript',
+                },
+              ],
+              coverage: { statements: 80, branches: 70, functions: 90, lines: 85 },
+              strategy: 'Unit and integration tests',
+            }),
+          );
         } else if (prompt.includes('基于重构目标优化代码结构和质量')) {
-          return Promise.resolve(JSON.stringify({
-            files: [
-              {
-                path: 'refactored.js',
-                content: 'console.log("refactored")',
-                language: 'javascript',
-              },
-            ],
-            changes: [{ file: 'test.js', description: 'Improved structure' }],
-            explanation: 'Refactoring explanation',
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              files: [
+                {
+                  path: 'refactored.js',
+                  content: 'console.log("refactored")',
+                  language: 'javascript',
+                },
+              ],
+              changes: [{ file: 'test.js', description: 'Improved structure' }],
+              explanation: 'Refactoring explanation',
+            }),
+          );
         } else if (prompt.includes('基于语义反馈优化已生成的代码')) {
-          return Promise.resolve(JSON.stringify({
-            files: [
-              {
-                path: 'optimized.js',
-                content: 'console.log("optimized")',
-                language: 'javascript',
-              },
-            ],
-            optimizations: [{ description: 'Improved performance' }],
-            explanation: 'Optimization explanation',
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              files: [
+                {
+                  path: 'optimized.js',
+                  content: 'console.log("optimized")',
+                  language: 'javascript',
+                },
+              ],
+              optimizations: [{ description: 'Improved performance' }],
+              explanation: 'Optimization explanation',
+            }),
+          );
         } else {
           return Promise.resolve('{}');
         }
@@ -288,7 +302,7 @@ describe('GeneratorService', () => {
       expect(result.files).toHaveLength(1);
       expect(result.files[0].path).toBe('test.js');
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
-        expect.stringContaining('基于以下期望模型，生成相应的代码实现')
+        expect.stringContaining('基于以下期望模型，生成相应的代码实现'),
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
@@ -383,9 +397,9 @@ describe('GeneratorService', () => {
         summary: 'Semantic analysis summary',
       };
 
-      jest.spyOn(service as any, 'getPromptTemplate').mockResolvedValueOnce(
-        'Mocked prompt template'
-      );
+      jest
+        .spyOn(service as any, 'getPromptTemplate')
+        .mockResolvedValueOnce('Mocked prompt template');
 
       const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
 
@@ -402,24 +416,24 @@ describe('GeneratorService', () => {
       const expectationId = 'non-existent-id';
       const semanticAnalysis = { key: 'value' };
 
-      await expect(service.generateCodeWithSemanticInput(expectationId, semanticAnalysis)).rejects.toThrow(
-        'Expectation not found'
-      );
+      await expect(
+        service.generateCodeWithSemanticInput(expectationId, semanticAnalysis),
+      ).rejects.toThrow('Expectation not found');
     });
 
     it('should use default prompt if template is not found', async () => {
       const expectationId = 'test-expectation-id';
       const semanticAnalysis = { key: 'value' };
 
-      jest.spyOn(service as any, 'getPromptTemplate').mockRejectedValueOnce(
-        new Error('Template not found')
-      );
+      jest
+        .spyOn(service as any, 'getPromptTemplate')
+        .mockRejectedValueOnce(new Error('Template not found'));
 
       const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
 
       expect(result).toBeDefined();
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
-        expect.stringContaining('基于以下期望模型和语义分析结果，生成相应的代码实现')
+        expect.stringContaining('基于以下期望模型和语义分析结果，生成相应的代码实现'),
       );
     });
   });
@@ -433,9 +447,9 @@ describe('GeneratorService', () => {
         database: 'MongoDB',
       };
 
-      jest.spyOn(service as any, 'getPromptTemplate').mockResolvedValueOnce(
-        'Mocked project structure prompt'
-      );
+      jest
+        .spyOn(service as any, 'getPromptTemplate')
+        .mockResolvedValueOnce('Mocked project structure prompt');
 
       const result = await service.generateProjectStructure(expectationId, techStack);
 
@@ -453,7 +467,7 @@ describe('GeneratorService', () => {
       const techStack = { frontend: 'React' };
 
       await expect(service.generateProjectStructure(expectationId, techStack)).rejects.toThrow(
-        'Expectation not found'
+        'Expectation not found',
       );
     });
   });
@@ -470,14 +484,14 @@ describe('GeneratorService', () => {
         security: 'Medium',
       };
 
-      jest.spyOn(service as any, 'getPromptTemplate').mockResolvedValueOnce(
-        'Mocked architecture prompt'
-      );
+      jest
+        .spyOn(service as any, 'getPromptTemplate')
+        .mockResolvedValueOnce('Mocked architecture prompt');
 
       const result = await service.generateCodeWithArchitecture(
         expectationId,
         architectureGuide,
-        technicalRequirements
+        technicalRequirements,
       );
 
       expect(result).toBeDefined();
@@ -495,7 +509,11 @@ describe('GeneratorService', () => {
       const technicalRequirements = { performance: 'High' };
 
       await expect(
-        service.generateCodeWithArchitecture(expectationId, architectureGuide, technicalRequirements)
+        service.generateCodeWithArchitecture(
+          expectationId,
+          architectureGuide,
+          technicalRequirements,
+        ),
       ).rejects.toThrow('Expectation not found');
     });
   });
@@ -508,9 +526,9 @@ describe('GeneratorService', () => {
         types: ['Unit', 'Integration'],
       };
 
-      jest.spyOn(service as any, 'getPromptTemplate').mockResolvedValueOnce(
-        'Mocked test suite prompt'
-      );
+      jest
+        .spyOn(service as any, 'getPromptTemplate')
+        .mockResolvedValueOnce('Mocked test suite prompt');
 
       const result = await service.generateTestSuite(codeId, testRequirements);
 
@@ -523,14 +541,14 @@ describe('GeneratorService', () => {
     });
 
     it('should throw an error if code is not found', async () => {
-      jest.spyOn(service, 'getCodeById').mockRejectedValueOnce(
-        new Error('Code with id non-existent-id not found')
-      );
+      jest
+        .spyOn(service, 'getCodeById')
+        .mockRejectedValueOnce(new Error('Code with id non-existent-id not found'));
       const codeId = 'non-existent-id';
       const testRequirements = { coverage: 'High' };
 
       await expect(service.generateTestSuite(codeId, testRequirements)).rejects.toThrow(
-        'Code with id non-existent-id not found'
+        'Code with id non-existent-id not found',
       );
     });
   });
@@ -543,9 +561,9 @@ describe('GeneratorService', () => {
         performance: 'Optimize',
       };
 
-      jest.spyOn(service as any, 'getPromptTemplate').mockResolvedValueOnce(
-        'Mocked refactoring prompt'
-      );
+      jest
+        .spyOn(service as any, 'getPromptTemplate')
+        .mockResolvedValueOnce('Mocked refactoring prompt');
 
       const result = await service.refactorCode(codeId, refactoringGoals);
 
@@ -558,14 +576,14 @@ describe('GeneratorService', () => {
     });
 
     it('should throw an error if code is not found', async () => {
-      jest.spyOn(service, 'getCodeById').mockRejectedValueOnce(
-        new Error('Code with id non-existent-id not found')
-      );
+      jest
+        .spyOn(service, 'getCodeById')
+        .mockRejectedValueOnce(new Error('Code with id non-existent-id not found'));
       const codeId = 'non-existent-id';
       const refactoringGoals = { readability: 'Improve' };
 
       await expect(service.refactorCode(codeId, refactoringGoals)).rejects.toThrow(
-        'Code with id non-existent-id not found'
+        'Code with id non-existent-id not found',
       );
     });
   });
@@ -578,9 +596,9 @@ describe('GeneratorService', () => {
         priority: 'high',
       };
 
-      jest.spyOn(service as any, 'getPromptTemplate').mockResolvedValueOnce(
-        'Mocked optimization prompt'
-      );
+      jest
+        .spyOn(service as any, 'getPromptTemplate')
+        .mockResolvedValueOnce('Mocked optimization prompt');
 
       const result = await service.optimizeCode(codeId, semanticFeedback);
 
@@ -594,14 +612,14 @@ describe('GeneratorService', () => {
     });
 
     it('should throw an error if code is not found', async () => {
-      jest.spyOn(service, 'getCodeById').mockRejectedValueOnce(
-        new Error('Code with id non-existent-id not found')
-      );
+      jest
+        .spyOn(service, 'getCodeById')
+        .mockRejectedValueOnce(new Error('Code with id non-existent-id not found'));
       const codeId = 'non-existent-id';
       const semanticFeedback = { suggestions: ['Improve performance'] };
 
       await expect(service.optimizeCode(codeId, semanticFeedback)).rejects.toThrow(
-        'Code with id non-existent-id not found'
+        'Code with id non-existent-id not found',
       );
     });
   });

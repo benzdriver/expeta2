@@ -9,9 +9,7 @@ import { SemanticMediatorModule } from '../semantic-mediator/semantic-mediator.m
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Validation.name, schema: ValidationSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Validation.name, schema: ValidationSchema }]),
     LlmRouterModule,
     MemoryModule,
     SemanticMediatorModule,

@@ -77,40 +77,47 @@ describe('LlmRouterService', () => {
     };
 
     const mockOpenaiSuccessResponse: AxiosResponse<OpenAIChatCompletionResponse> = {
-       data: {
-         id: 'openai-test-id',
-         object: 'chat.completion',
-         created: Date.now(),
-         model: mockOpenaiModel,
-         choices: [{
-           index: 0,
-           message: { role: 'assistant', content: 'OpenAI response' },
-           finish_reason: 'stop',
-         }],
-         usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
-       },
-       status: 200,
-       statusText: 'OK',
-       headers: {},
-       config: { headers: {} as any }, // Use 'as any' to bypass strict type checks if needed
-     };
-
+      data: {
+        id: 'openai-test-id',
+        object: 'chat.completion',
+        created: Date.now(),
+        model: mockOpenaiModel,
+        choices: [
+          {
+            index: 0,
+            message: { role: 'assistant', content: 'OpenAI response' },
+            finish_reason: 'stop',
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+      },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as any }, // Use 'as any' to bypass strict type checks if needed
+    };
 
     const mockAnthropicApiError = new AxiosError(
       'Anthropic API Error',
       '500',
       undefined,
       undefined,
-      { status: 500, statusText: 'Internal Server Error', data: {}, headers: {}, config: { headers: {} as any } } as AxiosResponse,
+      {
+        status: 500,
+        statusText: 'Internal Server Error',
+        data: {},
+        headers: {},
+        config: { headers: {} as any },
+      } as AxiosResponse,
     );
 
-    const mockOpenaiApiError = new AxiosError(
-      'OpenAI API Error',
-      '500',
-      undefined,
-      undefined,
-      { status: 500, statusText: 'Internal Server Error', data: {}, headers: {}, config: { headers: {} as any } } as AxiosResponse,
-    );
+    const mockOpenaiApiError = new AxiosError('OpenAI API Error', '500', undefined, undefined, {
+      status: 500,
+      statusText: 'Internal Server Error',
+      data: {},
+      headers: {},
+      config: { headers: {} as any },
+    } as AxiosResponse);
 
     it('should call Anthropic API successfully and return response', async () => {
       (httpService.post as jest.Mock).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
@@ -165,27 +172,27 @@ describe('LlmRouterService', () => {
     });
 
     it('should fall back to OpenAI if Anthropic key is missing', async () => {
-       (configService.get as jest.Mock).mockImplementation((key: string) => {
-         if (key === 'ANTHROPIC_API_KEY') return undefined; // Simulate missing key
-         if (key === 'OPENAI_API_KEY') return mockOpenaiApiKey;
-         if (key === 'ANTHROPIC_DEFAULT_MODEL') return mockAnthropicModel;
-         if (key === 'OPENAI_DEFAULT_MODEL') return mockOpenaiModel;
-         if (key === 'ANTHROPIC_API_URL') return 'https://api.anthropic.com/v1/messages';
-         if (key === 'OPENAI_API_URL') return 'https://api.openai.com/v1/chat/completions';
-         return null;
-       });
-       (httpService.post as jest.Mock).mockReturnValueOnce(of(mockOpenaiSuccessResponse)); // OpenAI should be called
+      (configService.get as jest.Mock).mockImplementation((key: string) => {
+        if (key === 'ANTHROPIC_API_KEY') return undefined; // Simulate missing key
+        if (key === 'OPENAI_API_KEY') return mockOpenaiApiKey;
+        if (key === 'ANTHROPIC_DEFAULT_MODEL') return mockAnthropicModel;
+        if (key === 'OPENAI_DEFAULT_MODEL') return mockOpenaiModel;
+        if (key === 'ANTHROPIC_API_URL') return 'https://api.anthropic.com/v1/messages';
+        if (key === 'OPENAI_API_URL') return 'https://api.openai.com/v1/chat/completions';
+        return null;
+      });
+      (httpService.post as jest.Mock).mockReturnValueOnce(of(mockOpenaiSuccessResponse)); // OpenAI should be called
 
-       const result = await service.generateContent(prompt, options);
+      const result = await service.generateContent(prompt, options);
 
-       expect(httpService.post).toHaveBeenCalledTimes(1);
-       expect(httpService.post).toHaveBeenCalledWith(
-         'https://api.openai.com/v1/chat/completions', // OpenAI URL
-         expect.any(Object),
-         expect.any(Object),
-       );
-       expect(result).toBe('OpenAI response');
-     });
+      expect(httpService.post).toHaveBeenCalledTimes(1);
+      expect(httpService.post).toHaveBeenCalledWith(
+        'https://api.openai.com/v1/chat/completions', // OpenAI URL
+        expect.any(Object),
+        expect.any(Object),
+      );
+      expect(result).toBe('OpenAI response');
+    });
 
     it('should throw an error if both API keys are missing', async () => {
       (configService.get as jest.Mock).mockImplementation((key: string) => {
@@ -219,35 +226,34 @@ describe('LlmRouterService', () => {
       expect(result).toBe('OpenAI response');
     });
 
-     it('should use Anthropic if specified as provider', async () => {
-       (httpService.post as jest.Mock).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
-       const specificOptions = { ...options, provider: 'anthropic' as const };
+    it('should use Anthropic if specified as provider', async () => {
+      (httpService.post as jest.Mock).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
+      const specificOptions = { ...options, provider: 'anthropic' as const };
 
-       const result = await service.generateContent(prompt, specificOptions);
+      const result = await service.generateContent(prompt, specificOptions);
 
-       expect(httpService.post).toHaveBeenCalledTimes(1);
-       expect(httpService.post).toHaveBeenCalledWith(
-         'https://api.anthropic.com/v1/messages', // Anthropic URL
-         expect.objectContaining({ model: mockAnthropicModel }),
-         expect.any(Object),
-       );
-       expect(result).toBe('Anthropic response');
-     });
+      expect(httpService.post).toHaveBeenCalledTimes(1);
+      expect(httpService.post).toHaveBeenCalledWith(
+        'https://api.anthropic.com/v1/messages', // Anthropic URL
+        expect.objectContaining({ model: mockAnthropicModel }),
+        expect.any(Object),
+      );
+      expect(result).toBe('Anthropic response');
+    });
 
-     it('should default to Anthropic if provider is invalid', async () => {
-       (httpService.post as jest.Mock).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
-       const specificOptions = { ...options, provider: 'invalid-provider' };
+    it('should default to Anthropic if provider is invalid', async () => {
+      (httpService.post as jest.Mock).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
+      const specificOptions = { ...options, provider: 'invalid-provider' };
 
-       const result = await service.generateContent(prompt, specificOptions);
+      const result = await service.generateContent(prompt, specificOptions);
 
-       expect(httpService.post).toHaveBeenCalledTimes(1);
-       expect(httpService.post).toHaveBeenCalledWith(
-         'https://api.anthropic.com/v1/messages', // Should default to Anthropic
-         expect.any(Object),
-         expect.any(Object),
-       );
-       expect(result).toBe('Anthropic response');
-     });
-
+      expect(httpService.post).toHaveBeenCalledTimes(1);
+      expect(httpService.post).toHaveBeenCalledWith(
+        'https://api.anthropic.com/v1/messages', // Should default to Anthropic
+        expect.any(Object),
+        expect.any(Object),
+      );
+      expect(result).toBe('Anthropic response');
+    });
   });
 });
