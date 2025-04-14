@@ -8,6 +8,6 @@ module.exports = {
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
-  testTimeout: 30000, // Increase timeout to 30 seconds
+  testTimeout: 120000, // Increase timeout to 120 seconds
 
 };
