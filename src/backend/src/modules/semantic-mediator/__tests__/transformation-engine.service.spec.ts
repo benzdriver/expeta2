@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TransformationEngineService } from '../components/transformation-engine/transformation-engine.service';
 import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
+import { MemoryType } from '../../memory/schemas/memory.schema';
+import { SemanticDescriptor } from '../interfaces/semantic-descriptor.interface';
 
 describe('TransformationEngineService', () => {
   let service: TransformationEngineService;
@@ -58,67 +60,127 @@ describe('TransformationEngineService', () => {
   });
 
   describe('generateTransformationPath', () => {
-    it('should generate a transformation path between source and target modules', async () => {
-      const sourceModule = 'clarifier';
-      const targetModule = 'generator';
-      const sourceData = { key: 'value', sourceField: 'test' };
+    it('should generate a transformation path between source and target descriptors', async () => {
+      const sourceDescriptor: SemanticDescriptor = {
+        entity: 'user',
+        description: 'User entity with basic information',
+        attributes: {
+          name: { type: 'string', description: 'User name' },
+          age: { type: 'number', description: 'User age' }
+        }
+      };
+      
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'profile',
+        description: 'Profile entity with formatted user information',
+        attributes: {
+          fullName: { type: 'string', description: 'User full name' },
+          userAge: { type: 'string', description: 'User age as string' }
+        }
+      };
+      
       const context = { additionalInfo: 'context' };
 
       const result = await service.generateTransformationPath(
-        sourceModule,
-        targetModule,
-        sourceData,
+        sourceDescriptor,
+        targetDescriptor,
         context
       );
 
       expect(result).toBeDefined();
-      expect(result.steps).toHaveLength(2);
-      expect(result.steps[0].type).toBe('transform');
-      expect(result.steps[0].operation).toBe('rename');
+      expect(result.mappings).toHaveLength(2);
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
-        expect.stringContaining('生成转换路径'),
+        expect.stringContaining('生成从源数据结构到目标数据结构的转换路径'),
         expect.any(Object)
       );
       expect(memoryService.storeMemory).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'transformation_path',
+          type: MemoryType.SEMANTIC_TRANSFORMATION,
           content: expect.objectContaining({
-            sourceModule,
-            targetModule,
-            path: result,
+            sourceDescriptor,
+            targetDescriptor,
+            transformationPath: expect.any(Object),
           }),
         })
       );
     });
 
     it('should handle null or undefined source data', async () => {
-      const result = await service.generateTransformationPath('clarifier', 'generator', null);
+      const sourceDescriptor: SemanticDescriptor = {
+        entity: 'user',
+        description: 'User entity with basic information',
+        attributes: {}
+      };
+      
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'profile',
+        description: 'Profile entity with formatted user information',
+        attributes: {}
+      };
+      
+      const result = await service.generateTransformationPath(sourceDescriptor, targetDescriptor, null);
       
       expect(result).toBeDefined();
-      expect(result.steps).toBeInstanceOf(Array);
+      expect(result.mappings).toBeInstanceOf(Array);
       expect(llmRouterService.generateContent).toHaveBeenCalled();
     });
 
     it('should handle empty object source data', async () => {
-      const result = await service.generateTransformationPath('clarifier', 'generator', {});
+      const sourceDescriptor: SemanticDescriptor = {
+        entity: 'user',
+        description: 'User entity with basic information',
+        attributes: {}
+      };
+      
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'profile',
+        description: 'Profile entity with formatted user information',
+        attributes: {}
+      };
+      
+      const result = await service.generateTransformationPath(sourceDescriptor, targetDescriptor, {});
       
       expect(result).toBeDefined();
-      expect(result.steps).toBeInstanceOf(Array);
+      expect(result.mappings).toBeInstanceOf(Array);
       expect(llmRouterService.generateContent).toHaveBeenCalled();
     });
 
     it('should handle LLM service errors gracefully', async () => {
       jest.spyOn(llmRouterService, 'generateContent').mockRejectedValueOnce(new Error('LLM service error'));
       
-      await expect(service.generateTransformationPath('clarifier', 'generator', { key: 'value' }))
+      const sourceDescriptor: SemanticDescriptor = {
+        entity: 'user',
+        description: 'User entity with basic information',
+        attributes: {}
+      };
+      
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'profile',
+        description: 'Profile entity with formatted user information',
+        attributes: {}
+      };
+      
+      await expect(service.generateTransformationPath(sourceDescriptor, targetDescriptor, { key: 'value' }))
         .rejects.toThrow('Failed to generate transformation path');
     });
 
     it('should handle invalid LLM responses gracefully', async () => {
       jest.spyOn(llmRouterService, 'generateContent').mockResolvedValueOnce('not a valid JSON');
       
-      await expect(service.generateTransformationPath('clarifier', 'generator', { key: 'value' }))
-        .rejects.toThrow('Failed to parse transformation path');
+      const sourceDescriptor: SemanticDescriptor = {
+        entity: 'user',
+        description: 'User entity with basic information',
+        attributes: {}
+      };
+      
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'profile',
+        description: 'Profile entity with formatted user information',
+        attributes: {}
+      };
+      
+      await expect(service.generateTransformationPath(sourceDescriptor, targetDescriptor, { key: 'value' }))
+        .rejects.toThrow('Failed to generate transformation path');
     });
   });
 
@@ -191,36 +253,44 @@ describe('TransformationEngineService', () => {
 
   describe('validateTransformation', () => {
     it('should validate a transformation result', async () => {
-      const sourceData = { sourceField: 'value' };
-      const transformedData = { targetField: 'value' };
-      const sourceModule = 'clarifier';
-      const targetModule = 'generator';
-      const path = {
-        steps: [{ type: 'transform', operation: 'rename', from: 'sourceField', to: 'targetField' }]
+      const result = {
+        fullName: 'John Doe',
+        userAge: '30'
       };
-
-      const result = await service.validateTransformation(
-        sourceData,
-        transformedData,
-        sourceModule,
-        targetModule,
-        path
+      
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'profile',
+        description: 'Profile entity with formatted user information',
+        attributes: {
+          fullName: { type: 'string', description: 'User full name' },
+          userAge: { type: 'string', description: 'User age as string' }
+        }
+      };
+      
+      const context = { additionalInfo: 'context' };
+      
+      const validationResult = await service.validateTransformation(
+        result,
+        targetDescriptor,
+        context
       );
 
-      expect(result).toBeDefined();
-      expect(result.valid).toBe(true);
+      expect(validationResult).toBeDefined();
+      expect(validationResult.valid).toBe(true);
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
-        expect.stringContaining('验证转换'),
+        expect.stringContaining('验证转换结果是否符合目标结构描述'),
         expect.any(Object)
       );
     });
 
     it('should handle null or undefined data', async () => {
-      const path = {
-        steps: [{ type: 'transform', operation: 'rename' }]
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'profile',
+        description: 'Profile entity with formatted user information',
+        attributes: {}
       };
       
-      const result = await service.validateTransformation(null, null, 'clarifier', 'generator', path);
+      const result = await service.validateTransformation(null, targetDescriptor);
       
       expect(result).toBeDefined();
       expect(result.valid).toBeDefined();
@@ -228,25 +298,31 @@ describe('TransformationEngineService', () => {
     });
 
     it('should handle LLM service errors gracefully', async () => {
-      const sourceData = { key: 'value' };
-      const transformedData = { key: 'value' };
-      const path = { steps: [{ type: 'transform', operation: 'rename' }] };
-      
       jest.spyOn(llmRouterService, 'generateContent').mockRejectedValueOnce(new Error('LLM service error'));
       
-      await expect(service.validateTransformation(sourceData, transformedData, 'clarifier', 'generator', path))
+      const result = { fullName: 'John Doe' };
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'profile',
+        description: 'Profile entity with formatted user information',
+        attributes: {}
+      };
+      
+      await expect(service.validateTransformation(result, targetDescriptor))
         .rejects.toThrow('Failed to validate transformation');
     });
 
     it('should handle invalid LLM responses gracefully', async () => {
-      const sourceData = { key: 'value' };
-      const transformedData = { key: 'value' };
-      const path = { steps: [{ type: 'transform', operation: 'rename' }] };
-      
       jest.spyOn(llmRouterService, 'generateContent').mockResolvedValueOnce('not a valid JSON');
       
-      await expect(service.validateTransformation(sourceData, transformedData, 'clarifier', 'generator', path))
-        .rejects.toThrow('Failed to parse validation result');
+      const result = { fullName: 'John Doe' };
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'profile',
+        description: 'Profile entity with formatted user information',
+        attributes: {}
+      };
+      
+      await expect(service.validateTransformation(result, targetDescriptor))
+        .rejects.toThrow('Failed to validate transformation');
     });
   });
 
