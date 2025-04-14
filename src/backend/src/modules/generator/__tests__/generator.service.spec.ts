@@ -105,7 +105,7 @@ describe('GeneratorService', () => {
       }),
     };
 
-    const mockLlmService = {
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('生成相应的代码实现')) {
           return Promise.resolve(JSON.stringify({
@@ -258,7 +258,7 @@ describe('GeneratorService', () => {
         },
         {
           provide: LlmRouterService,
-          useValue: mockLlmService,
+          useValue: mockLlmRouterService,
         },
         {
           provide: MemoryService,

@@ -130,7 +130,7 @@ describe('ClarifierService', () => {
       }),
     };
 
-    const mockLlmService = {
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('生成5个关键澄清问题')) {
           return Promise.resolve(JSON.stringify([
@@ -245,7 +245,7 @@ describe('ClarifierService', () => {
         },
         {
           provide: LlmRouterService,
-          useValue: mockLlmService,
+          useValue: mockLlmRouterService,
         },
         {
           provide: MemoryService,
