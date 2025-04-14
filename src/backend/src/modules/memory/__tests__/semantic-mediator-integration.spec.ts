@@ -3,6 +3,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { MemoryService } from '../memory.service';
 import { Memory, MemoryType } from '../schemas/memory.schema';
 import { SemanticCacheService } from '../services/semantic-cache.service';
+import * as jest from 'jest';
 
 describe('MemoryService - Semantic Mediator Integration', () => {
   let service: MemoryService;
