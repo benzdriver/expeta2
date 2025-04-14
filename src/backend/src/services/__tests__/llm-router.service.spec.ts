@@ -271,7 +271,7 @@ describe('LlmRouterService', () => {
       (httpService.post as jest.Mock).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
       const specificOptions = { ...options, provider: 'invalid-provider' };
 
-      const result = await service.generateContent(prompt, specificOptions);
+      const result = await service.generateContent(prompt, specificOptions as any); // Cast to any to test invalid provider string
 
       expect(httpService.post).toHaveBeenCalledTimes(1);
       expect(httpService.post).toHaveBeenCalledWith(
