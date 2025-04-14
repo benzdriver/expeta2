@@ -11,6 +11,8 @@ import { TransformationEngineService } from './components/transformation-engine/
 import { IntelligentCacheService } from './components/intelligent-cache/intelligent-cache.service';
 import { MonitoringSystemService } from './components/monitoring-system/monitoring-system.service';
 import { HumanInTheLoopService } from './components/human-in-the-loop/human-in-the-loop.service';
+import { ResolverModule } from './components/resolver/resolver.module';
+import { ResolverService } from './components/resolver/resolver.service';
 
 @Module({
   imports: [
@@ -18,6 +20,7 @@ import { HumanInTheLoopService } from './components/human-in-the-loop/human-in-t
     MemoryModule,
     forwardRef(() => OrchestratorModule),
     forwardRef(() => GeneratorModule),
+    ResolverModule,
   ],
   controllers: [SemanticMediatorController],
   providers: [
@@ -27,6 +30,7 @@ import { HumanInTheLoopService } from './components/human-in-the-loop/human-in-t
     IntelligentCacheService,
     MonitoringSystemService,
     HumanInTheLoopService,
+    ResolverService,
   ],
   exports: [
     SemanticMediatorService,
@@ -35,6 +39,7 @@ import { HumanInTheLoopService } from './components/human-in-the-loop/human-in-t
     IntelligentCacheService,
     MonitoringSystemService,
     HumanInTheLoopService,
+    ResolverService,
   ],
 })
 export class SemanticMediatorModule {}
