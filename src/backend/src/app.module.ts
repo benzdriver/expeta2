@@ -7,7 +7,7 @@ import { ValidatorModule } from './modules/validator/validator.module';
 import { MemoryModule } from './modules/memory/memory.module';
 import { OrchestratorModule } from './modules/orchestrator/orchestrator.module';
 import { SemanticMediatorModule } from './modules/semantic-mediator/semantic-mediator.module';
-import { LlmModule } from './services/llm.module';
+import { LlmRouterModule } from './services/llm-router.module';
 
 @Module({
   imports: [
@@ -27,7 +27,7 @@ import { LlmModule } from './services/llm.module';
     MemoryModule,
     OrchestratorModule,
     SemanticMediatorModule,
-    LlmModule,
+    LlmRouterModule,
   ],
 })
 export class AppModule {}

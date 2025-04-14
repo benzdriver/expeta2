@@ -43,7 +43,7 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
     mockExpectationModel.findByIdAndUpdate = jest.fn().mockReturnThis();
     mockExpectationModel.exec = jest.fn().mockResolvedValue([]);
     
-    const mockLlmService = {
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockResolvedValue('{"result": "test"}'),
     };
     
@@ -79,7 +79,7 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
         },
         {
           provide: LlmRouterService,
-          useValue: mockLlmService,
+          useValue: mockLlmRouterService,
         },
         {
           provide: MemoryService,
