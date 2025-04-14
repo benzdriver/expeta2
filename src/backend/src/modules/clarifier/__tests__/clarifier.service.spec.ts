@@ -92,28 +92,42 @@ describe('ClarifierService', () => {
     };
 
     const mockSave = jest.fn().mockImplementation(function() { return Promise.resolve(this); });
-    const mockExec = jest.fn().mockResolvedValue({
-      _id: 'test-expectation-id', // Use the ID expected in tests
+    const mockExpectationInstance = {
+      _id: 'test-expectation-id-instance',
       requirementId: 'test-id',
       model: { id: 'root', name: 'Root Expectation', description: 'Root expectation description', children: [] },
-      save: mockSave, // Ensure found documents have save
-    });
-
-    const mockExpectationModel = jest.fn().mockImplementation((data) => ({
-      ...data,
-      _id: 'test-expectation-id-new',
       createdAt: new Date(),
       updatedAt: new Date(),
-      save: jest.fn().mockResolvedValue({ // Mock save on the new instance
-        ...data,
-        _id: 'test-expectation-id-saved',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      save: mockSave, // Use the defined mockSave for instances
+    };
+
+    const mockExpectationModel = jest.fn().mockImplementation((data) => ({
+      ...mockExpectationInstance, // Return a base instance structure
+      ...data,                  // Overlay constructor data
+      _id: 'test-expectation-id-new', // Specific ID for new instances
+      save: jest.fn().mockResolvedValue({ // Ensure new instances also have save, returning a resolved state
+         ...mockExpectationInstance,
+         ...data,
+         _id: 'test-expectation-id-saved-new', // Specific ID for saved new instance
+         createdAt: new Date(), // Ensure date fields are present
+         updatedAt: new Date(),
       }),
     }));
 
-    mockExpectationModel.findOne = jest.fn().mockReturnValue({ exec: mockExec });
-    mockExpectationModel.findById = jest.fn().mockReturnValue({ exec: mockExec });
+    mockExpectationModel.findOne = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({ // Mock the document returned by findOne
+        ...mockExpectationInstance, // Use base instance structure
+        _id: 'test-expectation-id', // Use the ID expected in tests for findOne
+        save: mockSave, // Ensure found documents have save
+      }),
+    });
+    mockExpectationModel.findById = jest.fn().mockReturnValue({
+       exec: jest.fn().mockResolvedValue({ // Mock the document returned by findById
+        ...mockExpectationInstance, // Use base instance structure
+        _id: 'test-expectation-id', // Use the ID expected in tests for findById
+        save: mockSave, // Ensure found documents have save
+      }),
+    });
     mockExpectationModel.findByIdAndUpdate = jest.fn().mockReturnThis(); // Example: Adjust if needed
 
     const mockLlmService = {
