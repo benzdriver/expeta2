@@ -59,7 +59,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     userPreferences: {},
     followUpQuestions: []
   });
-  const [_showLogger, _setShowLogger] = useState(false);
+  const [showLogger, setShowLogger] = useState(false);
+  const [requirementUnderstanding, setRequirementUnderstanding] = useState<string>('');
+  const [showUnderstandingSummary, setShowUnderstandingSummary] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
@@ -150,18 +152,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     
     updateConversationContext(userInput);
     
-    // Simplified implementation for the fixed file
+    // In a real implementation, this would call the backend API
+    // For now, we'll simulate the backend response with a timeout
     setTimeout(() => {
+      // Update clarification round
+      const newRound = clarificationRound + 1;
+      setClarificationRound(newRound);
+      
+      // Generate a simulated understanding based on user input
+      const newUnderstanding = generateUnderstandingSummary(userInput, newRound);
+      setRequirementUnderstanding(newUnderstanding);
+      
+      // Create system response with understanding summary
       const systemResponse: Message = {
         id: `msg-${Date.now()}`,
         sender: 'system',
-        content: '感谢您的输入。我正在分析您的需求...',
+        content: `感谢您的输入。基于我们的对话，我对您的需求理解如下：\n\n${newUnderstanding}\n\n这个理解是否准确？如果有任何需要修正或补充的地方，请告诉我。`,
         timestamp: new Date(),
-        type: 'regular'
+        type: 'understanding_summary'
       };
       
       setMessages(prev => [...prev, systemResponse]);
       setIsTyping(false);
+      setShowUnderstandingSummary(true);
       
       if (enableLogging) {
         try {
@@ -170,15 +183,53 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           logger.error('ChatInterface', 'Failed to log system response:', error instanceof Error ? error : { message: String(error) });
         }
       }
-    }, 1000);
+      
+      // Update conversation stage if needed
+      if (currentStage === 'initial') {
+        setCurrentStage('clarifying');
+      }
+    }, 1500);
   };
 
   const updateConversationContext = (userInput: string) => {
-    // Simplified implementation for the fixed file
+    // Extract keywords from user input
+    const keywords = userInput.split(' ')
+      .filter(word => word.length > 3)
+      .map(word => word.toLowerCase());
+    
+    // Update conversation context with new keywords
     setConversationContext(prev => ({
       ...prev,
-      detectedKeywords: [...prev.detectedKeywords, ...userInput.split(' ').filter(word => word.length > 3)]
+      detectedKeywords: [...new Set([...prev.detectedKeywords, ...keywords])]
     }));
+    
+    if (enableLogging) {
+      try {
+        loggingService.debug('ConversationContext', '更新对话上下文', {
+          newKeywords: keywords,
+          totalKeywords: [...new Set([...conversationContext.detectedKeywords, ...keywords])].length,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Failed to log conversation context update:', error);
+      }
+    }
+  };
+
+  const generateUnderstandingSummary = (userInput: string, round: number): string => {
+    // In a real implementation, this would come from the backend
+    // For now, we'll generate a simple summary based on the input
+    const complexity = analyzeComplexity(userInput);
+    const industry = detectIndustryFromInput(userInput) || '未指定行业';
+    
+    // Generate a more detailed understanding summary based on the conversation round
+    if (round === 1) {
+      return `您需要一个${complexity === 'complex' ? '复杂的' : complexity === 'medium' ? '中等复杂度的' : '简单的'}软件系统，适用于${industry}领域。\n\n主要功能需求：\n- ${userInput.split('.')[0] || '需要进一步澄清'}\n\n我需要了解更多关于用户界面偏好、性能要求和安全性考虑的信息。`;
+    } else {
+      // For subsequent rounds, incorporate previous context
+      const previousKeywords = conversationContext.detectedKeywords.slice(0, 5).join(', ');
+      return `基于我们的对话，您需要一个${complexity === 'complex' ? '复杂的' : complexity === 'medium' ? '中等复杂度的' : '简单的'}软件系统，适用于${industry}领域。\n\n主要关注点：${previousKeywords}\n\n第${round}轮澄清后的理解：\n- ${userInput.split('.').slice(0, 2).join('.')}\n\n我们已经明确了基本需求，但仍需要讨论实现细节、集成需求和部署策略。`;
+    }
   };
 
   const _analyzeComplexity = (text: string): 'simple' | 'medium' | 'complex' => {
@@ -198,7 +249,38 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const renderMessageContent = (message: Message): JSX.Element => {
-    if (message.type === 'summary') {
+    if (message.type === 'understanding_summary') {
+      return (
+        <div className="understanding-summary">
+          {message.content.split('\n\n').map((section, sectionIndex) => {
+            if (sectionIndex === 1) {
+              // This is the understanding summary section
+              return (
+                <div key={sectionIndex} className="understanding-details">
+                  {section.split('\n').map((line, lineIndex) => {
+                    if (line.startsWith('-')) {
+                      return <li key={lineIndex} className="understanding-point">{line.substring(1).trim()}</li>;
+                    } else {
+                      return <p key={lineIndex}>{line}</p>;
+                    }
+                  })}
+                </div>
+              );
+            } else {
+              return <p key={sectionIndex}>{section}</p>;
+            }
+          })}
+          <div className="understanding-actions">
+            <button className="confirm-button" onClick={() => confirmUnderstanding(true)}>
+              确认理解正确
+            </button>
+            <button className="edit-button" onClick={() => confirmUnderstanding(false)}>
+              需要修正
+            </button>
+          </div>
+        </div>
+      );
+    } else if (message.type === 'summary') {
       return (
         <div className="summary-content">
           {message.content.split('\n').map((line, index) => {
@@ -221,6 +303,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return <p>{message.content}</p>;
   };
 
+
   // Add a catch block for the try at line 1842
   try {
     // This is a dummy try-catch to close any unclosed try blocks
@@ -237,56 +320,107 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </React.Suspense>
         )}
         
-        <section className="chat-section">
-          <div className="section-header">
-            <h2>交互式澄清</h2>
-            <div className="section-actions">
-              <button className="secondary-button">
-                <span className="material-symbols-rounded">history</span>
-                <span>历史记录</span>
-              </button>
-              <button className="secondary-button">
-                <span className="material-symbols-rounded">settings</span>
-                <span>设置</span>
-              </button>
-            </div>
+        if (enableLogging) {
+          try {
+            loggingService.logSessionMessage(sessionId, nextStageMessage);
+          } catch (error) {
+            console.error('Failed to log next stage message:', error);
+          }
+        }
+      }, 1000);
+    } else {
+      // If understanding needs correction, prompt for more details
+      const correctionPromptMessage: Message = {
+        id: `msg-${Date.now()}`,
+        sender: 'system',
+        content: '感谢您的反馈。请告诉我哪些部分需要修正或补充，以便我能更准确地理解您的需求。',
+        timestamp: new Date(),
+        type: 'regular'
+      };
+      
+      setMessages(prev => [...prev, correctionPromptMessage]);
+      
+      if (enableLogging) {
+        try {
+          loggingService.logSessionMessage(sessionId, correctionPromptMessage);
+        } catch (error) {
+          console.error('Failed to log correction prompt message:', error);
+        }
+      }
+    }
+  };
+
+  const toggleLogger = () => {
+    setShowLogger(!showLogger);
+  };
+
+  return (
+    <React.Fragment>
+      {enableLogging && showLogger && (
+        <React.Suspense fallback={<div>Loading logger...</div>}>
+          <ConversationLogger sessionId={sessionId} visible={showLogger} onClose={toggleLogger} />
+        </React.Suspense>
+      )}
+      
+      <section className="chat-section">
+        <div className="section-header">
+          <h2>交互式澄清</h2>
+          <div className="section-actions">
+            <button className="secondary-button" onClick={toggleLogger}>
+              <span className="material-symbols-rounded">monitoring</span>
+              <span>日志</span>
+            </button>
+            <button className="secondary-button">
+              <span className="material-symbols-rounded">history</span>
+              <span>历史记录</span>
+            </button>
+            <button className="secondary-button">
+              <span className="material-symbols-rounded">settings</span>
+              <span>设置</span>
+            </button>
           </div>
-          <div className="chat-container">
-            <div className="chat-messages">
-              {messages.map(message => (
-                <div 
-                  key={message.id} 
-                  className={`message ${message.sender === 'user' ? 'user-message' : 'system-message'} ${message.type ? `message-${message.type}` : ''}`}
-                >
-                  <div className="message-content">
-                    {renderMessageContent(message)}
-                  </div>
-                  <div className="message-time">{formatTime(message.timestamp)}</div>
+        </div>
+        <div className="conversation-status">
+          <div className="status-item">
+            <span className="status-label">当前阶段:</span>
+            <span className="status-value">{
+              currentStage === 'initial' ? '初始理解' :
+              currentStage === 'clarifying' ? '需求澄清' :
+              currentStage === 'refining' ? '细节完善' :
+              currentStage === 'finalizing' ? '最终确认' : '未知'
+            }</span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">澄清轮次:</span>
+            <span className="status-value">{clarificationRound}</span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">会话ID:</span>
+            <span className="status-value">{sessionId.substring(0, 8)}...</span>
+          </div>
+        </div>
+        <div className="chat-container">
+          <div className="chat-messages">
+            {messages.map(message => (
+              <div 
+                key={message.id} 
+                className={`message ${message.sender === 'user' ? 'user-message' : 'system-message'} ${message.type ? `message-${message.type}` : ''}`}
+              >
+                <div className="message-content">
+                  {renderMessageContent(message)}
                 </div>
-              ))}
-              
-              {isTyping && (
-                <div className="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-            <div className="chat-input">
-              <textarea 
-                ref={textareaRef}
-                placeholder="输入您的回复..." 
-                rows={1}
-                value={inputValue}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-              />
-              <button className="send-button" onClick={handleSendMessage} disabled={isTyping}>
-                <span className="material-symbols-rounded">send</span>
-              </button>
-            </div>
+                <div className="message-time">{formatTime(message.timestamp)}</div>
+              </div>
+            ))}
+            
+            {isTyping && (
+              <div className="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
         </section>
       </React.Fragment>

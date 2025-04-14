@@ -1,0 +1,268 @@
+/* WorkflowVisualizer.css */
+
+.workflow-visualizer {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.visualizer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.visualizer-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #343a40;
+}
+
+.visualizer-content {
+  padding: 20px;
+}
+
+.workflow-summary {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.summary-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #343a40;
+}
+
+.workflow-status .status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.workflow-status .status-badge.running {
+  background-color: #e3fafc;
+  color: #0c8599;
+}
+
+.workflow-status .status-badge.completed {
+  background-color: #ebfbee;
+  color: #2b8a3e;
+}
+
+.workflow-status .status-badge.failed {
+  background-color: #fff5f5;
+  color: #e03131;
+}
+
+.workflow-status .status-badge.cancelled {
+  background-color: #f8f9fa;
+  color: #868e96;
+}
+
+.summary-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-label {
+  font-size: 12px;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+
+.item-value {
+  font-size: 14px;
+  color: #343a40;
+  font-weight: 500;
+}
+
+.workflow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workflow-step {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 6px;
+  background-color: #f8f9fa;
+  border-left: 4px solid #ced4da;
+}
+
+.workflow-step.step-completed {
+  border-left-color: #40c057;
+  background-color: #ebfbee;
+}
+
+.workflow-step.step-in-progress {
+  border-left-color: #4c6ef5;
+  background-color: #edf2ff;
+}
+
+.workflow-step.step-failed {
+  border-left-color: #e03131;
+  background-color: #fff5f5;
+}
+
+.workflow-step.step-waiting {
+  border-left-color: #f59f00;
+  background-color: #fff9db;
+}
+
+.step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #e9ecef;
+  color: #495057;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.step-completed .step-number {
+  background-color: #40c057;
+  color: white;
+}
+
+.step-in-progress .step-number {
+  background-color: #4c6ef5;
+  color: white;
+}
+
+.step-failed .step-number {
+  background-color: #e03131;
+  color: white;
+}
+
+.step-details {
+  flex: 1;
+}
+
+.step-details h4 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #343a40;
+}
+
+.step-details p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.step-result, .step-error {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.step-result {
+  background-color: #ebfbee;
+  color: #2b8a3e;
+}
+
+.step-error {
+  background-color: #fff5f5;
+  color: #e03131;
+}
+
+.result-label, .error-label {
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.step-progress {
+  margin-top: 8px;
+}
+
+.progress-indicator {
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #4c6ef5;
+  border-radius: 4px;
+}
+
+.progress-value {
+  font-size: 12px;
+  color: #495057;
+}
+
+.refresh-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.control-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #495057;
+}
+
+.refresh-button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  background-color: #e9ecef;
+  color: #495057;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-button:hover {
+  background-color: #dee2e6;
+}
+
+.refresh-button:disabled {
+  background-color: #f1f3f5;
+  color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.empty-state, .loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #6c757d;
+  font-size: 14px;
+  text-align: center;
+}

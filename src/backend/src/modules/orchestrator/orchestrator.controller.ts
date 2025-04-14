@@ -51,6 +51,12 @@ export class OrchestratorController {
     this.logger.log(`Getting workflow status for execution: ${executionId}`);
     return this.orchestratorService.getWorkflowStatus(executionId);
   }
+  
+  @Get('module-connections/:workflowId')
+  async getModuleConnections(@Param('workflowId') workflowId: string) {
+    this.logger.log(`Getting module connections for workflow: ${workflowId}`);
+    return this.orchestratorService.getModuleConnections(workflowId);
+  }
 
   @Post('cancel-workflow')
   async cancelWorkflow(@Body() data: { executionId: string }) {
