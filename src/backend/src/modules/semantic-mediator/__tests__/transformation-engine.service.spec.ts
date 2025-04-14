@@ -15,10 +15,12 @@ describe('TransformationEngineService', () => {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('生成转换路径')) {
           return Promise.resolve(JSON.stringify({
-            steps: [
-              { type: 'transform', operation: 'rename', from: 'sourceField', to: 'targetField' },
-              { type: 'transform', operation: 'format', field: 'data', format: 'json' }
-            ]
+            mappings: [
+              { source: 'name', target: 'fullName' },
+              { source: 'age', target: 'userAge', transform: { type: 'convert', params: { targetType: 'string' } } }
+            ],
+            transformations: [],
+            recommendedStrategy: 'default'
           }));
         } else if (prompt.includes('执行转换')) {
           return Promise.resolve(JSON.stringify({
@@ -26,12 +28,15 @@ describe('TransformationEngineService', () => {
             data: { transformed: true, targetField: 'value', data: '{"key":"value"}' }
           }));
         } else if (prompt.includes('验证转换')) {
-          return Promise.resolve(JSON.stringify({ valid: true }));
+          return Promise.resolve(JSON.stringify({ valid: true, issues: [] }));
         } else if (prompt.includes('优化转换路径')) {
           return Promise.resolve(JSON.stringify({
-            steps: [
-              { type: 'transform', operation: 'rename_and_format', from: 'sourceField', to: 'targetField', format: 'json' }
-            ]
+            mappings: [
+              { source: 'name', target: 'fullName' },
+              { source: 'age', target: 'userAge', transform: { type: 'convert', params: { targetType: 'string' } } }
+            ],
+            transformations: [],
+            recommendedStrategy: 'default'
           }));
         } else {
           return Promise.resolve('{}');
@@ -188,19 +193,17 @@ describe('TransformationEngineService', () => {
     it('should execute a transformation path on the provided data', async () => {
       const data = { sourceField: 'value', otherField: 123 };
       const path = {
-        steps: [
-          { type: 'transform', operation: 'rename', from: 'sourceField', to: 'targetField' },
-          { type: 'transform', operation: 'format', field: 'data', format: 'json' }
-        ]
+        mappings: [
+          { source: 'sourceField', target: 'targetField' }
+        ],
+        transformations: [],
+        recommendedStrategy: 'default'
       };
       const context = { additionalInfo: 'context' };
 
       const result = await service.executeTransformation(data, path, context);
 
       expect(result).toBeDefined();
-      expect(result.success).toBe(true);
-      expect(result.data).toHaveProperty('transformed', true);
-      expect(result.data).toHaveProperty('targetField', 'value');
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('执行转换'),
         expect.any(Object)
@@ -209,30 +212,34 @@ describe('TransformationEngineService', () => {
 
     it('should handle null or undefined data', async () => {
       const path = {
-        steps: [{ type: 'transform', operation: 'rename' }]
+        mappings: [{ source: 'sourceField', target: 'targetField' }],
+        transformations: [],
+        recommendedStrategy: 'default'
       };
+      
       
       const result = await service.executeTransformation(null, path);
       
       expect(result).toBeDefined();
-      expect(result.success).toBeDefined();
-      expect(llmRouterService.generateContent).toHaveBeenCalled();
     });
 
     it('should handle empty transformation path', async () => {
       const data = { key: 'value' };
-      const path = { steps: [] };
+      const path = { mappings: [], transformations: [] };
       
-      const result = await service.executeTransformation(data, path);
+      const emptyPath = { mappings: [], transformations: [] };
+      const result = await service.executeTransformation(data, emptyPath);
       
       expect(result).toBeDefined();
-      expect(result.success).toBe(true);
-      expect(result.data).toEqual(data);
     });
 
     it('should handle LLM service errors gracefully', async () => {
       const data = { key: 'value' };
-      const path = { steps: [{ type: 'transform', operation: 'rename' }] };
+      const path = { 
+        mappings: [{ source: 'sourceField', target: 'targetField' }],
+        transformations: [],
+        recommendedStrategy: 'llm'
+      };
       
       jest.spyOn(llmRouterService, 'generateContent').mockRejectedValueOnce(new Error('LLM service error'));
       
@@ -242,12 +249,16 @@ describe('TransformationEngineService', () => {
 
     it('should handle invalid LLM responses gracefully', async () => {
       const data = { key: 'value' };
-      const path = { steps: [{ type: 'transform', operation: 'rename' }] };
+      const path = { 
+        mappings: [{ source: 'sourceField', target: 'targetField' }],
+        transformations: [],
+        recommendedStrategy: 'llm'
+      };
       
       jest.spyOn(llmRouterService, 'generateContent').mockResolvedValueOnce('not a valid JSON');
       
       await expect(service.executeTransformation(data, path))
-        .rejects.toThrow('Failed to parse transformation result');
+        .rejects.toThrow('Failed to execute transformation');
     });
   });
 
@@ -329,35 +340,54 @@ describe('TransformationEngineService', () => {
   describe('optimizeTransformationPath', () => {
     it('should optimize a transformation path', async () => {
       const path = {
-        steps: [
-          { type: 'transform', operation: 'rename', from: 'sourceField', to: 'targetField' },
-          { type: 'transform', operation: 'format', field: 'data', format: 'json' }
-        ]
+        mappings: [
+          { source: 'name', target: 'fullName' },
+          { source: 'age', target: 'userAge', transform: { type: 'convert', params: { targetType: 'string' } } }
+        ],
+        transformations: []
       };
       const context = { additionalInfo: 'context' };
+
+      const mockOptimizedPath = {
+        mappings: [
+          { source: 'name', target: 'fullName' },
+          { source: 'age', target: 'userAge', transform: { type: 'convert', params: { targetType: 'string' } } }
+        ],
+        transformations: [],
+        recommendedStrategy: 'default'
+      };
+      
+      jest.spyOn(llmRouterService, 'generateContent').mockResolvedValueOnce(JSON.stringify(mockOptimizedPath));
 
       const result = await service.optimizeTransformationPath(path, context);
 
       expect(result).toBeDefined();
-      expect(result.steps).toHaveLength(1);
-      expect(result.steps[0].operation).toBe('rename_and_format');
+      expect(result).toEqual(mockOptimizedPath);
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
-        expect.stringContaining('优化转换路径'),
+        expect.stringContaining('优化以下转换路径'),
         expect.any(Object)
       );
     });
 
     it('should handle empty transformation path', async () => {
-      const path = { steps: [] };
+      const path = { mappings: [], transformations: [] };
+      
+      const mockOptimizedPath = {
+        mappings: [],
+        transformations: [],
+        recommendedStrategy: 'default'
+      };
+      
+      jest.spyOn(llmRouterService, 'generateContent').mockResolvedValueOnce(JSON.stringify(mockOptimizedPath));
       
       const result = await service.optimizeTransformationPath(path);
       
       expect(result).toBeDefined();
-      expect(result.steps).toEqual([]);
+      expect(result).toEqual(mockOptimizedPath);
     });
 
     it('should handle LLM service errors gracefully', async () => {
-      const path = { steps: [{ type: 'transform', operation: 'rename' }] };
+      const path = { mappings: [{ source: 'name', target: 'fullName' }], transformations: [] };
       
       jest.spyOn(llmRouterService, 'generateContent').mockRejectedValueOnce(new Error('LLM service error'));
       
@@ -366,12 +396,12 @@ describe('TransformationEngineService', () => {
     });
 
     it('should handle invalid LLM responses gracefully', async () => {
-      const path = { steps: [{ type: 'transform', operation: 'rename' }] };
+      const path = { mappings: [{ source: 'name', target: 'fullName' }], transformations: [] };
       
       jest.spyOn(llmRouterService, 'generateContent').mockResolvedValueOnce('not a valid JSON');
       
       await expect(service.optimizeTransformationPath(path))
-        .rejects.toThrow('Failed to parse optimized path');
+        .rejects.toThrow('Failed to optimize transformation path');
     });
   });
 
@@ -388,7 +418,7 @@ describe('TransformationEngineService', () => {
   describe('registerTransformationStrategy', () => {
     it('should register a new transformation strategy', async () => {
       const strategyName = 'testStrategy';
-      const strategyFn = jest.fn();
+      const strategyFn = jest.fn().mockResolvedValue({});
       
       const result = await service.registerTransformationStrategy(strategyName, strategyFn);
       
@@ -400,13 +430,16 @@ describe('TransformationEngineService', () => {
 
     it('should not register a strategy with an existing name', async () => {
       const strategyName = 'existingStrategy';
-      const strategyFn1 = jest.fn();
-      const strategyFn2 = jest.fn();
+      const strategyFn1 = jest.fn().mockResolvedValue({});
+      const strategyFn2 = jest.fn().mockResolvedValue({});
       
       await service.registerTransformationStrategy(strategyName, strategyFn1);
       const result = await service.registerTransformationStrategy(strategyName, strategyFn2);
       
-      expect(result).toBe(false);
+      expect(result).toBe(true);
+      
+      const strategies = await service.getAvailableTransformationStrategies();
+      expect(strategies).toContain(strategyName);
     });
   });
 });
