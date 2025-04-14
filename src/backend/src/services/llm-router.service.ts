@@ -3,6 +3,26 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as templates from './prompt-templates';
 
+interface OpenAIChatCompletionResponse {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  choices: {
+    index: number;
+    message: {
+      role: string;
+      content: string;
+    };
+    finish_reason: string;
+  }[];
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
+
 interface LlmRequestOptions {
   model?: string;
   temperature?: number;
@@ -47,7 +67,7 @@ export class LlmRouterService {
     const systemPrompt = options.systemPrompt || 'You are a helpful assistant specialized in software requirements analysis and clarification.';
 
     try {
-      const response = await axios.post(
+      const response = await axios.post<OpenAIChatCompletionResponse>(
         this.apiUrl,
         {
           model,
