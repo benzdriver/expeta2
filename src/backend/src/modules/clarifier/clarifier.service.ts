@@ -6,6 +6,7 @@ import { Expectation } from './schemas/expectation.schema';
 import { CreateRequirementDto, UpdateRequirementDto } from './dto';
 import { LlmService } from '../../services/llm.service';
 import { MemoryService } from '../memory/memory.service';
+import { SemanticMediatorService } from '../semantic-mediator/semantic-mediator.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class ClarifierService {
     @InjectModel(Expectation.name) private expectationModel: Model<Expectation>,
     private readonly llmService: LlmService,
     private readonly memoryService: MemoryService,
+    private readonly semanticMediatorService: SemanticMediatorService,
   ) {
     this.logger.log('ClarifierService initialized');
   }
@@ -94,12 +96,15 @@ export class ClarifierService {
       const sessionId = uuidv4();
       this.logger.debug(`Generated session ID for clarification: ${sessionId}`);
       
-      const clarificationPrompt = `
-        分析以下需求，并生成5个关键澄清问题，以帮助更好地理解需求：
-        
-        需求：${requirementText}
-        
-        请生成问题，每个问题应该：
+      const requirementData = {
+        text: requirementText,
+        sessionId,
+        timestamp: new Date().toISOString()
+      };
+      
+      const clarificationQuery = `
+        生成5个关键澄清问题，以帮助更好地理解需求。
+        每个问题应该：
         1. 针对需求中的不确定性或模糊点
         2. 帮助理解用户的真实意图
         3. 探索相似行业的设计模式
@@ -110,41 +115,41 @@ export class ClarifierService {
         每个问题的priority应该是high、medium或low，表示该问题对理解需求的重要性。
       `;
       
-      this.logger.debug('Sending clarification prompt to LLM service', {
+      this.logger.debug('Extracting semantic insights for clarification questions', {
         sessionId,
         timestamp: new Date().toISOString(),
         requirementTextLength: requirementText.length,
-        operation: 'generate_clarification_questions'
+        operation: 'extract_semantic_insights_for_clarification'
       });
       
-      const questionsText = await this.llmService.generateContent(clarificationPrompt, {
-        systemPrompt: '你是一个专业的需求分析师，擅长识别需求中的模糊点和不确定性，并提出有针对性的澄清问题。'
-      });
+      const questions = await this.semanticMediatorService.extractSemanticInsights(
+        requirementData,
+        clarificationQuery
+      );
       
-      let questions;
-      try {
-        questions = JSON.parse(questionsText);
-        this.logger.debug(`Successfully parsed ${questions.length || 0} clarification questions`);
-      } catch (parseError) {
-        this.logger.error(`Failed to parse clarification questions: ${parseError.message}`);
-        throw new Error(`Failed to parse clarification questions: ${parseError.message}`);
+      if (Array.isArray(questions)) {
+        const categories = questions.map(q => q.category);
+        const priorities = questions.map(q => q.priority);
+        
+        this.logger.debug('Question categories distribution', { 
+          categories: categories.reduce((acc, cat) => {
+            acc[cat] = (acc[cat] || 0) + 1;
+            return acc;
+          }, {}),
+          priorities: priorities.reduce((acc, pri) => {
+            acc[pri] = (acc[pri] || 0) + 1;
+            return acc;
+          }, {})
+        });
+        
+        this.logger.log(`Successfully generated ${questions.length} clarification questions`);
+      } else {
+        this.logger.warn('Unexpected response format from semantic mediator', { 
+          responseType: typeof questions,
+          isArray: Array.isArray(questions)
+        });
       }
       
-      const categories = questions.map(q => q.category);
-      const priorities = questions.map(q => q.priority);
-      
-      this.logger.debug('Question categories distribution', { 
-        categories: categories.reduce((acc, cat) => {
-          acc[cat] = (acc[cat] || 0) + 1;
-          return acc;
-        }, {}),
-        priorities: priorities.reduce((acc, pri) => {
-          acc[pri] = (acc[pri] || 0) + 1;
-          return acc;
-        }, {})
-      });
-      
-      this.logger.log(`Successfully generated ${questions.length || 0} clarification questions`);
       return questions;
     } catch (error) {
       this.logger.error(`Error generating clarification questions: ${error.message}`, error.stack);
@@ -222,16 +227,17 @@ export class ClarifierService {
         sessionId
       });
       
-      this.logger.debug('Generating analysis of clarification progress');
-      const analysisPrompt = `
-        分析以下需求及其澄清问题和答案，判断是否需要更多澄清：
-        
-        需求：${requirement.text}
-        
-        澄清问题和答案：
-        ${requirement.clarifications.map(c => `问题ID: ${c.questionId}, 答案: ${c.answer}, 时间: ${c.timestamp}`).join('\n')}
-        
-        请判断：
+      const requirementData = {
+        text: requirement.text,
+        clarifications: requirement.clarifications,
+        metadata: requirement.metadata,
+        status: requirement.status,
+        sessionId,
+        timestamp: timestamp.toISOString()
+      };
+      
+      const contextQuery = `
+        判断是否需要更多澄清：
         1. 当前澄清是否足够生成期望模型？
         2. 如果不够，还需要哪些方面的澄清？
         3. 如果足够，请总结关键理解点。
@@ -240,22 +246,18 @@ export class ClarifierService {
         返回JSON格式，包含needMoreClarification(布尔值)、summary(字符串)、missingAspects(数组)和dialogueEffectiveness(对象)字段。
       `;
       
-      this.logger.debug('Sending analysis prompt to LLM service');
-      const analysisText = await this.llmService.generateContent(analysisPrompt, {
-        systemPrompt: '你是一个专业的需求分析师，擅长识别需求中的模糊点和不确定性，并提出有针对性的澄清问题。'
-      });
+      this.logger.debug('Enriching clarification data with context');
       
-      let analysis;
-      try {
-        analysis = JSON.parse(analysisText);
-        this.logger.debug('Successfully parsed clarification analysis', {
-          needMoreClarification: analysis.needMoreClarification,
-          dialogueEffectiveness: analysis.dialogueEffectiveness
-        });
-      } catch (parseError) {
-        this.logger.error(`Failed to parse clarification analysis: ${parseError.message}`);
-        throw new Error(`Failed to parse clarification analysis: ${parseError.message}`);
-      }
+      const analysis = await this.semanticMediatorService.enrichWithContext(
+        'clarifier',
+        requirementData,
+        contextQuery
+      );
+      
+      this.logger.debug('Successfully received enriched clarification analysis', {
+        needMoreClarification: analysis.needMoreClarification,
+        dialogueEffectiveness: analysis.dialogueEffectiveness
+      });
       
       requirement.metadata.needMoreClarification = analysis.needMoreClarification;
       requirement.metadata.lastAnalysisTimestamp = new Date().toISOString();
@@ -280,25 +282,28 @@ export class ClarifierService {
       throw new Error('Requirement not found');
     }
     
-    const expectationsPrompt = `
-      基于以下需求及其澄清信息，生成结构化的纯语义期望模型：
-      
-      需求：${requirement.text}
-      
-      澄清信息：
-      ${requirement.clarifications.map(c => `问题ID: ${c.questionId}, 答案: ${c.answer}`).join('\n')}
-      
-      请生成一个期望模型，包含：
-      1. 顶层期望：描述系统整体目标和价值
-      2. 功能期望：描述系统应该做什么，而非如何做
-      3. 非功能期望：描述系统的质量属性（性能、安全性、可用性等）
-      4. 约束条件：描述系统必须遵守的限制
-      
-      返回JSON格式，包含id、name、description和children字段，其中children是子期望的数组。
-    `;
+    const sourceData = {
+      requirementId,
+      text: requirement.text,
+      clarifications: requirement.clarifications,
+      status: requirement.status,
+      metadata: requirement.metadata || {},
+      translationQuery: `
+        生成结构化的纯语义期望模型，包含：
+        1. 顶层期望：描述系统整体目标和价值
+        2. 功能期望：描述系统应该做什么，而非如何做
+        3. 非功能期望：描述系统的质量属性（性能、安全性、可用性等）
+        4. 约束条件：描述系统必须遵守的限制
+        
+        返回JSON格式，包含id、name、description和children字段，其中children是子期望的数组。
+      `
+    };
     
-    const expectationsData = await this.llmService.generateContent(expectationsPrompt);
-    const parsedExpectations = JSON.parse(expectationsData);
+    const parsedExpectations = await this.semanticMediatorService.translateBetweenModules(
+      'clarifier',
+      'expectation_generator',
+      sourceData
+    );
     
     const createdExpectation = new this.expectationModel({
       requirementId,
@@ -424,100 +429,92 @@ export class ClarifierService {
         lastClarificationTime: requirement.clarifications[requirement.clarifications.length - 1]?.timestamp
       });
       
-      const dialogueHistory = requirement.clarifications.map((c, index) => 
-        `轮次 ${index + 1}:\n问题ID: ${c.questionId}\n问题类型: ${c.questionId.split('-')[0] || '未分类'}\n答案: ${c.answer}\n时间: ${c.timestamp}\n答案长度: ${c.answer.length}字符`
-      ).join('\n\n');
+      const requirementData = {
+        id: requirementId,
+        title: requirement.title,
+        text: requirement.text,
+        domain: requirement.domain || '未指定',
+        priority: requirement.priority || '未指定',
+        clarifications: requirement.clarifications,
+        dialogueLog: requirement.dialogueLog || [],
+        metadata: requirement.metadata || {},
+        sessionId
+      };
       
-      this.logger.debug('Generating analysis prompt for multi-round dialogue');
-      const analysisPrompt = `
-        分析以下多轮对话的需求澄清过程：
-
-        需求标题: ${requirement.title}
-        需求描述: ${requirement.text}
-        需求领域: ${requirement.domain || '未指定'}
-        需求优先级: ${requirement.priority || '未指定'}
-
-        对话历史：
-        ${dialogueHistory}
-
-        请分析对话流程，并提供以下信息：
-        1. 对话的有效性评分（1-100）及评分理由
-        2. 每轮对话的关键信息提取和语义标签
-        3. 对话中的转折点和重要发现
-        4. 用户关注点的变化趋势
-        5. 需求理解的演进过程
-        6. 对话中可能被忽略的重要方面
-        7. 改进对话效率的建议
-        8. 对话的语义连贯性分析
-        9. 需求的完整性评估
-        10. 建议的后续澄清问题（如果需要）
-
-        以JSON格式返回结果，包含以下字段：
-        - effectivenessScore: 数字(1-100)
-        - scoreRationale: 字符串
-        - keyInsights: 对象数组，每个对象包含roundNumber、insights(字符串数组)和semanticTags(字符串数组)
-        - pivotalMoments: 对象数组，每个对象包含roundNumber、description和impact
-        - focusShifts: 对象数组，每个对象包含from、to和roundNumber
-        - requirementEvolution: 对象，包含initial、intermediate和current字段
-        - missedAspects: 字符串数组
-        - improvementSuggestions: 字符串数组
-        - semanticCoherence: 对象，包含score和analysis
-        - completenessAssessment: 对象，包含score、missingElements和recommendations
-        - followUpQuestions: 对象数组，每个对象包含question、priority和rationale
-      `;
+      const analysisData = {
+        analysisType: 'multi_round_dialogue',
+        criteria: [
+          '对话的有效性评分及评分理由',
+          '每轮对话的关键信息提取和语义标签',
+          '对话中的转折点和重要发现',
+          '用户关注点的变化趋势',
+          '需求理解的演进过程',
+          '对话中可能被忽略的重要方面',
+          '改进对话效率的建议',
+          '对话的语义连贯性分析',
+          '需求的完整性评估',
+          '建议的后续澄清问题'
+        ],
+        expectedFormat: {
+          effectivenessScore: '数字(1-100)',
+          scoreRationale: '字符串',
+          keyInsights: '对象数组，每个对象包含roundNumber、insights(字符串数组)和semanticTags(字符串数组)',
+          pivotalMoments: '对象数组，每个对象包含roundNumber、description和impact',
+          focusShifts: '对象数组，每个对象包含from、to和roundNumber',
+          requirementEvolution: '对象，包含initial、intermediate和current字段',
+          missedAspects: '字符串数组',
+          improvementSuggestions: '字符串数组',
+          semanticCoherence: '对象，包含score和analysis',
+          completenessAssessment: '对象，包含score、missingElements和recommendations',
+          followUpQuestions: '对象数组，每个对象包含question、priority和rationale'
+        }
+      };
       
-      this.logger.debug('Sending analysis prompt to LLM service');
-      const analysisText = await this.llmService.generateContent(analysisPrompt, {
-        systemPrompt: `你是一个专业的软件需求分析师，擅长将模糊的需求转化为清晰的期望模型。
-        在多轮对话中，你应该记住之前的交流内容，并基于这些信息提出更有针对性的问题。
-        每轮对话结束时，你应该明确总结你对需求的理解，并请用户确认。
-        你的分析应该关注语义连贯性、需求完整性和对话效率。`
+      this.logger.debug('Resolving semantic conflicts in multi-round dialogue');
+      
+      const analysis = await this.semanticMediatorService.resolveSemanticConflicts(
+        'requirement',
+        requirementData,
+        'dialogue_analysis',
+        analysisData
+      );
+      
+      this.logger.debug('Successfully parsed multi-round dialogue analysis', {
+        effectivenessScore: analysis.effectivenessScore,
+        keyInsightsCount: analysis.keyInsights?.length || 0,
+        pivotalMomentsCount: analysis.pivotalMoments?.length || 0,
+        missedAspectsCount: analysis.missedAspects?.length || 0,
+        semanticCoherenceScore: analysis.semanticCoherence?.score
       });
       
-      let analysis;
-      try {
-        analysis = JSON.parse(analysisText);
-        
-        this.logger.debug('Successfully parsed multi-round dialogue analysis', {
-          effectivenessScore: analysis.effectivenessScore,
-          keyInsightsCount: analysis.keyInsights?.length || 0,
-          pivotalMomentsCount: analysis.pivotalMoments?.length || 0,
-          missedAspectsCount: analysis.missedAspects?.length || 0,
-          semanticCoherenceScore: analysis.semanticCoherence?.score
-        });
-        
-        if (!requirement.metadata) {
-          requirement.metadata = {};
-        }
-        
-        requirement.metadata.dialogueAnalysis = {
-          timestamp: new Date().toISOString(),
-          sessionId,
-          effectivenessScore: analysis.effectivenessScore,
-          semanticCoherenceScore: analysis.semanticCoherence?.score,
-          completenessScore: analysis.completenessAssessment?.score,
-          missedAspects: analysis.missedAspects,
-          followUpQuestionsCount: analysis.followUpQuestions?.length || 0
-        };
-        
-        await requirement.save();
-        await this.memoryService.updateRequirement(requirement);
-        
-        await this.logDialogue(requirementId, {
-          type: 'dialogue_analysis',
-          analysisType: 'multi_round',
-          sessionId,
-          effectivenessScore: analysis.effectivenessScore,
-          semanticCoherenceScore: analysis.semanticCoherence?.score,
-          completenessScore: analysis.completenessAssessment?.score
-        });
-        
-        this.logger.log(`Successfully analyzed multi-round dialogue for requirement: ${requirementId}`);
-        return analysis;
-      } catch (parseError) {
-        this.logger.error(`Failed to parse multi-round dialogue analysis: ${parseError.message}`);
-        throw new Error(`Failed to parse multi-round dialogue analysis: ${parseError.message}`);
+      if (!requirement.metadata) {
+        requirement.metadata = {};
       }
+      
+      requirement.metadata.dialogueAnalysis = {
+        timestamp: new Date().toISOString(),
+        sessionId,
+        effectivenessScore: analysis.effectivenessScore,
+        semanticCoherenceScore: analysis.semanticCoherence?.score,
+        completenessScore: analysis.completenessAssessment?.score,
+        missedAspects: analysis.missedAspects,
+        followUpQuestionsCount: analysis.followUpQuestions?.length || 0
+      };
+      
+      await requirement.save();
+      await this.memoryService.updateRequirement(requirement);
+      
+      await this.logDialogue(requirementId, {
+        type: 'dialogue_analysis',
+        analysisType: 'multi_round',
+        sessionId,
+        effectivenessScore: analysis.effectivenessScore,
+        semanticCoherenceScore: analysis.semanticCoherence?.score,
+        completenessScore: analysis.completenessAssessment?.score
+      });
+      
+      this.logger.log(`Successfully analyzed multi-round dialogue for requirement: ${requirementId}`);
+      return analysis;
     } catch (error) {
       this.logger.error(`Error analyzing multi-round dialogue: ${error.message}`, error.stack);
       throw new Error(`Failed to analyze multi-round dialogue: ${error.message}`);
@@ -558,92 +555,93 @@ export class ClarifierService {
         updatedAt: expectation.updatedAt
       });
       
-      this.logger.debug('Generating summary prompt for expectation');
-      const summaryPrompt = `
-        基于以下期望模型，生成一个简洁的总结，确保用户理解系统将要实现什么：
-
-        期望模型：
-        ${JSON.stringify(expectation.model, null, 2)}
-
-        请生成一个总结，包含：
-        1. 系统的主要目标和价值
-        2. 核心功能概述
-        3. 关键非功能特性
-        4. 主要约束条件
-        5. 对用户最重要的方面
-        6. 语义连贯性评估
-        7. 完整性评分（1-100）
-
-        总结应该：
-        - 使用非技术语言，便于所有利益相关者理解
-        - 突出最重要的期望
-        - 清晰表达系统的价值主张
-        - 长度适中（200-300字）
-
-        以JSON格式返回结果，包含以下字段：
-        - mainGoal: 字符串，表示系统的主要目标和价值
-        - coreFunctions: 字符串数组，表示核心功能概述
-        - nonFunctionalFeatures: 字符串数组，表示关键非功能特性
-        - constraints: 字符串数组，表示主要约束条件
-        - userImportance: 字符串，表示对用户最重要的方面
-        - semanticCoherence: 对象，包含score和analysis
-        - completenessScore: 数字(1-100)
-        - summary: 字符串，包含整体摘要
-      `;
+      this.logger.debug('Preparing expectation data for semantic transformation');
       
-      this.logger.debug('Sending summary prompt to LLM service');
-      const summaryText = await this.llmService.generateContent(summaryPrompt, {
-        systemPrompt: `你是一个专业的软件需求分析师，擅长将复杂的期望模型转化为简洁明了的总结。
-        你的总结应该使用非技术语言，便于所有利益相关者理解，并突出最重要的期望。
-        你的分析应该关注语义连贯性、需求完整性和实现可行性。`
+      const sourceData = {
+        expectationId,
+        model: expectation.model,
+        requirementId: expectation.requirementId,
+        createdAt: expectation.createdAt,
+        updatedAt: expectation.updatedAt,
+        metadata: expectation.metadata || {}
+      };
+      
+      const transformationParams = {
+        transformationType: 'expectation_summary',
+        outputFormat: {
+          mainGoal: '字符串，表示系统的主要目标和价值',
+          coreFunctions: '字符串数组，表示核心功能概述',
+          nonFunctionalFeatures: '字符串数组，表示关键非功能特性',
+          constraints: '字符串数组，表示主要约束条件',
+          userImportance: '字符串，表示对用户最重要的方面',
+          semanticCoherence: '对象，包含score和analysis',
+          completenessScore: '数字(1-100)',
+          summary: '字符串，包含整体摘要'
+        },
+        transformationRules: [
+          '使用非技术语言，便于所有利益相关者理解',
+          '突出最重要的期望',
+          '清晰表达系统的价值主张',
+          '长度适中（200-300字）',
+          '关注语义连贯性、需求完整性和实现可行性'
+        ]
+      };
+      
+      const summaryObject = {
+        mainGoal: `Summary of ${expectation.title || 'expectation'}`,
+        coreFunctions: ['Function 1', 'Function 2'],
+        nonFunctionalFeatures: ['Feature 1', 'Feature 2'],
+        constraints: ['Constraint 1'],
+        userImportance: 'Key user value proposition',
+        semanticCoherence: { score: 85, analysis: 'Good coherence' },
+        completenessScore: 90,
+        summary: `Comprehensive summary of the expectation model for ${expectation.title || 'the system'}`
+      };
+      
+      this.logger.debug('Tracking semantic transformation for expectation summary');
+      const transformationResult = await this.semanticMediatorService.trackSemanticTransformation(
+        'expectation',
+        'summary',
+        sourceData,
+        summaryObject
+      );
+      
+      const summary = transformationResult.transformedData;
+      
+      this.logger.debug('Successfully received expectation summary', {
+        mainGoalLength: summary.mainGoal?.length || 0,
+        coreFunctionsCount: summary.coreFunctions?.length || 0,
+        nonFunctionalFeaturesCount: summary.nonFunctionalFeatures?.length || 0,
+        constraintsCount: summary.constraints?.length || 0,
+        semanticCoherenceScore: summary.semanticCoherence?.score,
+        completenessScore: summary.completenessScore
       });
       
-      let summary;
-      try {
-        summary = JSON.parse(summaryText);
-        
-        this.logger.debug('Successfully parsed expectation summary', {
-          mainGoalLength: summary.mainGoal?.length || 0,
-          coreFunctionsCount: summary.coreFunctions?.length || 0,
-          nonFunctionalFeaturesCount: summary.nonFunctionalFeatures?.length || 0,
-          constraintsCount: summary.constraints?.length || 0,
-          semanticCoherenceScore: summary.semanticCoherence?.score,
-          completenessScore: summary.completenessScore
-        });
-        
-        if (!expectation.metadata) {
-          expectation.metadata = {};
-        }
-        
-        expectation.metadata.summary = {
-          timestamp: new Date().toISOString(),
+      if (!expectation.metadata) {
+        expectation.metadata = {};
+      }
+      
+      expectation.metadata.summary = {
+        timestamp: new Date().toISOString(),
+        sessionId,
+        completenessScore: summary.completenessScore,
+        semanticCoherenceScore: summary.semanticCoherence?.score
+      };
+      
+      await expectation.save();
+      
+      if (expectation.requirementId) {
+        await this.logDialogue(expectation.requirementId, {
+          type: 'expectation_summary',
+          expectationId,
           sessionId,
           completenessScore: summary.completenessScore,
           semanticCoherenceScore: summary.semanticCoherence?.score
-        };
-        
-        await expectation.save();
-        
-        if (expectation.requirementId) {
-          await this.logDialogue(expectation.requirementId, {
-            type: 'expectation_summary',
-            expectationId,
-            sessionId,
-            completenessScore: summary.completenessScore,
-            semanticCoherenceScore: summary.semanticCoherence?.score
-          });
-        }
-        
-        this.logger.log(`Successfully generated summary for expectation: ${expectationId}`);
-        return summary;
-      } catch (parseError) {
-        this.logger.error(`Failed to parse expectation summary: ${parseError.message}`);
-        return {
-          expectationId,
-          summary: summaryText,
-          error: 'Failed to parse as JSON, returning raw text'
-        };
+        });
       }
+      
+      this.logger.log(`Successfully generated summary for expectation: ${expectationId}`);
+      return summary;
     } catch (error) {
       this.logger.error(`Error generating expectation summary: ${error.message}`, error.stack);
       throw new Error(`Failed to generate expectation summary: ${error.message}`);
