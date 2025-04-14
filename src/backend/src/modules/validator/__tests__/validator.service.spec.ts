@@ -6,35 +6,41 @@ import { Validation } from '../schemas/validation.schema';
 import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
+import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediator.service';
 
 describe('ValidatorService', () => {
   let service: ValidatorService;
   let validationModel: Model<Validation>;
   let llmRouterService: LlmRouterService;
   let memoryService: MemoryService;
+  let semanticMediatorService: SemanticMediatorService;
 
   beforeEach(async () => {
-    const mockValidationModel = {
-      new: jest.fn().mockResolvedValue({
-        save: jest.fn().mockResolvedValue({
-          _id: 'test-validation-id',
-          expectationId: 'test-expectation-id',
-          codeId: 'test-code-id',
-          status: 'passed',
-          score: 85,
-          details: [
-            {
-              expectationId: 'exp-1',
-              status: 'passed',
-              score: 90,
-              message: 'Test message',
-            },
-          ],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }),
-      }),
-      find: jest.fn().mockReturnValue({
+    function MockValidationModel(data) {
+      Object.assign(this, data);
+      this.save = jest.fn().mockResolvedValue({
+        _id: 'test-validation-id',
+        expectationId: data.expectationId || 'test-expectation-id',
+        codeId: data.codeId || 'test-code-id',
+        status: data.status || 'passed',
+        score: data.score || 85,
+        details: data.details || [
+          {
+            expectationId: 'exp-1',
+            status: 'passed',
+            score: 90,
+            message: 'Test message',
+          },
+        ],
+        metadata: data.metadata || {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      return this;
+    }
+    
+    MockValidationModel.find = jest.fn().mockImplementation(() => {
+      return {
         sort: jest.fn().mockReturnValue({
           exec: jest.fn().mockResolvedValue([
             {
@@ -54,28 +60,63 @@ describe('ValidatorService', () => {
             },
           ]),
         }),
-      }),
-      findById: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({
-          _id: 'test-validation-id',
-          expectationId: 'test-expectation-id',
-          codeId: 'test-code-id',
-          status: 'passed',
-          score: 85,
-          details: [
-            {
-              expectationId: 'exp-1',
+        exec: jest.fn().mockResolvedValue([
+          {
+            _id: 'test-validation-id',
+            expectationId: 'test-expectation-id',
+            codeId: 'test-code-id',
+            status: 'passed',
+            score: 85,
+            details: [
+              {
+                expectationId: 'exp-1',
+                status: 'passed',
+                score: 90,
+                message: 'Test message',
+              },
+            ],
+            toObject: () => ({
+              _id: 'test-validation-id',
+              expectationId: 'test-expectation-id',
+              codeId: 'test-code-id',
               status: 'passed',
-              score: 90,
-              message: 'Test message',
-            },
-          ],
-          metadata: {
-            iterationNumber: 1,
+              score: 85,
+              details: [
+                {
+                  expectationId: 'exp-1',
+                  status: 'passed',
+                  score: 90,
+                  message: 'Test message',
+                },
+              ],
+            }),
           },
-        }),
+        ]),
+      };
+    });
+    
+    MockValidationModel.findById = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({
+        _id: 'test-validation-id',
+        expectationId: 'test-expectation-id',
+        codeId: 'test-code-id',
+        status: 'passed',
+        score: 85,
+        details: [
+          {
+            expectationId: 'exp-1',
+            status: 'passed',
+            score: 90,
+            message: 'Test message',
+          },
+        ],
+        metadata: {
+          iterationNumber: 1,
+        },
       }),
-    };
+    });
+    
+    const mockValidationModel = MockValidationModel;
 
     const mockLlmRouterService = {
       generateContent: jest.fn().mockImplementation((prompt) => {
@@ -180,6 +221,55 @@ describe('ValidatorService', () => {
       }),
     };
 
+    const mockSemanticMediatorService = {
+      generateValidationContext: jest.fn().mockResolvedValue({
+        strategy: 'balanced',
+        weights: {
+          functionality: 1.0,
+          performance: 1.0,
+          security: 1.0,
+          maintainability: 1.0
+        },
+        focusAreas: [],
+        previousValidations: [],
+        semanticContext: {
+          codeFeatures: { features: ['Feature 1', 'Feature 2'] },
+          semanticRelationship: { relationship: 'Strong match' },
+          expectationSummary: 'Expectation summary',
+          validationHistory: 'Validation history'
+        }
+      }),
+      translateBetweenModules: jest.fn().mockResolvedValue(
+        `基于以下期望模型、生成的代码和语义上下文，执行语义验证：
+        
+        期望模型：{"id":"root","name":"Root Expectation"}
+        
+        生成的代码：
+        文件路径: test.js
+        内容:
+        console.log("test")
+        
+        语义上下文：
+        {"codeFeatures":{"features":["Feature 1","Feature 2"]},"semanticRelationship":{"relationship":"Strong match"}}
+        
+        请评估代码对期望的满足程度，并提供JSON结果。`
+      ),
+      enrichWithContext: jest.fn().mockImplementation((module, data, context) => {
+        return Promise.resolve({
+          ...data,
+          enriched: true,
+          context
+        });
+      }),
+      trackSemanticTransformation: jest.fn().mockResolvedValue(true),
+      extractCodeFeatures: jest.fn().mockResolvedValue({
+        features: ['Feature 1', 'Feature 2']
+      }),
+      analyzeSemanticRelationship: jest.fn().mockResolvedValue({
+        relationship: 'Strong match'
+      })
+    };
+
     const mockMemoryService = {
       getMemoryByType: jest.fn().mockImplementation((type) => {
         if (type === MemoryType.EXPECTATION) {
@@ -262,6 +352,10 @@ describe('ValidatorService', () => {
           provide: MemoryService,
           useValue: mockMemoryService,
         },
+        {
+          provide: SemanticMediatorService,
+          useValue: mockSemanticMediatorService,
+        },
       ],
     }).compile();
 
@@ -269,6 +363,7 @@ describe('ValidatorService', () => {
     validationModel = module.get<Model<Validation>>(getModelToken(Validation.name));
     llmRouterService = module.get<LlmRouterService>(LlmRouterService);
     memoryService = module.get<MemoryService>(MemoryService);
+    semanticMediatorService = module.get<SemanticMediatorService>(SemanticMediatorService);
   });
 
   it('should be defined', () => {
@@ -533,6 +628,44 @@ describe('ValidatorService', () => {
           key: 'value',
         },
       };
+      
+      jest.clearAllMocks();
+      
+      jest.spyOn(validationModel, 'find').mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([
+          {
+            _id: 'prev-validation-1',
+            expectationId: 'test-expectation-id',
+            codeId: 'test-code-id',
+            status: 'passed',
+            score: 85,
+            details: [
+              {
+                expectationId: 'exp-1',
+                status: 'passed',
+                score: 90,
+                message: 'Test message',
+              },
+            ],
+            toObject: () => ({
+              _id: 'prev-validation-1',
+              expectationId: 'test-expectation-id',
+              codeId: 'test-code-id',
+              status: 'passed',
+              score: 85,
+              details: [
+                {
+                  expectationId: 'exp-1',
+                  status: 'passed',
+                  score: 90,
+                  message: 'Test message',
+                },
+              ],
+            }),
+          },
+        ]),
+      } as any);
 
       const result = await service.validateWithAdaptiveContext(
         expectationId,
@@ -548,6 +681,8 @@ describe('ValidatorService', () => {
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型、生成的代码和验证上下文，执行自适应语义验证'),
       );
+      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
+      expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -565,6 +700,119 @@ describe('ValidatorService', () => {
       await expect(
         service.validateWithAdaptiveContext(expectationId, codeId, validationContext),
       ).rejects.toThrow('Expectation or Code not found');
+    });
+  });
+
+  describe('validateWithSemanticMediation', () => {
+    it('should validate with semantic mediation', async () => {
+      const expectationId = 'test-expectation-id';
+      const codeId = 'test-code-id';
+      const options: {
+        strategy?: 'balanced' | 'strict' | 'lenient' | 'performance' | 'security' | 'custom';
+        focusAreas?: string[];
+        weights?: Record<string, number>;
+        previousValidations?: string[];
+        iterative?: boolean;
+      } = {
+        strategy: 'balanced',
+        focusAreas: ['functionality', 'security'],
+        weights: {
+          functionality: 1.2,
+          security: 1.1,
+        },
+        previousValidations: ['prev-validation-1'],
+        iterative: false
+      };
+
+      const result = await service.validateWithSemanticMediation(
+        expectationId,
+        codeId,
+        options
+      );
+
+      expect(result).toBeDefined();
+      expect(result.expectationId).toBe(expectationId);
+      expect(result.codeId).toBe(codeId);
+      expect(result.status).toBe('passed');
+      expect(result.score).toBe(85);
+      expect(semanticMediatorService.generateValidationContext).toHaveBeenCalledWith(
+        expectationId,
+        codeId,
+        options.previousValidations,
+        {
+          strategy: options.strategy,
+          focusAreas: options.focusAreas,
+          customWeights: options.weights
+        }
+      );
+      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalledWith(
+        'validator',
+        'llm',
+        expect.objectContaining({
+          expectationId,
+          codeId,
+          validationType: 'semantic_mediation',
+          iterative: false
+        })
+      );
+      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();
+      expect(memoryService.storeMemory).toHaveBeenCalled();
+    });
+
+    it('should throw an error if expectation or code is not found', async () => {
+      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
+        return Promise.resolve([]);
+      });
+
+      jest.spyOn(semanticMediatorService, 'generateValidationContext').mockImplementation(() => {
+        throw new Error('Expectation or Code not found');
+      });
+
+      const expectationId = 'non-existent-id';
+      const codeId = 'non-existent-id';
+      const options: {
+        strategy?: 'balanced' | 'strict' | 'lenient' | 'performance' | 'security' | 'custom';
+        focusAreas?: string[];
+        weights?: Record<string, number>;
+        previousValidations?: string[];
+        iterative?: boolean;
+      } = {
+        strategy: 'balanced'
+      };
+
+      await expect(
+        service.validateWithSemanticMediation(expectationId, codeId, options)
+      ).rejects.toThrow('Expectation or Code not found');
+    });
+  });
+
+  describe('validateCodeWithSemanticInput', () => {
+    it('should use semantic mediator for validation', async () => {
+      const expectationId = 'test-expectation-id';
+      const codeId = 'test-code-id';
+      const semanticInput = {
+        key: 'value',
+        insights: ['insight1', 'insight2'],
+      };
+
+      const result = await service.validateCodeWithSemanticInput(
+        expectationId,
+        codeId,
+        semanticInput
+      );
+
+      expect(result).toBeDefined();
+      expect(semanticMediatorService.generateValidationContext).toHaveBeenCalled();
+      expect(semanticMediatorService.enrichWithContext).toHaveBeenCalledWith(
+        'validator',
+        semanticInput,
+        expect.stringContaining(`expectation:${expectationId} code:${codeId}`)
+      );
+      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
+      expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();
+      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(memoryService.storeMemory).toHaveBeenCalled();
     });
   });
 });

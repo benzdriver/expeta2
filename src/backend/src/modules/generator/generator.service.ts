@@ -6,6 +6,7 @@ import { LlmRouterService } from '../../services/llm-router.service';
 import { MemoryService } from '../memory/memory.service';
 import { MemoryType } from '../memory/schemas/memory.schema';
 import { GenerateCodeWithSemanticInputDto } from './dto';
+import { SemanticMediatorService } from '../semantic-mediator/semantic-mediator.service';
 
 @Injectable()
 export class GeneratorService {
@@ -13,6 +14,7 @@ export class GeneratorService {
     @InjectModel(Code.name) private codeModel: Model<Code>,
     private readonly llmRouterService: LlmRouterService,
     private readonly memoryService: MemoryService,
+    private readonly semanticMediatorService: SemanticMediatorService,
   ) {}
 
   async generateCode(expectationId: string): Promise<Code> {
@@ -141,6 +143,20 @@ export class GeneratorService {
 
     logger.debug(`Found expectation: ${expectation.content.title || 'Untitled'}`);
 
+    logger.debug('Enriching semantic analysis with context');
+    const enrichedAnalysis = await this.semanticMediatorService.enrichWithContext(
+      'generator',
+      semanticAnalysis,
+      `expectation:${expectationId}`,
+    );
+
+    logger.debug('Translating expectation to generator-friendly format');
+    const translatedExpectation = await this.semanticMediatorService.translateBetweenModules(
+      'expectation',
+      'generator',
+      expectation.content.model,
+    );
+
     let codeGenerationPrompt;
     try {
       const templateName = options?.templateName || 'GENERATE_CODE_WITH_SEMANTIC_INPUT_PROMPT';
@@ -149,7 +165,6 @@ export class GeneratorService {
         semanticAnalysis: JSON.stringify(semanticAnalysis, null, 2),
         options: JSON.stringify(options || {}, null, 2),
       });
-
       logger.debug(`Using template: ${templateName}`);
     } catch (error) {
       logger.warn(`Template not found, using default prompt: ${error.message}`);
@@ -157,9 +172,9 @@ export class GeneratorService {
       codeGenerationPrompt = `
         基于以下期望模型和语义分析结果，生成相应的代码实现：
         
-        期望模型：${JSON.stringify(expectation.content.model, null, 2)}
+        期望模型：${JSON.stringify(translatedExpectation, null, 2)}
         
-        语义分析结果：${JSON.stringify(semanticAnalysis, null, 2)}
+        语义分析结果：${JSON.stringify(enrichedAnalysis, null, 2)}
         
         请生成以下文件的代码：
         1. 主要功能实现文件
@@ -172,6 +187,7 @@ export class GeneratorService {
 
     logger.debug('Sending prompt to LLM service');
     const generatedCodeText = await this.llmRouterService.generateContent(codeGenerationPrompt);
+
 
     let generatedCode;
     try {
@@ -192,7 +208,7 @@ export class GeneratorService {
         version: 1,
         status: 'generated',
         semanticAnalysisUsed: true,
-        semanticAnalysisSummary: semanticAnalysis.summary || 'No summary available',
+        semanticAnalysisSummary: enrichedAnalysis.summary || 'Enriched semantic analysis',
         generationOptions: options || {},
         generatedAt: new Date().toISOString(),
       },
@@ -202,6 +218,19 @@ export class GeneratorService {
 
     logger.debug('Saving generated code to database');
     const savedCode = await createdCode.save();
+
+    logger.debug('Tracking semantic transformation');
+    await this.semanticMediatorService.trackSemanticTransformation(
+      'expectation',
+      'code',
+      expectation.content.model,
+      savedCode,
+      {
+        trackDifferences: true,
+        analyzeTransformation: true,
+        saveToMemory: true,
+      },
+    );
 
     logger.debug('Storing code in memory service');
     await this.memoryService.storeMemory({
@@ -340,7 +369,6 @@ export class GeneratorService {
         templateVariables,
       );
       logger.debug('Sending architecture-based code generation prompt to LLM service');
-
       const generatedCodeText = await this.llmRouterService.generateContent(prompt);
 
       let generatedCode;
@@ -591,6 +619,46 @@ export class GeneratorService {
     }
   }
 
+  /**
+   * 验证代码语义
+   * 使用语义中介器验证代码是否符合语义期望
+   */
+  async validateCodeSemantics(codeId: string): Promise<any> {
+    const logger = new Logger('GeneratorService');
+    logger.log(`Validating code semantics for code ID: ${codeId}`);
+
+    const code = await this.getCodeById(codeId);
+    if (!code) {
+      logger.error(`Code not found: ${codeId}`);
+      throw new Error(`Code with id ${codeId} not found`);
+    }
+
+    logger.debug('Generating validation context');
+    const validationContext = await this.semanticMediatorService.generateValidationContext(
+      code.expectationId,
+      codeId,
+    );
+
+    logger.debug('Extracting semantic insights from code');
+    const codeInsights = await this.semanticMediatorService.extractSemanticInsights(
+      code,
+      'code validation',
+    );
+
+    logger.log(`Successfully validated code semantics for code ID: ${codeId}`);
+    return {
+      codeId,
+      expectationId: code.expectationId,
+      validationContext,
+      semanticInsights: codeInsights,
+      timestamp: new Date(),
+    };
+  }
+
+  /**
+   * 优化代码
+   * 基于语义反馈优化现有代码
+   */
   async optimizeCode(codeId: string, semanticFeedback: any): Promise<Code> {
     const logger = new Logger('GeneratorService');
     logger.log(`Optimizing code with ID: ${codeId}`);
@@ -613,6 +681,20 @@ export class GeneratorService {
 
     logger.debug(`Optimizing code for expectation: ${expectation.content.title || 'Untitled'}`);
 
+    logger.debug('Extracting semantic insights from feedback');
+    const semanticInsights = await this.semanticMediatorService.extractSemanticInsights(
+      semanticFeedback,
+      'code optimization',
+    );
+
+    logger.debug('Resolving semantic conflicts between expectation and code');
+    const resolvedExpectation = await this.semanticMediatorService.resolveSemanticConflicts(
+      'expectation',
+      expectation.content.model,
+      'code',
+      originalCode,
+    );
+
     const optimizationPrompt = `
       请优化以下代码，提高其质量和性能：
       
@@ -620,10 +702,10 @@ export class GeneratorService {
       ${JSON.stringify(originalCode.files, null, 2)}
       
       期望模型：
-      ${JSON.stringify(expectation.content.model, null, 2)}
+      ${JSON.stringify(resolvedExpectation, null, 2)}
       
       语义反馈：
-      ${JSON.stringify(semanticFeedback, null, 2)}
+      ${JSON.stringify(semanticInsights, null, 2)}
       
       优化要求：
       - 提高代码效率
@@ -689,6 +771,26 @@ export class GeneratorService {
     logger.debug(`Saving optimized code (version ${newVersion}) to database`);
     const savedCode = await createdCode.save();
 
+    logger.debug('Evaluating semantic transformation');
+    const evaluationResult = await this.semanticMediatorService.evaluateSemanticTransformation(
+      originalCode,
+      savedCode,
+      'Optimize code based on semantic feedback',
+    );
+
+    logger.debug('Tracking semantic transformation');
+    await this.semanticMediatorService.trackSemanticTransformation(
+      'code',
+      'optimized_code',
+      originalCode,
+      savedCode,
+      {
+        trackDifferences: true,
+        analyzeTransformation: true,
+        saveToMemory: true,
+      },
+    );
+
     logger.debug('Storing optimized code in memory service');
     await this.memoryService.storeMemory({
       type: MemoryType.CODE,
@@ -698,6 +800,7 @@ export class GeneratorService {
         status: 'optimized',
         originalCodeId: codeId,
         version: newVersion,
+        evaluationResult: evaluationResult,
       },
       tags: ['code', 'optimized', originalCode.expectationId, savedCode._id.toString()],
     });

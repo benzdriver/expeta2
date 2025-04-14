@@ -5,6 +5,7 @@ import { Validation } from './schemas/validation.schema';
 import { LlmRouterService } from '../../services/llm-router.service';
 import { MemoryService } from '../memory/memory.service';
 import { MemoryType } from '../memory/schemas/memory.schema';
+import { SemanticMediatorService } from '../semantic-mediator/semantic-mediator.service';
 
 @Injectable()
 export class ValidatorService {
@@ -12,6 +13,7 @@ export class ValidatorService {
     @InjectModel(Validation.name) private validationModel: Model<Validation>,
     private readonly llmRouterService: LlmRouterService,
     private readonly memoryService: MemoryService,
+    private readonly semanticMediatorService: SemanticMediatorService,
   ) {}
 
   async validateCode(expectationId: string, codeId: string): Promise<Validation> {
@@ -93,7 +95,7 @@ export class ValidatorService {
 
   /**
    * 使用语义输入验证代码
-   * 这个方法接收语义中介器提供的额外语义信息来增强验证过程
+   * 这个方法使用语义中介器提供的额外语义信息来增强验证过程
    */
   async validateCodeWithSemanticInput(
     expectationId: string,
@@ -122,37 +124,44 @@ export class ValidatorService {
 
     logger.debug(`Found expectation and code for validation`);
 
-    const validationPrompt = `
-      基于以下期望模型、生成的代码和语义解析结果，评估代码是否满足期望要求：
-      
-      期望模型：${JSON.stringify(expectation.model, null, 2)}
-      
-      生成的代码：
-      ${code.files.map((file) => `文件路径: ${file.path}\n内容:\n${file.content}`).join('\n\n')}
-      
-      语义解析结果：
-      ${JSON.stringify(semanticInput, null, 2)}
-      
-      请评估代码对每个期望的满足程度，并提供以下格式的JSON结果：
+    logger.debug('Generating validation context using semantic mediator');
+    const validationContext = await this.semanticMediatorService.generateValidationContext(
+      expectationId,
+      codeId,
+      [], // No previous validations
       {
-        "status": "passed|failed|partial",
-        "score": 0-100,
-        "details": [
-          {
-            "expectationId": "期望ID",
-            "status": "passed|failed|partial",
-            "score": 0-100,
-            "message": "评估说明",
-            "semanticInsights": "基于语义解析的额外洞察"
-          }
-        ],
-        "semanticAnalysis": "对语义解析结果的总体分析"
+        strategy: 'balanced',
+        focusAreas: [] // No specific focus areas
       }
-    `;
-
-    logger.debug('Sending validation prompt to LLM service');
-    const validationResultText = await this.llmRouterService.generateContent(validationPrompt);
-
+    );
+    
+    logger.debug('Enriching semantic input with context');
+    const enrichedSemanticInput = await this.semanticMediatorService.enrichWithContext(
+      'validator',
+      semanticInput,
+      `expectation:${expectationId} code:${codeId}`
+    );
+    
+    const enhancedValidationContext = {
+      expectation: expectation.model,
+      code: {
+        files: code.files,
+        features: validationContext.semanticContext?.codeFeatures || {}
+      },
+      semanticInput: enrichedSemanticInput,
+      semanticRelationship: validationContext.semanticContext?.semanticRelationship || {},
+      validationType: 'semantic'
+    };
+    
+    logger.debug('Transforming validation context to prompt using semantic mediator');
+    const transformedPrompt = await this.semanticMediatorService.translateBetweenModules(
+      'validator',
+      'llm',
+      enhancedValidationContext
+    );
+    
+    logger.debug('Sending transformed validation prompt to LLM service');
+    const validationResultText = await this.llmService.generateContent(transformedPrompt);
     let validationResult;
     try {
       validationResult = JSON.parse(validationResultText);
@@ -161,6 +170,18 @@ export class ValidatorService {
       logger.error(`Failed to parse validation result: ${error.message}`);
       throw new Error(`Failed to parse validation result: ${error.message}`);
     }
+
+    await this.semanticMediatorService.trackSemanticTransformation(
+      'llm',
+      'validator',
+      validationResultText,
+      validationResult,
+      {
+        trackDifferences: true,
+        analyzeTransformation: true,
+        saveToMemory: true
+      }
+    );
 
     const validation = new this.validationModel({
       expectationId,
@@ -171,7 +192,8 @@ export class ValidatorService {
       metadata: {
         semanticAnalysis: validationResult.semanticAnalysis,
         usedSemanticInput: true,
-        validatedAt: new Date().toISOString(),
+        validationContext: validationContext.semanticContext || {},
+        validatedAt: new Date().toISOString()
       },
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -205,6 +227,119 @@ export class ValidatorService {
    * 迭代验证代码
    * 这个方法在多轮验证过程中使用，接收前一轮验证的反馈
    */
+  /**
+   * 使用语义中介器验证代码
+   * 这个方法完全利用语义中介器的能力进行增强的语义验证
+   */
+  async validateWithSemanticMediation(
+    expectationId: string,
+    codeId: string,
+    options: {
+      strategy?: 'balanced' | 'strict' | 'lenient' | 'performance' | 'security' | 'custom';
+      focusAreas?: string[];
+      weights?: Record<string, number>;
+      previousValidations?: string[];
+      iterative?: boolean;
+    } = {}
+  ): Promise<Validation> {
+    const logger = new Logger('ValidatorService');
+    logger.log(`Performing semantic mediation validation - expectation: ${expectationId}, code: ${codeId}`);
+    
+    logger.debug('Generating comprehensive validation context using semantic mediator');
+    const validationContext = await this.semanticMediatorService.generateValidationContext(
+      expectationId,
+      codeId,
+      options.previousValidations || [],
+      {
+        strategy: options.strategy || 'balanced',
+        focusAreas: options.focusAreas,
+        customWeights: options.weights
+      }
+    );
+    
+    logger.debug('Transforming validation context to prompt using semantic mediator');
+    const transformedPrompt = await this.semanticMediatorService.translateBetweenModules(
+      'validator',
+      'llm',
+      {
+        expectationId,
+        codeId,
+        validationContext,
+        validationType: 'semantic_mediation',
+        iterative: options.iterative || false
+      }
+    );
+    
+    logger.debug('Sending transformed validation prompt to LLM service');
+    const validationResultText = await this.llmService.generateContent(transformedPrompt);
+    
+    let validationResult;
+    try {
+      validationResult = JSON.parse(validationResultText);
+      logger.debug(`Successfully parsed semantic mediation validation result with status: ${validationResult.status}`);
+    } catch (error) {
+      logger.error(`Failed to parse semantic mediation validation result: ${error.message}`);
+      throw new Error(`Failed to parse semantic mediation validation result: ${error.message}`);
+    }
+    
+    await this.semanticMediatorService.trackSemanticTransformation(
+      'llm',
+      'validator',
+      validationResultText,
+      validationResult,
+      {
+        trackDifferences: true,
+        analyzeTransformation: true,
+        saveToMemory: true
+      }
+    );
+    
+    const validation = new this.validationModel({
+      expectationId,
+      codeId,
+      status: validationResult.status,
+      score: validationResult.score,
+      details: validationResult.details,
+      metadata: {
+        semanticAnalysis: validationResult.semanticAnalysis,
+        semanticInsights: validationResult.semanticInsights,
+        validationContext,
+        validatedAt: new Date().toISOString(),
+        validationType: 'semantic_mediation',
+        iterative: options.iterative || false
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    
+    logger.debug('Saving semantic mediation validation result to database');
+    const savedValidation = await validation.save();
+    
+    logger.debug('Storing semantic mediation validation in memory service');
+    await this.memoryService.storeMemory({
+      type: MemoryType.VALIDATION,
+      content: savedValidation,
+      metadata: {
+        expectationId,
+        codeId,
+        status: validationResult.status,
+        score: validationResult.score,
+        isSemanticMediation: true,
+        validationContext: {
+          strategy: options.strategy || 'balanced',
+          focusAreas: options.focusAreas,
+          weights: options.weights,
+          iterative: options.iterative || false
+        },
+        timestamp: new Date().toISOString()
+      },
+      tags: ['validation', 'semantic_mediation', expectationId, codeId]
+    });
+    
+    logger.log(`Successfully performed semantic mediation validation - status: ${validationResult.status}, score: ${validationResult.score}`);
+    return savedValidation;
+  }
+
   async validateCodeIteratively(
     expectationId: string,
     codeId: string,
@@ -432,6 +567,20 @@ export class ValidatorService {
    * 使用自适应语义验证
    * 根据验证上下文和语义分析动态调整验证标准和权重
    */
+  /**
+   * 将任意策略字符串映射到有效的验证策略
+   * 私有辅助方法，确保策略值符合语义中介器的要求
+   */
+  private mapToValidStrategy(strategy: string): 'balanced' | 'strict' | 'lenient' | 'performance' | 'security' | 'custom' {
+    const validStrategies = ['balanced', 'strict', 'lenient', 'performance', 'security', 'custom'];
+    
+    if (!strategy || !validStrategies.includes(strategy)) {
+      return 'balanced'; // 默认使用平衡策略
+    }
+    
+    return strategy as 'balanced' | 'strict' | 'lenient' | 'performance' | 'security' | 'custom';
+  }
+
   async validateWithAdaptiveContext(
     expectationId: string,
     codeId: string,
@@ -478,74 +627,49 @@ export class ValidatorService {
         metadata: v.metadata,
       }));
     }
-
-    const validationPrompt = `
-      基于以下期望模型、生成的代码和验证上下文，执行自适应语义验证：
+    
+    let enhancedContext = { ...validationContext };
+    if (!validationContext.semanticContext) {
+      logger.debug('Generating semantic validation context using semantic mediator');
+      const validStrategy = this.mapToValidStrategy(validationContext.strategy);
       
-      期望模型：${JSON.stringify(expectation.model, null, 2)}
-      
-      生成的代码：
-      ${code.files.map((file) => `文件路径: ${file.path}\n内容:\n${file.content}`).join('\n\n')}
-      
-      验证上下文：
-      - 验证策略: ${validationContext.strategy || 'balanced'}
-      - 重点关注领域: ${JSON.stringify(validationContext.focusAreas || [])}
-      - 权重配置: ${JSON.stringify(
-        validationContext.weights || {
-          functionality: 1.0,
-          performance: 1.0,
-          security: 1.0,
-          maintainability: 1.0,
-        },
-      )}
-      
-      ${
-        previousValidationsData.length > 0
-          ? `
-      先前验证结果：
-      ${JSON.stringify(previousValidationsData, null, 2)}
-      `
-          : ''
-      }
-      
-      ${
-        validationContext.semanticContext
-          ? `
-      语义上下文：
-      ${JSON.stringify(validationContext.semanticContext, null, 2)}
-      `
-          : ''
-      }
-      
-      请根据提供的验证上下文，执行自适应验证，并提供以下格式的JSON结果：
-      {
-        "status": "passed|failed|partial",
-        "score": 0-100,
-        "details": [
-          {
-            "expectationId": "期望ID",
-            "status": "passed|failed|partial",
-            "score": 0-100,
-            "message": "评估说明",
-            "semanticInsights": "基于语义分析的洞察",
-            "adaptiveAnalysis": "基于自适应上下文的分析"
-          }
-        ],
-        "adaptiveInsights": {
-          "strategyEffectiveness": "验证策略有效性评估",
-          "focusAreasAnalysis": "重点关注领域分析",
-          "weightEffectiveness": "权重配置有效性分析",
-          "suggestedAdjustments": {
-            "weights": { "功能类别1": 权重值, ... },
-            "focusAreas": ["建议关注领域1", ...]
-          }
+      const generatedContext = await this.semanticMediatorService.generateValidationContext(
+        expectationId,
+        codeId,
+        validationContext.previousValidations || [],
+        {
+          strategy: validStrategy,
+          focusAreas: validationContext.focusAreas,
+          customWeights: validationContext.weights
         }
-      }
-    `;
-
+      );
+      
+      enhancedContext = {
+        ...validationContext,
+        semanticContext: generatedContext.semanticContext
+      };
+    }
+    
+    const adaptiveValidationData = {
+      expectation: expectation.model,
+      code: {
+        files: code.files
+      },
+      validationContext: enhancedContext,
+      previousValidations: previousValidationsData,
+      validationType: 'adaptive'
+    };
+    
+    logger.debug('Transforming validation data to prompt using semantic mediator');
+    const transformedPrompt = await this.semanticMediatorService.translateBetweenModules(
+      'validator',
+      'llm',
+      adaptiveValidationData
+    );
+    
     logger.debug('Sending adaptive validation prompt to LLM service');
-    const validationResultText = await this.llmRouterService.generateContent(validationPrompt);
-
+    const validationResultText = await this.llmService.generateContent(transformedPrompt);
+    
     let validationResult;
     try {
       validationResult = JSON.parse(validationResultText);
@@ -556,7 +680,19 @@ export class ValidatorService {
       logger.error(`Failed to parse adaptive validation result: ${error.message}`);
       throw new Error(`Failed to parse adaptive validation result: ${error.message}`);
     }
-
+    
+    await this.semanticMediatorService.trackSemanticTransformation(
+      'llm',
+      'validator',
+      validationResultText,
+      validationResult,
+      {
+        trackDifferences: true,
+        analyzeTransformation: true,
+        saveToMemory: true
+      }
+    );
+    
     const validation = new this.validationModel({
       expectationId,
       codeId,
@@ -565,7 +701,7 @@ export class ValidatorService {
       details: validationResult.details,
       metadata: {
         adaptiveInsights: validationResult.adaptiveInsights,
-        validationContext,
+        validationContext: enhancedContext,
         previousValidations: validationContext.previousValidations || [],
         validatedAt: new Date().toISOString(),
         validationType: 'adaptive',
@@ -588,9 +724,10 @@ export class ValidatorService {
         score: validationResult.score,
         isAdaptive: true,
         validationContext: {
-          strategy: validationContext.strategy,
-          focusAreas: validationContext.focusAreas,
-          weights: validationContext.weights,
+          strategy: enhancedContext.strategy,
+          focusAreas: enhancedContext.focusAreas,
+          weights: enhancedContext.weights,
+          semanticContext: enhancedContext.semanticContext ? true : false
         },
         timestamp: new Date().toISOString(),
       },
