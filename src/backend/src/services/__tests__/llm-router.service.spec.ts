@@ -38,12 +38,7 @@ describe('LlmRouterService', () => {
             }),
           },
         },
-        {
-          provide: HttpService,
-          useValue: {
-            post: jest.fn(),
-          },
-        },
+
       ],
     }).compile();
 
@@ -51,11 +46,16 @@ describe('LlmRouterService', () => {
     configService = module.get<ConfigService>(ConfigService);
     httpService = module.get<HttpService>(HttpService);
 
+
+    jest.spyOn(httpService, 'post');
     jest.clearAllMocks();
   });
 
+
+
   it('should be defined', () => {
     expect(service).toBeDefined();
+
   });
 
   describe('generateContent', () => {
@@ -123,7 +123,7 @@ describe('LlmRouterService', () => {
     } as AxiosResponse);
 
     it('should call Anthropic API successfully and return response', async () => {
-      (httpService.post as jest.Mock).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
+      (httpService.post as jest.MockedFunction<typeof httpService.post>).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
 
       const result = await service.generateContent(prompt, options);
 
@@ -139,7 +139,7 @@ describe('LlmRouterService', () => {
     });
 
     it('should fall back to OpenAI API when Anthropic API fails', async () => {
-      (httpService.post as jest.Mock)
+      (httpService.post as jest.MockedFunction<typeof httpService.post>)
         .mockReturnValueOnce(throwError(() => mockAnthropicApiError)) // Anthropic fails
         .mockReturnValueOnce(of(mockOpenaiSuccessResponse)); // OpenAI succeeds
 
@@ -164,7 +164,7 @@ describe('LlmRouterService', () => {
     });
 
     it('should throw an error when both Anthropic and OpenAI APIs fail', async () => {
-      (httpService.post as jest.Mock)
+      (httpService.post as jest.MockedFunction<typeof httpService.post>)
         .mockReturnValueOnce(throwError(() => mockAnthropicApiError)) // Anthropic fails
         .mockReturnValueOnce(throwError(() => mockOpenaiApiError)); // OpenAI fails
 
@@ -184,7 +184,7 @@ describe('LlmRouterService', () => {
         if (key === 'OPENAI_API_URL') return 'https://api.openai.com/v1/chat/completions';
         return null;
       });
-      (httpService.post as jest.Mock).mockReturnValueOnce(of(mockOpenaiSuccessResponse)); // OpenAI should be called
+      (httpService.post as jest.MockedFunction<typeof httpService.post>).mockReturnValueOnce(of(mockOpenaiSuccessResponse)); // OpenAI should be called
 
       const result = await service.generateContent(prompt, options);
 
@@ -215,7 +215,7 @@ describe('LlmRouterService', () => {
     });
 
     it('should use OpenAI if specified as provider', async () => {
-      (httpService.post as jest.Mock).mockReturnValueOnce(of(mockOpenaiSuccessResponse));
+      (httpService.post as jest.MockedFunction<typeof httpService.post>).mockReturnValueOnce(of(mockOpenaiSuccessResponse));
       const specificOptions = { ...options, provider: 'openai' as const };
 
       const result = await service.generateContent(prompt, specificOptions);
@@ -230,7 +230,7 @@ describe('LlmRouterService', () => {
     });
 
     it('should use Anthropic if specified as provider', async () => {
-      (httpService.post as jest.Mock).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
+      (httpService.post as jest.MockedFunction<typeof httpService.post>).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
       const specificOptions = { ...options, provider: 'anthropic' as const };
 
       const result = await service.generateContent(prompt, specificOptions);
@@ -245,7 +245,7 @@ describe('LlmRouterService', () => {
     });
 
     it('should default to Anthropic if provider is invalid', async () => {
-      (httpService.post as jest.Mock).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
+      (httpService.post as jest.MockedFunction<typeof httpService.post>).mockReturnValueOnce(of(mockAnthropicSuccessResponse));
       const specificOptions = { ...options, provider: 'invalid-provider' };
 
       const result = await service.generateContent(prompt, specificOptions);
