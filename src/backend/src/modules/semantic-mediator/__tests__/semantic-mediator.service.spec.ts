@@ -267,7 +267,6 @@ describe('SemanticMediatorService', () => {
       }),
     };
 
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SemanticMediatorService,

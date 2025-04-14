@@ -71,9 +71,7 @@ describe('SemanticMediatorService Tests', () => {
       storeMemory: jest.fn().mockResolvedValue({ id: 'memory-id' }),
       getMemoryByType: jest.fn().mockImplementation((type, id) => {
         if (type === MemoryType.EXPECTATION && id === 'exp-123') {
-          return Promise.resolve([
-            { content: { _id: 'exp-123', model: { key: 'value' } } }
-          ]);
+          return Promise.resolve([{ content: { _id: 'exp-123', model: { key: 'value' } } }]);
         } else if (type === MemoryType.CODE && id === 'code-456') {
           return Promise.resolve([
             {
@@ -202,13 +200,13 @@ describe('SemanticMediatorService Tests', () => {
   it('should extract semantic insights', async () => {
     const originalMethod = service.extractSemanticInsights;
     service.extractSemanticInsights = jest.fn().mockResolvedValueOnce({
-      insights: ['insight1', 'insight2']
+      insights: ['insight1', 'insight2'],
     });
-    
+
     const result = await service.extractSemanticInsights({ key: 'data' }, 'semantic query');
     expect(result).toBeDefined();
     expect(result.insights).toEqual(['insight1', 'insight2']);
-    
+
     service.extractSemanticInsights = originalMethod;
   });
 
@@ -229,13 +227,15 @@ describe('SemanticMediatorService Tests', () => {
         semanticExpectations: ['expectation1'],
         validationCriteria: ['criteria1'],
         priorityAreas: ['area1'],
-      }
+      },
     });
-    
-    const result = await service.generateValidationContext('exp-123', 'code-456', [], { strategy: 'balanced' });
+
+    const result = await service.generateValidationContext('exp-123', 'code-456', [], {
+      strategy: 'balanced',
+    });
     expect(result).toBeDefined();
     expect(result.validationContext.semanticExpectations).toEqual(['expectation1']);
-    
+
     service.generateValidationContext = originalMethod;
   });
 

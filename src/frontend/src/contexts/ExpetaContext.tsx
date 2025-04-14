@@ -4,8 +4,13 @@ import {
   generatorApi, 
   validatorApi, 
   orchestratorApi, 
-  semanticMediatorApi 
+  semanticMediatorApi,
+  RequirementData,
+  GeneratorOptions,
+  WorkflowParams,
+  ModuleData
 } from '../services/api';
+import loggingService from '../services/logging.service';
 
 interface Expectation {
   id: string;
@@ -71,10 +76,17 @@ interface Validation {
   updatedAt?: Date;
 }
 
+interface ProcessStatus {
+  status: string;
+  message?: string;
+  nextStep?: string;
+  suggestedQuestions?: Array<{ id: string; text: string }>;
+}
+
 interface ExpetaContextType {
   requirements: Requirement[];
   currentRequirement: Requirement | null;
-  expectations: Record<string, any>;
+  expectations: Record<string, Expectation[]>;
   generatedCode: GeneratedCode | null;
   validations: Validation[];
   isLoading: boolean;
@@ -83,26 +95,26 @@ interface ExpetaContextType {
   createRequirement: (text: string) => Promise<Requirement>;
   getRequirements: () => Promise<Requirement[]>;
   getRequirement: (id: string) => Promise<Requirement>;
-  updateRequirement: (id: string, data: any) => Promise<Requirement>;
-  generateClarificationQuestions: (requirementText: string) => Promise<any>;
-  processClarificationAnswer: (requirementId: string, questionId: string, answer: string) => Promise<any>;
-  generateExpectations: (requirementId: string) => Promise<any>;
+  updateRequirement: (id: string, data: Partial<RequirementData>) => Promise<Requirement>;
+  generateClarificationQuestions: (requirementText: string) => Promise<Array<{id: string; text: string}>>;
+  processClarificationAnswer: (requirementId: string, questionId: string, answer: string) => Promise<Requirement>;
+  generateExpectations: (requirementId: string) => Promise<Expectation[]>;
   
-  generateCode: (expectationId: string, options: any) => Promise<GeneratedCode>;
+  generateCode: (expectationId: string, options: GeneratorOptions) => Promise<GeneratedCode>;
   
   validateCode: (expectationId: string, codeId: string) => Promise<Validation>;
   
-  processRequirement: (requirementId: string) => Promise<any>;
-  executeWorkflow: (workflowId: string, params: any) => Promise<any>;
+  processRequirement: (requirementId: string) => Promise<ProcessStatus>;
+  executeWorkflow: (workflowId: string, params: WorkflowParams) => Promise<Record<string, unknown>>;
   getWorkflowStatus: (workflowId: string) => Promise<any>;
   getModuleConnections: (workflowId: string) => Promise<any>;
   
-  translateBetweenModules: (sourceModule: string, targetModule: string, data: any) => Promise<any>;
-  enrichWithContext: (module: string, data: any, contextQuery: string) => Promise<any>;
-  extractSemanticInsights: (data: any, query: string) => Promise<any>;
-  resolveSemanticConflicts: (moduleA: string, dataA: any, moduleB: string, dataB: any) => Promise<any>;
-  trackSemanticTransformation: (sourceModule: string, targetModule: string, sourceData: any, transformedData: any) => Promise<any>;
-  evaluateSemanticTransformation: (sourceData: any, transformedData: any, expectedOutcome: string) => Promise<any>;
+  translateBetweenModules: (sourceModule: string, targetModule: string, data: ModuleData) => Promise<ModuleData>;
+  enrichWithContext: (module: string, data: ModuleData, contextQuery: string) => Promise<ModuleData>;
+  extractSemanticInsights: (data: ModuleData, query: string) => Promise<Record<string, unknown>>;
+  resolveSemanticConflicts: (moduleA: string, dataA: ModuleData, moduleB: string, dataB: ModuleData) => Promise<ModuleData>;
+  trackSemanticTransformation: (sourceModule: string, targetModule: string, sourceData: ModuleData, transformedData: ModuleData) => Promise<Record<string, unknown>>;
+  evaluateSemanticTransformation: (sourceData: ModuleData, transformedData: ModuleData, expectedOutcome: string) => Promise<Record<string, unknown>>;
 }
 
 const ExpetaContext = createContext<ExpetaContextType | undefined>(undefined);
@@ -122,7 +134,7 @@ interface ExpetaProviderProps {
 export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [currentRequirement, setCurrentRequirement] = useState<Requirement | null>(null);
-  const [expectations, setExpectations] = useState<Record<string, any>>({});
+  const [expectations, setExpectations] = useState<Record<string, Expectation[]>>({});
   const [generatedCode, setGeneratedCode] = useState<GeneratedCode | null>(null);
   const [validations, setValidations] = useState<Validation[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -130,7 +142,7 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
 
   useEffect(() => {
     getRequirements().catch(err => {
-      console.error('Failed to load initial requirements', err);
+      loggingService.error('ExpetaContext', 'Failed to load initial requirements', err);
       setError('Failed to load initial data');
     });
   }, []);
@@ -141,9 +153,10 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
     try {
       const result = await apiCall();
       return result;
-    } catch (err: any) {
-      console.error('API call failed:', err);
-      setError(err.message || 'An error occurred');
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : { message: String(err) };
+      loggingService.error('ExpetaContext', 'API call failed:', error);
+      setError(error instanceof Error ? error.message : String(err) || 'An error occurred');
       throw err;
     } finally {
       setIsLoading(false);
@@ -152,7 +165,10 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
 
   const createRequirement = async (text: string): Promise<Requirement> => {
     return handleApiCall(async () => {
-      const response = await clarifierApi.createRequirement({ text });
+      const response = await clarifierApi.createRequirement({ 
+        title: 'New Requirement',
+        description: text 
+      });
       const newRequirement = response.data;
       setRequirements(prev => [...prev, newRequirement]);
       setCurrentRequirement(newRequirement);
@@ -178,7 +194,7 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
     });
   };
 
-  const updateRequirement = async (id: string, data: any): Promise<Requirement> => {
+  const updateRequirement = async (id: string, data: Partial<RequirementData>): Promise<Requirement> => {
     return handleApiCall(async () => {
       const response = await clarifierApi.updateRequirement(id, data);
       const updatedRequirement = response.data;
@@ -192,7 +208,7 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
     });
   };
 
-  const generateClarificationQuestions = async (requirementText: string): Promise<any> => {
+  const generateClarificationQuestions = async (requirementText: string): Promise<Array<{id: string; text: string}>> => {
     return handleApiCall(async () => {
       const response = await clarifierApi.generateClarificationQuestions(requirementText);
       return response.data;
@@ -203,7 +219,7 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
     requirementId: string, 
     questionId: string, 
     answer: string
-  ): Promise<any> => {
+  ): Promise<Requirement> => {
     return handleApiCall(async () => {
       const response = await clarifierApi.processClarificationAnswer(requirementId, questionId, answer);
       if (currentRequirement?.id === requirementId) {
@@ -213,7 +229,7 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
     });
   };
 
-  const generateExpectations = async (requirementId: string): Promise<any> => {
+  const generateExpectations = async (requirementId: string): Promise<Expectation[]> => {
     return handleApiCall(async () => {
       const response = await clarifierApi.generateExpectations(requirementId);
       const generatedExpectations = response.data;
@@ -225,7 +241,7 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
     });
   };
 
-  const generateCode = async (expectationId: string, options: any): Promise<GeneratedCode> => {
+  const generateCode = async (expectationId: string, options: GeneratorOptions): Promise<GeneratedCode> => {
     return handleApiCall(async () => {
       const response = await generatorApi.generateCode(expectationId, options);
       const code = response.data;
@@ -243,14 +259,14 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
     });
   };
 
-  const processRequirement = async (requirementId: string): Promise<any> => {
+  const processRequirement = async (requirementId: string): Promise<ProcessStatus> => {
     return handleApiCall(async () => {
       const response = await orchestratorApi.processRequirement(requirementId);
       return response.data;
     });
   };
 
-  const executeWorkflow = async (workflowId: string, params: any): Promise<any> => {
+  const executeWorkflow = async (workflowId: string, params: WorkflowParams): Promise<Record<string, unknown>> => {
     return handleApiCall(async () => {
       const response = await orchestratorApi.executeWorkflow(workflowId, params);
       
@@ -283,8 +299,8 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
   const translateBetweenModules = async (
     sourceModule: string, 
     targetModule: string, 
-    data: any
-  ): Promise<any> => {
+    data: ModuleData
+  ): Promise<ModuleData> => {
     return handleApiCall(async () => {
       const response = await semanticMediatorApi.translateBetweenModules(sourceModule, targetModule, data);
       return response.data;
@@ -293,16 +309,16 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
 
   const enrichWithContext = async (
     module: string, 
-    data: any, 
+    data: ModuleData, 
     contextQuery: string
-  ): Promise<any> => {
+  ): Promise<ModuleData> => {
     return handleApiCall(async () => {
       const response = await semanticMediatorApi.enrichWithContext(module, data, contextQuery);
       return response.data;
     });
   };
 
-  const extractSemanticInsights = async (data: any, query: string): Promise<any> => {
+  const extractSemanticInsights = async (data: ModuleData, query: string): Promise<Record<string, unknown>> => {
     return handleApiCall(async () => {
       const response = await semanticMediatorApi.extractSemanticInsights(data, query);
       return response.data;
@@ -312,9 +328,9 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
   const trackSemanticTransformation = async (
     sourceModule: string, 
     targetModule: string, 
-    sourceData: any, 
-    transformedData: any
-  ): Promise<any> => {
+    sourceData: ModuleData, 
+    transformedData: ModuleData
+  ): Promise<Record<string, unknown>> => {
     return handleApiCall(async () => {
       const response = await semanticMediatorApi.trackSemanticTransformation(
         sourceModule, 
@@ -327,10 +343,10 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
   };
 
   const evaluateSemanticTransformation = async (
-    sourceData: any, 
-    transformedData: any, 
+    sourceData: ModuleData, 
+    transformedData: ModuleData, 
     expectedOutcome: string
-  ): Promise<any> => {
+  ): Promise<Record<string, unknown>> => {
     return handleApiCall(async () => {
       const response = await semanticMediatorApi.evaluateSemanticTransformation(
         sourceData, 
@@ -384,7 +400,7 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
     translateBetweenModules,
     enrichWithContext,
     extractSemanticInsights,
-    resolveSemanticConflicts: async (moduleA: string, dataA: any, moduleB: string, dataB: any): Promise<any> => {
+    resolveSemanticConflicts: async (moduleA: string, dataA: ModuleData, moduleB: string, dataB: ModuleData): Promise<ModuleData> => {
       return handleApiCall(async () => {
         const response = await semanticMediatorApi.resolveSemanticConflicts(moduleA, dataA, moduleB, dataB);
         return response.data;

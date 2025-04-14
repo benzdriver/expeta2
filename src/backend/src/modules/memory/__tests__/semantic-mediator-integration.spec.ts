@@ -121,10 +121,10 @@ describe('MemoryService - Semantic Mediator Integration', () => {
 
       const originalConsoleError = console.error;
       console.error = jest.fn();
-      
+
       const originalLoggerError = service['logger'].error;
       service['logger'].error = jest.fn();
-      
+
       try {
         const result = await service.storeWithSemanticTransformation(data, targetSchema);
         expect(result).toBeUndefined();
@@ -173,10 +173,10 @@ describe('MemoryService - Semantic Mediator Integration', () => {
 
       const originalConsoleError = console.error;
       console.error = jest.fn();
-      
+
       const originalLoggerError = service['logger'].error;
       service['logger'].error = jest.fn();
-      
+
       try {
         const result = await service.registerAsDataSource(memoryType, semanticDescription);
         expect(result).toBeUndefined();

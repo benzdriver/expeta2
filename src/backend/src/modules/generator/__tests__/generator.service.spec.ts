@@ -17,8 +17,8 @@ describe('GeneratorService', () => {
   let semanticMediatorService: SemanticMediatorService;
 
   beforeEach(async () => {
-    const mockCodeModel = function() {
-      this.save = jest.fn().mockImplementation(function() {
+    const mockCodeModel = function () {
+      this.save = jest.fn().mockImplementation(function () {
         const metadata = this.metadata || {
           expectationId: 'test-expectation-id',
           version: 1,
@@ -29,7 +29,7 @@ describe('GeneratorService', () => {
           architecturePattern: '',
           originalCodeId: null,
         };
-        
+
         return Promise.resolve({
           _id: 'test-code-id',
           expectationId: 'test-expectation-id',
@@ -47,7 +47,7 @@ describe('GeneratorService', () => {
       });
       return this;
     };
-    
+
     mockCodeModel.find = jest.fn().mockReturnValue({
       sort: jest.fn().mockReturnValue({
         exec: jest.fn().mockResolvedValue([
@@ -75,7 +75,7 @@ describe('GeneratorService', () => {
         ]),
       }),
     });
-    
+
     mockCodeModel.findById = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue({
         _id: 'test-code-id',
@@ -460,7 +460,7 @@ describe('GeneratorService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       jest.spyOn(service as any, 'createCode').mockResolvedValueOnce(mockResult);
 
       const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
@@ -538,7 +538,7 @@ describe('GeneratorService', () => {
       jest
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked project structure prompt');
-        
+
       const mockSave = jest.fn().mockResolvedValueOnce({
         _id: 'test-code-id',
         expectationId: expectationId,
@@ -554,7 +554,7 @@ describe('GeneratorService', () => {
       });
 
       jest.spyOn(service as any, 'codeModel').mockImplementationOnce(() => ({
-        save: mockSave
+        save: mockSave,
       }));
 
       const result = await service.generateProjectStructure(expectationId, techStack);
@@ -608,7 +608,7 @@ describe('GeneratorService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       jest.spyOn(service as any, 'createCode').mockResolvedValueOnce(mockResult);
 
       const result = await service.generateCodeWithArchitecture(
@@ -669,7 +669,7 @@ describe('GeneratorService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       jest.spyOn(service as any, 'createCode').mockResolvedValueOnce(mockResult);
 
       const result = await service.generateTestSuite(codeId, testRequirements);

@@ -323,23 +323,30 @@ describe('OrchestratorService', () => {
             status: 'failed',
             score: 0.7,
             message: 'Test issue',
-            semanticInsights: 'Needs improvement'
-          }],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          metadata: {},
-        } as any)
-        .mockResolvedValueOnce({
-          _id: 'val-124',
-          codeId: 'code-790',
-          expectationId: 'exp-456',
-          score: 0.95,
-          status: 'passed',
-          details: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          metadata: {},
-        } as any);
+            semanticInsights: 'Needs improvement',
+          },
+        ],
+        metadata: { version: '1.0' },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const mockPassedValidation = {
+        _id: 'val-124',
+        codeId: 'code-790',
+        expectationId: 'exp-456',
+        score: 0.95,
+        status: 'passed',
+        details: [],
+        metadata: { version: '1.0' },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest
+        .spyOn(validatorService, 'validateCode')
+        .mockResolvedValueOnce(mockPartialValidation as any)
+        .mockResolvedValueOnce(mockPassedValidation as any);
 
       const result = await service.executeWorkflow(workflowId, params);
 
@@ -419,7 +426,7 @@ describe('OrchestratorService', () => {
           },
         ],
       };
-      
+
       jest.spyOn(memoryService, 'storeMemory').mockResolvedValueOnce({
         _id: 'workflow-123',
         type: MemoryType.SYSTEM,
@@ -454,7 +461,7 @@ describe('OrchestratorService', () => {
   describe('getWorkflowStatus', () => {
     it('should return the status of a workflow execution', async () => {
       const executionId = 'exec-123';
-      
+
       jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
         if (type === MemoryType.SYSTEM) {
           return Promise.resolve([
@@ -482,7 +489,7 @@ describe('OrchestratorService', () => {
   describe('cancelWorkflow', () => {
     it('should cancel a workflow execution', async () => {
       const executionId = 'exec-123';
-      
+
       jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
         if (type === MemoryType.SYSTEM) {
           return Promise.resolve([

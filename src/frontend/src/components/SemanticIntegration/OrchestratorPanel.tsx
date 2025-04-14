@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useExpeta } from '../../contexts/ExpetaContext';
 import './OrchestratorPanel.css';
+import loggingService from '../../services/logging.service';
 
 interface OrchestratorPanelProps {
   requirementId?: string;
@@ -17,9 +18,23 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
     error 
   } = useExpeta();
   
-  const [processStatus, setProcessStatus] = useState<any>(null);
+  interface ProcessStatus {
+    status: string;
+    message?: string;
+    nextStep?: string;
+    suggestedQuestions?: Array<{ text: string; id?: string }>;
+  }
+  
+  interface WorkflowParams {
+    requirementId?: string;
+    expectationId?: string;
+    codeId?: string;
+    options?: Record<string, unknown>;
+  }
+  
+  const [processStatus, setProcessStatus] = useState<ProcessStatus | null>(null);
   const [selectedWorkflow, setSelectedWorkflow] = useState<string>('full_process');
-  const [workflowParams, setWorkflowParams] = useState<any>({});
+  const [workflowParams, setWorkflowParams] = useState<WorkflowParams>({});
   const [availableRequirements, setAvailableRequirements] = useState<any[]>([]);
   const [selectedRequirementId, setSelectedRequirementId] = useState<string>(requirementId || '');
   const [showRequirementSelector, setShowRequirementSelector] = useState<boolean>(false);
@@ -55,9 +70,11 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
       const status = await processRequirement(selectedRequirementId);
       setProcessStatus(status);
       
-      setWorkflowParams((prev: any) => ({ ...prev, requirementId: selectedRequirementId }));
-    } catch (err) {
-      console.error('Failed to process requirement', err);
+      setWorkflowParams((prev: WorkflowParams) => ({ ...prev, requirementId: selectedRequirementId }));
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : { message: String(err) };
+      loggingService.error('OrchestratorPanel', 'Failed to process requirement', error);
+    }
     }
   };
   
@@ -71,8 +88,9 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
       if (result.executionId && onWorkflowExecuted) {
         onWorkflowExecuted(result.executionId);
       }
-    } catch (err) {
-      console.error('Failed to execute workflow', err);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : { message: String(err) };
+      loggingService.error('OrchestratorPanel', 'Failed to execute workflow', error);
     }
   };
   
@@ -329,7 +347,7 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
           <div className="suggested-questions">
             <h4>建议的澄清问题</h4>
             <ul>
-              {processStatus.suggestedQuestions.map((q: any, index: number) => (
+              {processStatus.suggestedQuestions.map((q, index: number) => (
                 <li key={index}>{q.text}</li>
               ))}
             </ul>
