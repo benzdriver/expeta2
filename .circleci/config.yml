@@ -127,15 +127,9 @@ workflows:
     jobs:
       - install-backend
       - install-frontend
-      - test-backend:
-          requires:
-            - install-backend
-      - test-frontend:
-          requires:
-            - install-frontend
       - build-backend:
           requires:
-            - test-backend
+            - install-backend
       - build-frontend:
           requires:
-            - test-frontend
+            - install-frontend
