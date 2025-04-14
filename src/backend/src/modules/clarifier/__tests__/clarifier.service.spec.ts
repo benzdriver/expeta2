@@ -105,7 +105,7 @@ describe('ClarifierService', () => {
        exec: jest.fn().mockResolvedValue({ ...mockExpectationInstance, status: 'updated', save: mockExpSave }), // Example update
     });
 
-    const mockLlmService = {
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('生成5个关键澄清问题')) {
           return Promise.resolve(
@@ -319,7 +319,7 @@ describe('ClarifierService', () => {
     service = module.get<ClarifierService>(ClarifierService);
     requirementModel = module.get(getModelToken(Requirement.name));
     expectationModel = module.get(getModelToken(Expectation.name));
-    llmService = module.get<LlmService>(LlmService);
+    llmRouterService = module.get<LlmRouterService>(LlmRouterService);
     memoryService = module.get<MemoryService>(MemoryService);
     semanticMediatorService = module.get<SemanticMediatorService>(SemanticMediatorService);
   });
