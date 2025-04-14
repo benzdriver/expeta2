@@ -171,11 +171,12 @@
   }
 }
 
-.chat-input {
+.chat-input { /* Input Area Container */
   display: flex;
   padding: 16px 20px;
   border-top: 1px solid #DEE2E6;
   background-color: #FFFFFF;
+  border-radius: var(--border-radius); /* Spec: var(--border-radius) - Applied to container */
 }
 
 .chat-input textarea {

@@ -323,29 +323,23 @@ describe('OrchestratorService', () => {
             status: 'failed',
             score: 0.7,
             message: 'Test issue',
-            semanticInsights: 'Needs improvement',
-          },
-        ],
-        metadata: { version: '1.0' },
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      const mockPassedValidation = {
-        _id: 'val-124',
-        codeId: 'code-790',
-        expectationId: 'exp-456',
-        score: 0.95,
-        status: 'passed',
-        details: [],
-        metadata: { version: '1.0' },
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      jest.spyOn(validatorService, 'validateCode')
-        .mockResolvedValueOnce(mockPartialValidation as any)
-        .mockResolvedValueOnce(mockPassedValidation as any);
+            semanticInsights: 'Needs improvement'
+          }],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          metadata: {},
+        } as any)
+        .mockResolvedValueOnce({
+          _id: 'val-124',
+          codeId: 'code-790',
+          expectationId: 'exp-456',
+          score: 0.95,
+          status: 'passed',
+          details: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          metadata: {},
+        } as any);
 
       const result = await service.executeWorkflow(workflowId, params);
 

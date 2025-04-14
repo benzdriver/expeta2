@@ -10,8 +10,8 @@ import { SemanticMediatorModule } from '../semantic-mediator/semantic-mediator.m
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Code.name, schema: CodeSchema }]),
-    LlmRouterModule,
-    MemoryModule,
+    LlmModule,
+    forwardRef(() => MemoryModule),
     forwardRef(() => SemanticMediatorModule),
   ],
   controllers: [GeneratorController],

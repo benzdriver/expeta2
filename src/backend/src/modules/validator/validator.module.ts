@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+
 import { MongooseModule } from '@nestjs/mongoose';
 import { ValidatorController } from './validator.controller';
 import { ValidatorService } from './validator.service';
