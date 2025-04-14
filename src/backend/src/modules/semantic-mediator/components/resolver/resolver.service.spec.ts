@@ -22,28 +22,28 @@ describe('ResolverService', () => {
   let memoryService: MemoryService;
 
   const mockMonitoringSystemService = {
-    createDebugSession: jest.fn().mockReturnValue(Promise.resolve('debug-session-id')),
-    logTransformationEvent: jest.fn().mockReturnValue(Promise.resolve(undefined)),
-    logError: jest.fn().mockReturnValue(Promise.resolve(undefined)),
-    endDebugSession: jest.fn().mockReturnValue(Promise.resolve(undefined)),
+    createDebugSession: jest.fn(() => Promise.resolve('debug-session-id')),
+    logTransformationEvent: jest.fn(() => Promise.resolve(undefined)),
+    logError: jest.fn(() => Promise.resolve(undefined)),
+    endDebugSession: jest.fn(() => Promise.resolve(undefined)),
   };
 
   const mockIntelligentCacheService = {
-    retrieveTransformationPath: jest.fn().mockReturnValue(Promise.resolve(null)),
-    storeTransformationPath: jest.fn().mockReturnValue(Promise.resolve(undefined)),
-    updateUsageStatistics: jest.fn().mockReturnValue(Promise.resolve(undefined)),
+    retrieveTransformationPath: jest.fn(() => Promise.resolve(null)),
+    storeTransformationPath: jest.fn(() => Promise.resolve(undefined)),
+    updateUsageStatistics: jest.fn(() => Promise.resolve(undefined)),
   };
 
   const mockMemoryService = {
-    storeMemory: jest.fn().mockReturnValue(Promise.resolve({ _id: 'memory-id' })),
-    getMemoryByType: jest.fn().mockReturnValue(Promise.resolve([])),
+    storeMemory: jest.fn(() => Promise.resolve({ _id: 'memory-id' })),
+    getMemoryByType: jest.fn(() => Promise.resolve([])),
   };
 
   const mockExplicitMappingStrategy = {
     name: 'explicit_mapping',
     priority: 3,
-    canResolve: jest.fn().mockReturnValue(Promise.resolve(false)),
-    resolve: jest.fn().mockReturnValue(Promise.resolve({
+    canResolve: jest.fn(() => Promise.resolve(false)),
+    resolve: jest.fn(() => Promise.resolve({
       success: true,
       resolvedData: { result: 'explicit mapping result' },
       strategyUsed: 'explicit_mapping',
@@ -54,8 +54,8 @@ describe('ResolverService', () => {
   const mockPatternMatchingStrategy = {
     name: 'pattern_matching',
     priority: 2,
-    canResolve: jest.fn().mockReturnValue(Promise.resolve(false)),
-    resolve: jest.fn().mockReturnValue(Promise.resolve({
+    canResolve: jest.fn(() => Promise.resolve(false)),
+    resolve: jest.fn(() => Promise.resolve({
       success: true,
       resolvedData: { result: 'pattern matching result' },
       strategyUsed: 'pattern_matching',
@@ -66,8 +66,8 @@ describe('ResolverService', () => {
   const mockLlmResolutionStrategy = {
     name: 'llm_resolution',
     priority: 1,
-    canResolve: jest.fn().mockReturnValue(Promise.resolve(true)),
-    resolve: jest.fn().mockReturnValue(Promise.resolve({
+    canResolve: jest.fn(() => Promise.resolve(true)),
+    resolve: jest.fn(() => Promise.resolve({
       success: true,
       resolvedData: { result: 'llm resolution result' },
       strategyUsed: 'llm_resolution',
@@ -149,7 +149,7 @@ describe('ResolverService', () => {
         confidence: 0.95,
       };
 
-      intelligentCacheService.retrieveTransformationPath = jest.fn().mockReturnValue(Promise.resolve(cachedResult));
+      (intelligentCacheService.retrieveTransformationPath as jest.Mock).mockImplementation(() => Promise.resolve(cachedResult));
 
       const result = await service.resolveConflicts(moduleA, dataA, moduleB, dataB);
 
@@ -171,7 +171,7 @@ describe('ResolverService', () => {
       const dataB = { id: 2, name: 'Test B' };
 
       const error = new Error('Test error');
-      llmResolutionStrategy.resolve = jest.fn().mockReturnValue(Promise.reject(error));
+      llmResolutionStrategy.resolve = jest.fn(() => Promise.reject(error));
 
       const result = await service.resolveConflicts(moduleA, dataA, moduleB, dataB);
 
@@ -192,7 +192,7 @@ describe('ResolverService', () => {
       const moduleB = 'moduleB';
       const dataB = { id: 2, name: 'Test B' };
 
-      mockPatternMatchingStrategy.canResolve = jest.fn().mockReturnValue(Promise.resolve(true));
+      mockPatternMatchingStrategy.canResolve = jest.fn(() => Promise.resolve(true));
 
       const result = await service.resolveConflicts(moduleA, dataA, moduleB, dataB, {
         forceStrategy: 'pattern_matching',
@@ -230,7 +230,7 @@ describe('ResolverService', () => {
         },
       ];
 
-      memoryService.getMemoryByType = jest.fn().mockReturnValue(Promise.resolve(mockSources));
+      (memoryService.getMemoryByType as jest.Mock).mockImplementation(() => Promise.resolve(mockSources));
 
       const candidates = await service.findCandidateSources(semanticIntent);
 
@@ -241,7 +241,7 @@ describe('ResolverService', () => {
 
     it('should return empty array if no sources found', async () => {
       const semanticIntent = 'nonexistent data';
-      memoryService.getMemoryByType = jest.fn().mockReturnValue(Promise.resolve([]));
+      (memoryService.getMemoryByType as jest.Mock).mockImplementation(() => Promise.resolve([]));
 
       const candidates = await service.findCandidateSources(semanticIntent);
 
@@ -266,8 +266,8 @@ describe('ResolverService', () => {
 
       service.registerStrategy(newStrategy);
 
-      mockExplicitMappingStrategy.canResolve = jest.fn().mockReturnValue(Promise.resolve(false));
-      newStrategy.canResolve = jest.fn().mockReturnValue(Promise.resolve(true));
+      mockExplicitMappingStrategy.canResolve = jest.fn(() => Promise.resolve(false));
+      newStrategy.canResolve = jest.fn(() => Promise.resolve(true));
 
       return service
         .resolveConflicts('moduleA', { test: 'data' }, 'moduleB', { test: 'data' })
