@@ -8,6 +8,8 @@ module.exports = {
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
-  testTimeout: 120000, // Increase timeout to 120 seconds
-
+  setupFilesAfterEnv: ['../jest.setup.ts'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1',
+  }
 };

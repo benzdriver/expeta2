@@ -20,7 +20,6 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "types": ["jest", "node"]
-
+    "types": ["node", "jest"]
   }
 }

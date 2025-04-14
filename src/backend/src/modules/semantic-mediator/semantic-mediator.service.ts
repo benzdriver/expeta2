@@ -10,6 +10,7 @@ import { TransformationEngineService } from './components/transformation-engine/
 import { IntelligentCacheService } from './components/intelligent-cache/intelligent-cache.service';
 import { MonitoringSystemService } from './components/monitoring-system/monitoring-system.service';
 import { HumanInTheLoopService } from './components/human-in-the-loop/human-in-the-loop.service';
+import { ResolverService } from './components/resolver/resolver.service';
 
 @Injectable()
 export class SemanticMediatorService {
@@ -23,6 +24,7 @@ export class SemanticMediatorService {
     private readonly intelligentCache: IntelligentCacheService,
     private readonly monitoringSystem: MonitoringSystemService,
     private readonly humanInTheLoop: HumanInTheLoopService,
+    private readonly resolver: ResolverService,
   ) {}
 
   /**
@@ -237,76 +239,43 @@ export class SemanticMediatorService {
 
   /**
    * 解决不同模块之间的语义冲突
+   * 增强版本：使用专用的Resolver组件
    */
   async resolveSemanticConflicts(
     moduleA: string,
     dataA: any,
     moduleB: string,
     dataB: any,
+    options?: {
+      forceStrategy?: string;
+      context?: any;
+      cacheResults?: boolean;
+    },
   ): Promise<any> {
     try {
       this.logger.debug(`Resolving semantic conflicts between ${moduleA} and ${moduleB}`);
 
-      const descriptorA: SemanticDescriptor = {
-        entity: moduleA,
-        description: `Data from ${moduleA} module`,
-        attributes: {
-          data: {
-            type: typeof dataA,
-            description: `Data content from ${moduleA}`,
-          },
-        },
-        metadata: {
-          module: moduleA,
-        },
-      };
-
-      const descriptorB: SemanticDescriptor = {
-        entity: moduleB,
-        description: `Data from ${moduleB} module`,
-        attributes: {
-          data: {
-            type: typeof dataB,
-            description: `Data content from ${moduleB}`,
-          },
-        },
-        metadata: {
-          module: moduleB,
-        },
-      };
-
-      const transformationPath = {
-        source: {
-          type: 'composite',
-          components: [descriptorA, descriptorB],
-        },
-        target: {
-          type: 'resolved', // Target is the resolved state
-          components: [descriptorA, descriptorB], // Based on both inputs
-        },
-        steps: [
-          {
-            type: 'conflict_resolution',
-            modules: [moduleA, moduleB],
-          },
-        ],
-        recommendedStrategy: 'semantic_conflict_resolution', // Or another appropriate strategy
-      };
-
-      const result = await this.transformationEngine.executeTransformation(
-        { moduleA: dataA, moduleB: dataB }, // Pass both data sources
-        transformationPath,
-        { moduleA, moduleB }, // Context for the transformation
+      const result = await this.resolver.resolveConflicts(
+        moduleA,
+        dataA,
+        moduleB,
+        dataB,
+        options,
       );
 
-      await this.monitoringSystem.logTransformationEvent({
-        type: 'conflict_resolution',
+      await this.trackSemanticTransformation(
         moduleA,
         moduleB,
-        timestamp: new Date().toISOString(),
-      });
+        dataA,
+        result.resolvedData,
+        {
+          trackDifferences: true,
+          analyzeTransformation: true,
+          saveToMemory: true,
+        },
+      );
 
-      return result;
+      return result.resolvedData;
     } catch (error) {
       this.logger.error(`Error resolving semantic conflicts: ${error.message}`, error.stack);
       await this.monitoringSystem.logError(error, {

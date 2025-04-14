@@ -37,7 +37,7 @@ describe('ChatInterface Component', () => {
   test('allows user to send a message', async () => {
     render(<ChatInterface />);
     
-    const input = screen.getByPlaceholderText('请输入您的需求或回答...');
+    const input = screen.getByPlaceholderText('输入您的回复...');
     const testMessage = '我需要一个电子商务网站';
     
     fireEvent.change(input, { target: { value: testMessage } });
@@ -63,7 +63,7 @@ describe('ChatInterface Component', () => {
       />
     );
     
-    const input = screen.getByPlaceholderText('请输入您的需求或回答...');
+    const input = screen.getByPlaceholderText('输入您的回复...');
     
     fireEvent.change(input, { target: { value: '我需要一个电子商务网站，支持多种支付方式和商品管理' } });
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
@@ -139,7 +139,7 @@ describe('ChatInterface Component', () => {
   test('generates semantic tags from user input and performs analysis', async () => {
     render(<ChatInterface />);
     
-    const input = screen.getByPlaceholderText('请输入您的需求或回答...');
+    const input = screen.getByPlaceholderText('输入您的回复...');
     const testMessage = '我需要一个高性能的电子商务平台，支持大量并发用户，并且有良好的安全性';
     
     fireEvent.change(input, { target: { value: testMessage } });
@@ -164,7 +164,7 @@ describe('ChatInterface Component', () => {
     
     render(<ChatInterface onExpectationCreated={onExpectationCreated} />);
     
-    const input = screen.getByPlaceholderText('请输入您的需求或回答...');
+    const input = screen.getByPlaceholderText('输入您的回复...');
     
     fireEvent.change(input, { target: { value: '我需要一个简单的博客系统' } });
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
@@ -178,7 +178,7 @@ describe('ChatInterface Component', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
       
       await waitFor(() => {
-        expect(input.value).toBe('');
+        expect(screen.getByPlaceholderText('输入您的回复...')).toHaveValue('');
       });
     }
     
