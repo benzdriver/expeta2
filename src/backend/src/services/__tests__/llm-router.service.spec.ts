@@ -19,12 +19,7 @@ describe('LlmRouterService', () => {
   const mockOpenaiModel = 'gpt-4';
 
   beforeEach(async () => {
-    const mockHttpService = {
-      post: jest.fn(), // Mock the post method
-    };
-
     const module: TestingModule = await Test.createTestingModule({
-
       providers: [
         LlmRouterService,
         {
@@ -43,7 +38,11 @@ describe('LlmRouterService', () => {
         },
         {
           provide: HttpService,
-          useValue: mockHttpService, // Use the mock object
+          useValue: {
+            post: jest.fn().mockImplementation(() =>
+              of({ data: 'default mock response', status: 200, statusText: 'OK', headers: {}, config: {} })
+            ),
+          },
         },
       ],
     }).compile();
