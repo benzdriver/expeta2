@@ -3,6 +3,7 @@ import { MemoryService } from '../memory.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Memory, MemoryType } from '../schemas/memory.schema';
 import { Logger } from '@nestjs/common';
+import { SemanticCacheService } from '../services/semantic-cache.service';
 
 describe('MemoryService', () => {
   let service: MemoryService;
@@ -52,12 +53,30 @@ describe('MemoryService', () => {
       exec: jest.fn()
     };
 
+    const mockSemanticCacheService = {
+      get: jest.fn(),
+      set: jest.fn(),
+      delete: jest.fn(),
+      clear: jest.fn(),
+      getStats: jest.fn().mockReturnValue({
+        totalEntries: 0,
+        activeEntries: 0,
+        expiredEntries: 0,
+        avgRelevance: 0,
+        avgAccessCount: 0
+      })
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MemoryService,
         {
           provide: getModelToken(Memory.name),
           useValue: mockMemoryModel
+        },
+        {
+          provide: SemanticCacheService,
+          useValue: mockSemanticCacheService
         }
       ],
     }).compile();

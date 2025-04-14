@@ -122,6 +122,7 @@ describe('MemoryService - Transformation Feedback', () => {
     }));
 
     expect(service.updateMemory).toHaveBeenCalledWith(
+      MemoryType.SEMANTIC_TRANSFORMATION,
       'transformation-id',
       expect.objectContaining({
         metadata: expect.objectContaining({
