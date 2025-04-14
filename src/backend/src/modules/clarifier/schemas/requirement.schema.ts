@@ -36,25 +36,37 @@ export class Requirement extends Document {
   @Prop()
   priority?: string;
 
-  @Prop({ type: String, enum: ['initial', 'clarifying', 'expectations_generated', 'completed'], default: 'initial' })
+  @Prop({
+    type: String,
+    enum: ['initial', 'clarifying', 'expectations_generated', 'completed'],
+    default: 'initial',
+  })
   status: RequirementStatus;
 
-  @Prop({ type: [{ 
-    questionId: String, 
-    answer: String, 
-    timestamp: Date,
-    createdAt: Date,
-    updatedAt: Date
-  }] })
+  @Prop({
+    type: [
+      {
+        questionId: String,
+        answer: String,
+        timestamp: Date,
+        createdAt: Date,
+        updatedAt: Date,
+      },
+    ],
+  })
   clarifications?: Clarification[];
 
-  @Prop({ type: [{ 
-    sender: String, 
-    content: String, 
-    type: String, 
-    metadata: Object, 
-    timestamp: Date 
-  }] })
+  @Prop({
+    type: [
+      {
+        sender: String,
+        content: String,
+        type: String,
+        metadata: Object,
+        timestamp: Date,
+      },
+    ],
+  })
   dialogueLog?: DialogueMessage[];
 
   @Prop({ type: Object })

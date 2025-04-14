@@ -4,7 +4,7 @@ import { ClarifierController } from './clarifier.controller';
 import { ClarifierService } from './clarifier.service';
 import { Requirement, RequirementSchema } from './schemas/requirement.schema';
 import { Expectation, ExpectationSchema } from './schemas/expectation.schema';
-import { LlmModule } from '../../services/llm.module';
+import { LlmRouterModule } from '../../services/llm-router.module';
 import { MemoryModule } from '../memory/memory.module';
 import { SemanticMediatorModule } from '../semantic-mediator/semantic-mediator.module';
 
@@ -14,7 +14,7 @@ import { SemanticMediatorModule } from '../semantic-mediator/semantic-mediator.m
       { name: Requirement.name, schema: RequirementSchema },
       { name: Expectation.name, schema: ExpectationSchema },
     ]),
-    LlmModule,
+    LlmRouterModule,
     MemoryModule,
     forwardRef(() => SemanticMediatorModule), // Using forwardRef to avoid circular dependency
   ],

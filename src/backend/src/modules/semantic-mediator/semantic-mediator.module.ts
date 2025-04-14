@@ -1,9 +1,10 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { SemanticMediatorService } from './semantic-mediator.service';
 import { SemanticMediatorController } from './semantic-mediator.controller';
-import { LlmModule } from '../../services/llm.module';
+import { LlmRouterModule } from '../../services/llm-router.module';
 import { MemoryModule } from '../memory/memory.module';
 import { OrchestratorModule } from '../orchestrator/orchestrator.module';
+import { GeneratorModule } from '../generator/generator.module';
 
 import { SemanticRegistryService } from './components/semantic-registry/semantic-registry.service';
 import { TransformationEngineService } from './components/transformation-engine/transformation-engine.service';
@@ -14,7 +15,12 @@ import { ResolverModule } from './components/resolver/resolver.module';
 import { ResolverService } from './components/resolver/resolver.service';
 
 @Module({
-  imports: [LlmModule, MemoryModule, forwardRef(() => OrchestratorModule), ResolverModule],
+  imports: [
+    LlmRouterModule, // Use the renamed LlmRouterModule
+    MemoryModule,
+    forwardRef(() => OrchestratorModule),
+    forwardRef(() => GeneratorModule),
+  ],
   controllers: [SemanticMediatorController],
   providers: [
     SemanticMediatorService,

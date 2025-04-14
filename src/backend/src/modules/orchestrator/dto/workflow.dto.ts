@@ -9,7 +9,7 @@ export enum WorkflowType {
   ITERATIVE_REFINEMENT = 'iterative_refinement',
   PARALLEL_VALIDATION = 'parallel_validation',
   ADAPTIVE_VALIDATION = 'adaptive_validation',
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
 }
 
 /**

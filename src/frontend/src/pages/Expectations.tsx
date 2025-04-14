@@ -18,7 +18,7 @@ interface SubExpectation {
 }
 
 const Expectations: React.FC = () => {
-  const [expectations, setExpectations] = useState<Expectation[]>([
+  const [expectations, _setExpectations] = useState<Expectation[]>([
     {
       id: 'user_management_system',
       title: '用户管理系统',

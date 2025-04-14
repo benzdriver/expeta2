@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useExpeta } from '../../contexts/ExpetaContext';
+import loggingService from '../../services/logging.service';
 
 interface SemanticMediatorPanelProps {
-  initialData?: any;
+  initialData?: Record<string, unknown>;
 }
 
 const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialData }) => {
@@ -22,7 +23,12 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
   const [inputData, setInputData] = useState<string>(initialData ? JSON.stringify(initialData, null, 2) : '');
   const [contextQuery, setContextQuery] = useState<string>('');
   const [insightQuery, setInsightQuery] = useState<string>('');
-  const [result, setResult] = useState<any>(null);
+  interface MediatorResult {
+    error?: string;
+    [key: string]: unknown;
+  }
+  
+  const [result, setResult] = useState<MediatorResult | null>(null);
   const [selectedOperation, setSelectedOperation] = useState<string>('translate');
   const [moduleA, setModuleA] = useState<string>('clarifier');
   const [moduleB, setModuleB] = useState<string>('generator');
@@ -37,9 +43,10 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
       const data = JSON.parse(inputData);
       const translatedData = await translateBetweenModules(sourceModule, targetModule, data);
       setResult(translatedData);
-    } catch (err: any) {
-      console.error('Translation failed', err);
-      setResult({ error: err.message || 'Failed to translate between modules' });
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : { message: String(err) };
+      loggingService.error('SemanticMediatorPanel', 'Translation failed', error);
+      setResult({ error: error instanceof Error ? error.message : String(err) || 'Failed to translate between modules' });
     }
   };
   
@@ -48,9 +55,10 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
       const data = JSON.parse(inputData);
       const enrichedData = await enrichWithContext(sourceModule, data, contextQuery);
       setResult(enrichedData);
-    } catch (err: any) {
-      console.error('Enrichment failed', err);
-      setResult({ error: err.message || 'Failed to enrich with context' });
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : { message: String(err) };
+      loggingService.error('SemanticMediatorPanel', 'Enrichment failed', error);
+      setResult({ error: error instanceof Error ? error.message : String(err) || 'Failed to enrich with context' });
     }
   };
   
@@ -59,9 +67,10 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
       const data = JSON.parse(inputData);
       const insights = await extractSemanticInsights(data, insightQuery);
       setResult(insights);
-    } catch (err: any) {
-      console.error('Insight extraction failed', err);
-      setResult({ error: err.message || 'Failed to extract semantic insights' });
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : { message: String(err) };
+      loggingService.error('SemanticMediatorPanel', 'Insight extraction failed', error);
+      setResult({ error: error instanceof Error ? error.message : String(err) || 'Failed to extract semantic insights' });
     }
   };
   
@@ -71,9 +80,10 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
       const parsedDataB = JSON.parse(dataB);
       const resolution = await resolveSemanticConflicts(moduleA, parsedDataA, moduleB, parsedDataB);
       setResult(resolution);
-    } catch (err: any) {
-      console.error('Conflict resolution failed', err);
-      setResult({ error: err.message || 'Failed to resolve semantic conflicts' });
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : { message: String(err) };
+      loggingService.error('SemanticMediatorPanel', 'Conflict resolution failed', error);
+      setResult({ error: error instanceof Error ? error.message : String(err) || 'Failed to resolve semantic conflicts' });
     }
   };
   
@@ -88,9 +98,10 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
         parsedTransformedData
       );
       setResult(result);
-    } catch (err: any) {
-      console.error('Transformation tracking failed', err);
-      setResult({ error: err.message || 'Failed to track semantic transformation' });
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : { message: String(err) };
+      loggingService.error('SemanticMediatorPanel', 'Transformation tracking failed', error);
+      setResult({ error: error instanceof Error ? error.message : String(err) || 'Failed to track semantic transformation' });
     }
   };
   
@@ -104,9 +115,10 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
         expectedOutcome
       );
       setResult(evaluation);
-    } catch (err: any) {
-      console.error('Transformation evaluation failed', err);
-      setResult({ error: err.message || 'Failed to evaluate semantic transformation' });
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : { message: String(err) };
+      loggingService.error('SemanticMediatorPanel', 'Transformation evaluation failed', error);
+      setResult({ error: error instanceof Error ? error.message : String(err) || 'Failed to evaluate semantic transformation' });
     }
   };
 

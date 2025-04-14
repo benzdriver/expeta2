@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { LlmService } from './llm.service';
+import { LlmRouterModule } from './llm-router.module';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [LlmRouterModule],
   providers: [LlmService],
   exports: [LlmService],
 })

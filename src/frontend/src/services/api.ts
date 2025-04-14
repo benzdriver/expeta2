@@ -9,11 +9,49 @@ const api = axios.create({
   },
 });
 
+export interface RequirementData {
+  title: string;
+  description: string;
+  priority?: 'low' | 'medium' | 'high';
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface GeneratorOptions {
+  language: string;
+  framework?: string;
+  architecture?: string;
+  template?: string;
+  includeTests?: boolean;
+  additionalContext?: Record<string, unknown>;
+}
+
+export interface MemoryData {
+  content: string;
+  type: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+  source?: string;
+  relatedIds?: string[];
+}
+
+export interface WorkflowParams {
+  requirementId?: string;
+  expectationId?: string;
+  codeId?: string;
+  validationId?: string;
+  options?: Record<string, unknown>;
+}
+
+export interface ModuleData {
+  [key: string]: unknown;
+}
+
 export const clarifierApi = {
-  createRequirement: (data: any) => api.post('/clarifier/requirements', data),
+  createRequirement: (data: RequirementData) => api.post('/clarifier/requirements', data),
   getRequirements: () => api.get('/clarifier/requirements'),
   getRequirement: (id: string) => api.get(`/clarifier/requirements/${id}`),
-  updateRequirement: (id: string, data: any) => api.patch(`/clarifier/requirements/${id}`, data),
+  updateRequirement: (id: string, data: Partial<RequirementData>) => api.patch(`/clarifier/requirements/${id}`, data),
   deleteRequirement: (id: string) => api.delete(`/clarifier/requirements/${id}`),
   generateClarificationQuestions: (requirementText: string) => 
     api.post('/clarifier/generate-questions', { text: requirementText }),
@@ -28,7 +66,7 @@ export const clarifierApi = {
 };
 
 export const generatorApi = {
-  generateCode: (expectationId: string, options: any) => 
+  generateCode: (expectationId: string, options: GeneratorOptions) => 
     api.post('/generator/generate', { expectationId, options }),
   getCodeByExpectationId: (expectationId: string) => 
     api.get(`/generator/code/expectation/${expectationId}`),
@@ -48,13 +86,13 @@ export const validatorApi = {
 };
 
 export const memoryApi = {
-  storeMemory: (data: any) => 
+  storeMemory: (data: MemoryData) => 
     api.post('/memory/store', data),
   getMemoryById: (id: string) => 
     api.get(`/memory/get/${id}`),
   getRelatedMemories: (query: string) => 
     api.post('/memory/search', { query }),
-  updateMemory: (id: string, data: any) => 
+  updateMemory: (id: string, data: Partial<MemoryData>) => 
     api.patch(`/memory/${id}`, data),
   deleteMemory: (id: string) => 
     api.delete(`/memory/${id}`),
@@ -65,7 +103,7 @@ export const orchestratorApi = {
     api.post('/orchestrator/process-requirement', { requirementId }),
   getProcessStatus: (requirementId: string) => 
     api.get(`/orchestrator/status/${requirementId}`),
-  executeWorkflow: (workflowId: string, params: any) => 
+  executeWorkflow: (workflowId: string, params: WorkflowParams) => 
     api.post('/orchestrator/execute-workflow', { workflowId, params }),
   getWorkflowStatus: (executionId: string) =>
     api.get(`/orchestrator/workflow-status/${executionId}`),
@@ -76,17 +114,17 @@ export const orchestratorApi = {
 };
 
 export const semanticMediatorApi = {
-  translateBetweenModules: (sourceModule: string, targetModule: string, data: any) => 
+  translateBetweenModules: (sourceModule: string, targetModule: string, data: ModuleData) => 
     api.post('/semantic-mediator/translate', { sourceModule, targetModule, data }),
-  enrichWithContext: (module: string, data: any, contextQuery: string) => 
+  enrichWithContext: (module: string, data: ModuleData, contextQuery: string) => 
     api.post('/semantic-mediator/enrich', { module, data, contextQuery }),
-  resolveSemanticConflicts: (moduleA: string, dataA: any, moduleB: string, dataB: any) => 
+  resolveSemanticConflicts: (moduleA: string, dataA: ModuleData, moduleB: string, dataB: ModuleData) => 
     api.post('/semantic-mediator/resolve-conflicts', { moduleA, dataA, moduleB, dataB }),
-  extractSemanticInsights: (data: any, query: string) => 
+  extractSemanticInsights: (data: ModuleData, query: string) => 
     api.post('/semantic-mediator/extract-insights', { data, query }),
-  trackSemanticTransformation: (sourceModule: string, targetModule: string, sourceData: any, transformedData: any) => 
+  trackSemanticTransformation: (sourceModule: string, targetModule: string, sourceData: ModuleData, transformedData: ModuleData) => 
     api.post('/semantic-mediator/track-transformation', { sourceModule, targetModule, sourceData, transformedData }),
-  evaluateSemanticTransformation: (sourceData: any, transformedData: any, expectedOutcome: string) => 
+  evaluateSemanticTransformation: (sourceData: ModuleData, transformedData: ModuleData, expectedOutcome: string) => 
     api.post('/semantic-mediator/evaluate-transformation', { sourceData, transformedData, expectedOutcome }),
 };
 

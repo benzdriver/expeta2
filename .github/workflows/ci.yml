@@ -1,0 +1,82 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'src/backend/package-lock.json'
+    
+    - name: Install Backend Dependencies
+      run: |
+        cd src/backend
+        npm ci
+    
+    - name: Lint Backend
+      run: |
+        cd src/backend
+        npm run lint
+    
+    - name: Run Backend Tests
+      run: |
+        cd src/backend
+        npm test
+    
+    - name: Build Backend
+      run: |
+        cd src/backend
+        npm run build
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'src/frontend/package-lock.json'
+    
+    - name: Install Frontend Dependencies
+      run: |
+        cd src/frontend
+        npm ci
+    
+    - name: Lint Frontend
+      run: |
+        cd src/frontend
+        npm run lint
+    
+    - name: Run Frontend Tests
+      run: |
+        cd src/frontend
+        npm test
+    
+    - name: Build Frontend
+      run: |
+        cd src/frontend
+        npm run build

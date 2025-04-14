@@ -5,7 +5,7 @@ import { CreateRequirementDto, UpdateRequirementDto, ClarificationQuestionDto } 
 @Controller('clarifier')
 export class ClarifierController {
   private readonly logger = new Logger(ClarifierController.name);
-  
+
   constructor(private readonly clarifierService: ClarifierService) {}
 
   @Post('requirements')
@@ -48,8 +48,12 @@ export class ClarifierController {
   }
 
   @Post('answer')
-  async processClarificationAnswer(@Body() answer: { requirementId: string; questionId: string; answer: string }) {
-    this.logger.log(`Processing clarification answer for requirement: ${answer.requirementId}, question: ${answer.questionId}`);
+  async processClarificationAnswer(
+    @Body() answer: { requirementId: string; questionId: string; answer: string },
+  ) {
+    this.logger.log(
+      `Processing clarification answer for requirement: ${answer.requirementId}, question: ${answer.questionId}`,
+    );
     return this.clarifierService.processClarificationAnswer(
       answer.requirementId,
       answer.questionId,
@@ -68,31 +72,31 @@ export class ClarifierController {
     this.logger.debug(`Fetching expectations for requirement: ${requirementId}`);
     return this.clarifierService.getExpectations(requirementId);
   }
-  
+
   @Get('expectations/by-id/:id')
   async getExpectationById(@Param('id') id: string) {
     this.logger.debug(`Fetching expectation by ID: ${id}`);
     return this.clarifierService.getExpectationById(id);
   }
-  
+
   @Post('analyze-progress')
   async analyzeClarificationProgress(@Body() data: { requirementId: string }) {
     this.logger.log(`Analyzing clarification progress for requirement: ${data.requirementId}`);
     return this.clarifierService.analyzeClarificationProgress(data.requirementId);
   }
-  
+
   @Post('analyze-dialogue')
   async analyzeMultiRoundDialogue(@Body() data: { requirementId: string }) {
     this.logger.log(`Analyzing multi-round dialogue for requirement: ${data.requirementId}`);
     return this.clarifierService.analyzeMultiRoundDialogue(data.requirementId);
   }
-  
+
   @Post('expectation-summary/:id')
   async generateExpectationSummary(@Param('id') id: string) {
     this.logger.log(`Generating expectation summary for expectation: ${id}`);
     return this.clarifierService.generateExpectationSummary(id);
   }
-  
+
   @Post('log-dialogue')
   async logDialogue(@Body() data: { requirementId: string; message: any }) {
     this.logger.debug(`Logging dialogue message for requirement: ${data.requirementId}`);

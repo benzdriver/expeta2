@@ -20,22 +20,22 @@ export class GenerateCodeWithSemanticInputDto {
      * 代码风格
      */
     codeStyle?: string;
-    
+
     /**
      * 技术栈
      */
     techStack?: string;
-    
+
     /**
      * 优化目标
      */
     optimizationTarget?: 'performance' | 'readability' | 'maintainability';
-    
+
     /**
      * 是否包含测试
      */
     includeTests?: boolean;
-    
+
     /**
      * 是否包含文档
      */

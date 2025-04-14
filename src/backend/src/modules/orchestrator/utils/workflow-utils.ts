@@ -8,15 +8,15 @@
 export function getValueByPath(obj: any, path: string): any {
   const parts = path.split('.');
   let current = obj;
-  
+
   for (const part of parts) {
     if (current === null || current === undefined) {
       return undefined;
     }
-    
+
     current = current[part];
   }
-  
+
   return current;
 }
 
@@ -26,17 +26,17 @@ export function getValueByPath(obj: any, path: string): any {
 export function setValueByPath(obj: any, path: string, value: any): void {
   const parts = path.split('.');
   let current = obj;
-  
+
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i];
-    
+
     if (!(part in current)) {
       current[part] = {};
     }
-    
+
     current = current[part];
   }
-  
+
   current[parts[parts.length - 1]] = value;
 }
 
@@ -49,12 +49,15 @@ export function setValueByPath(obj: any, path: string, value: any): void {
  */
 export function evaluateCondition(condition: string, context: any): boolean {
   try {
-    const evalFunc = new Function('context', `
+    const evalFunc = new Function(
+      'context',
+      `
       with (context) {
         return ${condition};
       }
-    `);
-    
+    `,
+    );
+
     return evalFunc(context);
   } catch (error) {
     console.error(`Error evaluating condition "${condition}":`, error);

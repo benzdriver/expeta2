@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ITransformationEngine } from '../../interfaces/transformation-engine.interface';
 import { SemanticDescriptor } from '../../interfaces/semantic-descriptor.interface';
-import { LlmService } from '../../../../services/llm.service';
+import { LlmRouterService } from '../../../../services/llm-router.service';
 import { MemoryService } from '../../../memory/memory.service';
 import { MemoryType } from '../../../memory/schemas/memory.schema';
 
@@ -18,7 +18,7 @@ export class TransformationEngineService implements ITransformationEngine {
   > = new Map();
 
   constructor(
-    private readonly llmService: LlmService,
+    private readonly llmRouterService: LlmRouterService,
     private readonly memoryService: MemoryService,
   ) {
     this.registerDefaultStrategies();
@@ -63,7 +63,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmService.generateContent(prompt, {
+      const response = await this.llmRouterService.generateContent(prompt, {
         temperature: 0.2,
         maxTokens: 2000,
       });
@@ -182,7 +182,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmService.generateContent(prompt, {
+      const response = await this.llmRouterService.generateContent(prompt, {
         temperature: 0.1,
         maxTokens: 1500,
       });
@@ -236,7 +236,7 @@ ${metrics ? `性能指标：\n${JSON.stringify(metrics, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmService.generateContent(prompt, {
+      const response = await this.llmRouterService.generateContent(prompt, {
         temperature: 0.2,
         maxTokens: 2000,
       });
@@ -391,7 +391,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmService.generateContent(prompt, {
+      const response = await this.llmRouterService.generateContent(prompt, {
         temperature: 0.1,
         maxTokens: 2000,
       });
@@ -584,7 +584,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmService.generateContent(prompt, {
+      const response = await this.llmRouterService.generateContent(prompt, {
         temperature: 0.1,
         maxTokens: 1000,
       });
@@ -719,7 +719,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmService.generateContent(prompt, {
+      const response = await this.llmRouterService.generateContent(prompt, {
         temperature: 0.1,
         maxTokens: 500,
       });

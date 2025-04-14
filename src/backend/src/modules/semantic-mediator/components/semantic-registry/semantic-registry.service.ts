@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ISemanticRegistry } from '../../interfaces/semantic-registry.interface';
 import { SemanticDescriptor } from '../../interfaces/semantic-descriptor.interface';
-import { LlmService } from '../../../../services/llm.service';
+import { LlmRouterService } from '../../../../services/llm-router.service';
 import { MemoryService } from '../../../memory/memory.service';
 
 /**
@@ -20,7 +20,7 @@ export class SemanticRegistryService implements ISemanticRegistry {
   > = new Map();
 
   constructor(
-    private readonly llmService: LlmService,
+    private readonly llmRouterService: LlmRouterService,
     private readonly memoryService: MemoryService,
   ) {}
 
@@ -206,7 +206,7 @@ ${JSON.stringify(targetIntent, null, 2)}
 `;
 
     try {
-      const response = await this.llmService.generateContent(prompt, {
+      const response = await this.llmRouterService.generateContent(prompt, {
         temperature: 0.1,
         maxTokens: 10,
       });

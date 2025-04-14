@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import loggingService from '../services/logging.service';
 
 interface LLMConfig {
   provider: string;
@@ -50,7 +51,7 @@ const Settings: React.FC = () => {
   };
   
   const handleSaveSettings = () => {
-    console.log('Saving settings:', { llmConfig, systemSettings });
+    loggingService.info('Settings', 'Saving settings', { llmConfig, systemSettings });
     alert('设置已保存');
   };
   
