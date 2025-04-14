@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ValidatorController } from './validator.controller';
 import { ValidatorService } from './validator.service';
 import { Validation, ValidationSchema } from './schemas/validation.schema';
-import { LlmModule } from '../../services/llm.module';
+import { LlmRouterModule } from '../../services/llm-router.module';
 import { MemoryModule } from '../memory/memory.module';
 
 @Module({
@@ -11,7 +11,7 @@ import { MemoryModule } from '../memory/memory.module';
     MongooseModule.forFeature([
       { name: Validation.name, schema: ValidationSchema },
     ]),
-    LlmModule,
+    LlmRouterModule,
     MemoryModule,
   ],
   controllers: [ValidatorController],

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Code } from './schemas/code.schema';
-import { LlmService } from '../../services/llm.service';
+import { LlmRouterService } from '../../services/llm-router.service';
 import { MemoryService } from '../memory/memory.service';
 import { MemoryType } from '../memory/schemas/memory.schema';
 import { GenerateCodeWithSemanticInputDto } from './dto';
@@ -11,7 +11,7 @@ import { GenerateCodeWithSemanticInputDto } from './dto';
 export class GeneratorService {
   constructor(
     @InjectModel(Code.name) private codeModel: Model<Code>,
-    private readonly llmService: LlmService,
+    private readonly llmRouterService: LlmRouterService,
     private readonly memoryService: MemoryService,
   ) {}
 
@@ -38,7 +38,7 @@ export class GeneratorService {
       返回JSON格式，包含files数组，每个文件包含path、content和language字段。
     `;
 
-    const generatedCodeText = await this.llmService.generateContent(codeGenerationPrompt);
+    const generatedCodeText = await this.llmRouterService.generateContent(codeGenerationPrompt);
     const generatedCode = JSON.parse(generatedCodeText);
 
     const createdCode = new this.codeModel({
@@ -171,7 +171,7 @@ export class GeneratorService {
     }
 
     logger.debug('Sending prompt to LLM service');
-    const generatedCodeText = await this.llmService.generateContent(codeGenerationPrompt);
+    const generatedCodeText = await this.llmRouterService.generateContent(codeGenerationPrompt);
     
     let generatedCode;
     try {
@@ -251,7 +251,7 @@ export class GeneratorService {
       const prompt = await this.getPromptTemplate('PROJECT_STRUCTURE_GENERATION_PROMPT', templateVariables);
       logger.debug('Sending project structure generation prompt to LLM service');
       
-      const generatedStructureText = await this.llmService.generateContent(prompt);
+      const generatedStructureText = await this.llmRouterService.generateContent(prompt);
       
       let generatedStructure;
       try {
@@ -332,7 +332,7 @@ export class GeneratorService {
       const prompt = await this.getPromptTemplate('ARCHITECTURE_BASED_CODE_GENERATION_PROMPT', templateVariables);
       logger.debug('Sending architecture-based code generation prompt to LLM service');
       
-      const generatedCodeText = await this.llmService.generateContent(prompt);
+      const generatedCodeText = await this.llmRouterService.generateContent(prompt);
       
       let generatedCode;
       try {
@@ -409,7 +409,7 @@ export class GeneratorService {
       const prompt = await this.getPromptTemplate('TEST_SUITE_GENERATION_PROMPT', templateVariables);
       logger.debug('Sending test suite generation prompt to LLM service');
       
-      const generatedTestsText = await this.llmService.generateContent(prompt);
+      const generatedTestsText = await this.llmRouterService.generateContent(prompt);
       
       let generatedTests;
       try {
@@ -491,7 +491,7 @@ export class GeneratorService {
       const prompt = await this.getPromptTemplate('CODE_REFACTORING_PROMPT', templateVariables);
       logger.debug('Sending code refactoring prompt to LLM service');
       
-      const refactoredCodeText = await this.llmService.generateContent(prompt);
+      const refactoredCodeText = await this.llmRouterService.generateContent(prompt);
       
       let refactoredCode;
       try {
@@ -644,7 +644,7 @@ export class GeneratorService {
     `;
     
     logger.debug('Sending optimization prompt to LLM service');
-    const optimizedCodeText = await this.llmService.generateContent(optimizationPrompt);
+    const optimizedCodeText = await this.llmRouterService.generateContent(optimizationPrompt);
     
     let optimizedCode;
     try {

@@ -4,7 +4,7 @@ import { ClarifierController } from './clarifier.controller';
 import { ClarifierService } from './clarifier.service';
 import { Requirement, RequirementSchema } from './schemas/requirement.schema';
 import { Expectation, ExpectationSchema } from './schemas/expectation.schema';
-import { LlmModule } from '../../services/llm.module';
+import { LlmRouterModule } from '../../services/llm-router.module';
 import { MemoryModule } from '../memory/memory.module';
 
 @Module({
@@ -13,7 +13,7 @@ import { MemoryModule } from '../memory/memory.module';
       { name: Requirement.name, schema: RequirementSchema },
       { name: Expectation.name, schema: ExpectationSchema },
     ]),
-    LlmModule,
+    LlmRouterModule,
     MemoryModule,
   ],
   controllers: [ClarifierController],

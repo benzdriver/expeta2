@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { Requirement } from './schemas/requirement.schema';
 import { Expectation } from './schemas/expectation.schema';
 import { CreateRequirementDto, UpdateRequirementDto } from './dto';
-import { LlmService } from '../../services/llm.service';
+import { LlmRouterService } from '../../services/llm-router.service';
 import { MemoryService } from '../memory/memory.service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -15,7 +15,7 @@ export class ClarifierService {
   constructor(
     @InjectModel(Requirement.name) private requirementModel: Model<Requirement>,
     @InjectModel(Expectation.name) private expectationModel: Model<Expectation>,
-    private readonly llmService: LlmService,
+    private readonly llmRouterService: LlmRouterService,
     private readonly memoryService: MemoryService,
   ) {
     this.logger.log('ClarifierService initialized');
@@ -117,7 +117,7 @@ export class ClarifierService {
         operation: 'generate_clarification_questions'
       });
       
-      const questionsText = await this.llmService.generateContent(clarificationPrompt, {
+      const questionsText = await this.llmRouterService.generateContent(clarificationPrompt, {
         systemPrompt: '你是一个专业的需求分析师，擅长识别需求中的模糊点和不确定性，并提出有针对性的澄清问题。'
       });
       
@@ -241,7 +241,7 @@ export class ClarifierService {
       `;
       
       this.logger.debug('Sending analysis prompt to LLM service');
-      const analysisText = await this.llmService.generateContent(analysisPrompt, {
+      const analysisText = await this.llmRouterService.generateContent(analysisPrompt, {
         systemPrompt: '你是一个专业的需求分析师，擅长识别需求中的模糊点和不确定性，并提出有针对性的澄清问题。'
       });
       
@@ -297,7 +297,7 @@ export class ClarifierService {
       返回JSON格式，包含id、name、description和children字段，其中children是子期望的数组。
     `;
     
-    const expectationsData = await this.llmService.generateContent(expectationsPrompt);
+    const expectationsData = await this.llmRouterService.generateContent(expectationsPrompt);
     const parsedExpectations = JSON.parse(expectationsData);
     
     const createdExpectation = new this.expectationModel({
@@ -372,7 +372,7 @@ export class ClarifierService {
       - dialogueEffectiveness: 对话有效性评估，包含score、strengths、weaknesses和recommendations
     `;
     
-    const analysisText = await this.llmService.generateContent(analysisPrompt, {
+    const analysisText = await this.llmRouterService.generateContent(analysisPrompt, {
       systemPrompt: `你是一个专业的软件需求分析师，擅长将模糊的需求转化为清晰的期望模型。
       在多轮对话中，你应该记住之前的交流内容，并基于这些信息提出更有针对性的问题。
       每轮对话结束时，你应该明确总结你对需求的理解，并请用户确认。`
@@ -467,7 +467,7 @@ export class ClarifierService {
       `;
       
       this.logger.debug('Sending analysis prompt to LLM service');
-      const analysisText = await this.llmService.generateContent(analysisPrompt, {
+      const analysisText = await this.llmRouterService.generateContent(analysisPrompt, {
         systemPrompt: `你是一个专业的软件需求分析师，擅长将模糊的需求转化为清晰的期望模型。
         在多轮对话中，你应该记住之前的交流内容，并基于这些信息提出更有针对性的问题。
         每轮对话结束时，你应该明确总结你对需求的理解，并请用户确认。
@@ -592,7 +592,7 @@ export class ClarifierService {
       `;
       
       this.logger.debug('Sending summary prompt to LLM service');
-      const summaryText = await this.llmService.generateContent(summaryPrompt, {
+      const summaryText = await this.llmRouterService.generateContent(summaryPrompt, {
         systemPrompt: `你是一个专业的软件需求分析师，擅长将复杂的期望模型转化为简洁明了的总结。
         你的总结应该使用非技术语言，便于所有利益相关者理解，并突出最重要的期望。
         你的分析应该关注语义连贯性、需求完整性和实现可行性。`

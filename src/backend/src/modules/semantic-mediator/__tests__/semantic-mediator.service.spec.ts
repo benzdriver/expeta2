@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SemanticMediatorService } from '../semantic-mediator.service';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
 import { SemanticRegistryService } from '../components/semantic-registry/semantic-registry.service';
@@ -20,11 +20,7 @@ describe('SemanticMediatorService', () => {
   let humanInTheLoopMock: any;
 
   beforeEach(async () => {
-    // Mock LLM Service
     llmServiceMock = {
-      translateBetweenModules: jest
-        .fn()
-        .mockResolvedValue({ translated: true, data: 'translated data' }),
       enrichWithContext: jest.fn().mockResolvedValue({ enriched: true, data: 'enriched data' }),
       resolveSemanticConflicts: jest
         .fn()
@@ -277,13 +273,13 @@ describe('SemanticMediatorService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SemanticMediatorService,
-        { provide: LlmService, useValue: llmServiceMock },
+        { provide: LlmRouterService, useValue: llmServiceMock }, // Use LlmRouterService
         { provide: MemoryService, useValue: memoryServiceMock },
-        { provide: SemanticRegistryService, useValue: semanticRegistryMock },
-        { provide: TransformationEngineService, useValue: transformationEngineMock },
-        { provide: IntelligentCacheService, useValue: intelligentCacheMock },
-        { provide: MonitoringSystemService, useValue: monitoringSystemMock },
-        { provide: HumanInTheLoopService, useValue: humanInTheLoopMock },
+        { provide: SemanticRegistryService, useValue: semanticRegistryMock }, // Keep new components
+        { provide: TransformationEngineService, useValue: transformationEngineMock }, // Keep new components
+        { provide: IntelligentCacheService, useValue: intelligentCacheMock }, // Keep new components
+        { provide: MonitoringSystemService, useValue: monitoringSystemMock }, // Keep new components
+        { provide: HumanInTheLoopService, useValue: humanInTheLoopMock }, // Keep new components
       ],
     }).compile();
 
@@ -358,12 +354,20 @@ describe('SemanticMediatorService', () => {
       const result = await service.enrichWithContext(module, data, contextQuery);
 
       expect(memoryServiceMock.getRelatedMemories).toHaveBeenCalledWith(contextQuery);
+<<<<<<< HEAD
       expect(transformationEngineMock.executeTransformation).toHaveBeenCalled();
       expect(monitoringSystemMock.logTransformationEvent).toHaveBeenCalled();
       expect(result).toEqual({
         success: true,
         data: { newKey: 'transformedValue', date: '2025-04-13' },
       });
+||||||| parent of 79469d7 (Refactor: Rename LlmService to LlmRouterService and update references)
+      expect(llmServiceMock.enrichWithContext).toHaveBeenCalled();
+      expect(result).toEqual({ enriched: true, data: 'enriched data' });
+=======
+      expect(llmServiceMock.enrichWithContext).toHaveBeenCalled(); // Assuming LlmRouterService has this method
+      expect(result).toEqual({ enriched: true, data: 'enriched data' });
+>>>>>>> 79469d7 (Refactor: Rename LlmService to LlmRouterService and update references)
     });
 
     it('should return original data if no related memories found', async () => {
@@ -423,16 +427,16 @@ describe('SemanticMediatorService', () => {
       (intelligentCacheMock.storeTransformationPath as jest.Mock).mockClear();
       (monitoringSystemMock.logTransformationEvent as jest.Mock).mockClear();
 
-      (intelligentCacheMock.retrieveTransformationPath as jest.Mock).mockResolvedValue(null);
+      (intelligentCacheMock.retrieveTransformationPath as jest.Mock).mockResolvedValue(null); // Assume cache miss
       (transformationEngineMock.generateTransformationPath as jest.Mock).mockResolvedValue({
-        steps: [{ type: 'transform', operation: 'rename' }],
+        steps: [{ type: 'transform', operation: 'rename' }], // Mocked path
       });
       (transformationEngineMock.executeTransformation as jest.Mock).mockResolvedValue({
         success: true,
-        data: { newKey: 'transformedValue', date: '2025-04-13' },
+        data: { newKey: 'transformedValue', date: '2025-04-13' }, // Mocked result
       });
       (transformationEngineMock.validateTransformation as jest.Mock).mockResolvedValue({
-        valid: true,
+        valid: true, // Mocked validation
       });
 
       const result = await service.transformData(sourceData, sourceDescriptor, targetDescriptor);
@@ -440,7 +444,8 @@ describe('SemanticMediatorService', () => {
       expect(transformationEngineMock.generateTransformationPath).toHaveBeenCalledWith(
         sourceDescriptor,
         targetDescriptor,
-        expect.any(Object),
+        expect.any(Object), // Context might be complex, check if it's an object
+      );
       );
       expect(transformationEngineMock.executeTransformation).toHaveBeenCalled();
       expect(intelligentCacheMock.storeTransformationPath).toHaveBeenCalled();
@@ -571,4 +576,5 @@ describe('SemanticMediatorService', () => {
       });
     });
   });
+
 });

@@ -3,14 +3,14 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ValidatorService } from '../validator.service';
 import { Validation } from '../schemas/validation.schema';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
 
 describe('ValidatorService', () => {
   let service: ValidatorService;
   let validationModel: Model<Validation>;
-  let llmService: LlmService;
+  let llmRouterService: LlmRouterService;
   let memoryService: MemoryService;
 
   beforeEach(async () => {
@@ -245,7 +245,7 @@ describe('ValidatorService', () => {
           useValue: mockValidationModel,
         },
         {
-          provide: LlmService,
+          provide: LlmRouterService,
           useValue: mockLlmService,
         },
         {
@@ -257,7 +257,7 @@ describe('ValidatorService', () => {
 
     service = module.get<ValidatorService>(ValidatorService);
     validationModel = module.get<Model<Validation>>(getModelToken(Validation.name));
-    llmService = module.get<LlmService>(LlmService);
+    llmRouterService = module.get<LlmRouterService>(LlmRouterService);
     memoryService = module.get<MemoryService>(MemoryService);
   });
 
@@ -278,7 +278,7 @@ describe('ValidatorService', () => {
       expect(result.status).toBe('passed');
       expect(result.score).toBe(85);
       expect(result.details).toHaveLength(1);
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型和生成的代码，评估代码是否满足期望要求')
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
@@ -359,7 +359,7 @@ describe('ValidatorService', () => {
       expect(result.codeId).toBe(codeId);
       expect(result.status).toBe('passed');
       expect(result.score).toBe(85);
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型、生成的代码和语义解析结果，评估代码是否满足期望要求')
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
@@ -399,7 +399,7 @@ describe('ValidatorService', () => {
       expect(result.codeId).toBe(codeId);
       expect(result.status).toBe('passed');
       expect(result.score).toBe(85);
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型、生成的代码和前一轮验证结果，进行迭代验证')
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
@@ -455,7 +455,7 @@ describe('ValidatorService', () => {
       expect(result._id).toBe('test-validation-id');
       expect(result.status).toBe('passed');
       expect(result.score).toBe(100);
-      expect(llmService.generateContent).not.toHaveBeenCalled();
+      expect(llmRouterService.generateContent).not.toHaveBeenCalled();
     });
   });
 
@@ -472,7 +472,7 @@ describe('ValidatorService', () => {
       expect(result.prioritizedIssues).toHaveLength(1);
       expect(result.codeOptimizationSuggestions).toBeDefined();
       expect(result.overallRecommendation).toBe('Overall recommendation');
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下验证结果，生成详细的反馈，用于指导代码优化')
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
@@ -533,7 +533,7 @@ describe('ValidatorService', () => {
       expect(result.codeId).toBe(codeId);
       expect(result.status).toBe('passed');
       expect(result.score).toBe(85);
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型、生成的代码和验证上下文，执行自适应语义验证')
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SemanticMediatorService } from '../semantic-mediator.service';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
 import { SemanticRegistryService } from '../components/semantic-registry/semantic-registry.service';
@@ -11,7 +11,7 @@ import { HumanInTheLoopService } from '../components/human-in-the-loop/human-in-
 
 describe('SemanticMediatorService Basic Tests', () => {
   let service: SemanticMediatorService;
-  let llmService: LlmService;
+  let llmRouterService: LlmRouterService;
   let memoryService: MemoryService;
   let semanticRegistry: SemanticRegistryService;
   let transformationEngine: TransformationEngineService;
@@ -173,18 +173,18 @@ describe('SemanticMediatorService Basic Tests', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SemanticMediatorService,
-        { provide: LlmService, useValue: llmServiceMock },
+        { provide: LlmRouterService, useValue: llmServiceMock }, // Use LlmRouterService
         { provide: MemoryService, useValue: memoryServiceMock },
-        { provide: SemanticRegistryService, useValue: semanticRegistryMock },
-        { provide: TransformationEngineService, useValue: transformationEngineMock },
-        { provide: IntelligentCacheService, useValue: intelligentCacheMock },
-        { provide: MonitoringSystemService, useValue: monitoringSystemMock },
-        { provide: HumanInTheLoopService, useValue: humanInTheLoopMock },
+        { provide: SemanticRegistryService, useValue: semanticRegistryMock }, // Keep new components
+        { provide: TransformationEngineService, useValue: transformationEngineMock }, // Keep new components
+        { provide: IntelligentCacheService, useValue: intelligentCacheMock }, // Keep new components
+        { provide: MonitoringSystemService, useValue: monitoringSystemMock }, // Keep new components
+        { provide: HumanInTheLoopService, useValue: humanInTheLoopMock }, // Keep new components
       ],
     }).compile();
 
     service = module.get<SemanticMediatorService>(SemanticMediatorService);
-    llmService = module.get<LlmService>(LlmService);
+    llmRouterService = module.get<LlmRouterService>(LlmRouterService);
     memoryService = module.get<MemoryService>(MemoryService);
     semanticRegistry = module.get<SemanticRegistryService>(SemanticRegistryService);
     transformationEngine = module.get<TransformationEngineService>(TransformationEngineService);

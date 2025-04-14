@@ -3,7 +3,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { GeneratorService } from '../generator.service';
 import { Code } from '../schemas/code.schema';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
 import { GenerateCodeWithSemanticInputDto } from '../dto';
@@ -11,7 +11,7 @@ import { GenerateCodeWithSemanticInputDto } from '../dto';
 describe('GeneratorService', () => {
   let service: GeneratorService;
   let codeModel: Model<Code>;
-  let llmService: LlmService;
+  let llmRouterService: LlmRouterService;
   let memoryService: MemoryService;
 
   beforeEach(async () => {
@@ -257,7 +257,7 @@ describe('GeneratorService', () => {
           useValue: mockCodeModel,
         },
         {
-          provide: LlmService,
+          provide: LlmRouterService,
           useValue: mockLlmService,
         },
         {
@@ -269,7 +269,7 @@ describe('GeneratorService', () => {
 
     service = module.get<GeneratorService>(GeneratorService);
     codeModel = module.get<Model<Code>>(getModelToken(Code.name));
-    llmService = module.get<LlmService>(LlmService);
+    llmRouterService = module.get<LlmRouterService>(LlmRouterService);
     memoryService = module.get<MemoryService>(MemoryService);
   });
 
@@ -287,7 +287,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe(expectationId);
       expect(result.files).toHaveLength(1);
       expect(result.files[0].path).toBe('test.js');
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型，生成相应的代码实现')
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
@@ -393,7 +393,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe(expectationId);
       expect(result.metadata.semanticAnalysisUsed).toBe(true);
       expect(result.metadata.semanticAnalysisSummary).toBe('Semantic analysis summary');
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -418,7 +418,7 @@ describe('GeneratorService', () => {
       const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
 
       expect(result).toBeDefined();
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型和语义分析结果，生成相应的代码实现')
       );
     });
@@ -443,7 +443,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe(expectationId);
       expect(result.metadata.status).toBe('structure_generated');
       expect(result.metadata.techStack).toEqual(techStack);
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -484,7 +484,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe(expectationId);
       expect(result.metadata.status).toBe('architecture_generated');
       expect(result.metadata.architecturePattern).toBe('MVC');
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -518,7 +518,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe('test-expectation-id');
       expect(result.metadata.status).toBe('tests_added');
       expect(result.metadata.originalCodeId).toBe(codeId);
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -553,7 +553,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe('test-expectation-id');
       expect(result.metadata.status).toBe('refactored');
       expect(result.metadata.originalCodeId).toBe(codeId);
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -589,7 +589,7 @@ describe('GeneratorService', () => {
       expect(result.metadata.status).toBe('optimized');
       expect(result.metadata.originalCodeId).toBe(codeId);
       expect(result.metadata.optimizationFeedback).toEqual(semanticFeedback);
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
