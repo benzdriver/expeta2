@@ -39,19 +39,25 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
       trackSemanticTransformation: jest.fn().mockResolvedValue({}),
     } as any;
 
-    validationModel = {
-      create: jest.fn().mockReturnValue({
+    const ValidationModelMock = function() {
+      return {
         save: jest.fn().mockResolvedValue({}),
+      };
+    };
+    
+    ValidationModelMock.create = jest.fn().mockReturnValue({
+      save: jest.fn().mockResolvedValue({}),
+    });
+    ValidationModelMock.find = jest.fn().mockReturnValue({
+      sort: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
       }),
-      find: jest.fn().mockReturnValue({
-        sort: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue([]),
-        }),
-      }),
-      findById: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
-      }),
-    } as any;
+    });
+    ValidationModelMock.findById = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue(null),
+    });
+    
+    validationModel = ValidationModelMock as any;
 
     const moduleRef = await Test.createTestingModule({
       providers: [
