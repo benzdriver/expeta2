@@ -23,6 +23,20 @@ interface OpenAIChatCompletionResponse {
   };
 }
 
+interface AnthropicMessageResponse {
+  id: string;
+  type: string;
+  role: string;
+  content: { type: string; text: string }[];
+  model: string;
+  stop_reason: string;
+  stop_sequence: string | null;
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+  };
+}
+
 interface LlmRequestOptions {
   model?: string;
   temperature?: number;
@@ -33,20 +47,45 @@ interface LlmRequestOptions {
 @Injectable()
 export class LlmRouterService {
   private readonly logger = new Logger(LlmRouterService.name);
-  private apiKey: string;
-  private apiUrl: string;
-  private defaultModel: string;
+  private openaiApiKey: string;
+  private anthropicApiKey: string;
+  private openaiApiUrl: string;
+  private anthropicApiUrl: string;
+  private primaryProvider: 'anthropic' | 'openai' = 'anthropic'; // Default primary
+  private fallbackProvider: 'anthropic' | 'openai' = 'openai'; // Default fallback
+  private defaultAnthropicModel: string = 'claude-3-opus-20240229'; // Default Anthropic model (Opus as placeholder, will use Sonnet 3.5 later)
+  private defaultOpenaiModel: string = 'gpt-4'; // Default OpenAI model
   private defaultTemperature: number;
-  private defaultMaxTokens: number;
+  private defaultMaxTokens: number; // Max tokens for OpenAI
+  private defaultAnthropicMaxTokens: number = 4096; // Max tokens for Anthropic (Claude 3 Opus limit)
   private cache: Map<string, { result: string; timestamp: number }> = new Map();
   private cacheTTL: number = 3600000; // 1 hour in milliseconds
 
   constructor(private configService: ConfigService) {
-    this.apiKey = this.configService.get<string>('OPENAI_API_KEY');
-    this.apiUrl = 'https://api.openai.com/v1/chat/completions';
-    this.defaultModel = 'gpt-4';
+    this.openaiApiKey = this.configService.get<string>('OPENAI_API_KEY');
+    this.anthropicApiKey = this.configService.get<string>('ANTHROPIC_API_KEY'); // Load Anthropic key
+    
+    if (!this.openaiApiKey) {
+      this.logger.warn('OPENAI_API_KEY not found in configuration.');
+    }
+    if (!this.anthropicApiKey) {
+      this.logger.warn('ANTHROPIC_API_KEY not found in configuration. Anthropic provider will not be available.');
+      if (this.primaryProvider === 'anthropic') {
+        this.primaryProvider = 'openai';
+        this.fallbackProvider = null; // No fallback if primary is the only one configured
+        this.logger.warn('Setting OpenAI as the primary provider due to missing Anthropic key.');
+      }
+    }
+
+    this.openaiApiUrl = 'https://api.openai.com/v1/chat/completions';
+    this.anthropicApiUrl = 'https://api.anthropic.com/v1/messages'; // Anthropic Messages API endpoint
+    
+    this.defaultAnthropicModel = 'claude-3-5-sonnet-20240620'; // Updated to Sonnet 3.5 as requested
+    this.defaultOpenaiModel = 'gpt-4'; // Keep gpt-4 as default for OpenAI
+
     this.defaultTemperature = 0.7;
-    this.defaultMaxTokens = 4000;
+    this.defaultMaxTokens = 4000; // For OpenAI
+    this.defaultAnthropicMaxTokens = 4096; // Max output tokens for Claude 3.5 Sonnet
   }
 
   async generateContent(
@@ -61,53 +100,175 @@ export class LlmRouterService {
       return cachedResult;
     }
 
-    const model = options.model || this.defaultModel;
+    const provider = this.primaryProvider; // Start with the primary provider
+    const model = options.model || (provider === 'anthropic' ? this.defaultAnthropicModel : this.defaultOpenaiModel);
     const temperature = options.temperature || this.defaultTemperature;
-    const maxTokens = options.maxTokens || this.defaultMaxTokens;
-    const systemPrompt = options.systemPrompt || 'You are a helpful assistant specialized in software requirements analysis and clarification.';
+    const maxTokens = options.maxTokens || (provider === 'anthropic' ? this.defaultAnthropicMaxTokens : this.defaultMaxTokens);
+    const systemPrompt = options.systemPrompt || 'You are a helpful assistant.'; // More generic default
 
     try {
-      const response = await axios.post<OpenAIChatCompletionResponse>(
-        this.apiUrl,
+      this.logger.debug(`Attempting LLM call with primary provider: ${this.primaryProvider}`);
+      const result = await this.callProvider(this.primaryProvider, prompt, systemPrompt, model, temperature, maxTokens);
+      this.addToCache(cacheKey, result); // Cache the successful result
+      return result;
+    } catch (primaryError) {
+      this.logger.warn(`Primary provider (${this.primaryProvider}) failed: ${primaryError.message}. Attempting fallback.`);
+      
+      if (this.fallbackProvider && this.fallbackProvider !== this.primaryProvider) {
+        try {
+          this.logger.debug(`Attempting LLM call with fallback provider: ${this.fallbackProvider}`);
+          const fallbackModel = options.model || (this.fallbackProvider === 'anthropic' ? this.defaultAnthropicModel : this.defaultOpenaiModel);
+          const fallbackMaxTokens = options.maxTokens || (this.fallbackProvider === 'anthropic' ? this.defaultAnthropicMaxTokens : this.defaultMaxTokens);
+          
+          const fallbackResult = await this.callProvider(this.fallbackProvider, prompt, systemPrompt, fallbackModel, temperature, fallbackMaxTokens);
+          const fallbackCacheKey = this.generateCacheKey(prompt, { ...options, model: fallbackModel }, this.fallbackProvider);
+          this.addToCache(fallbackCacheKey, fallbackResult); // Cache the successful fallback result
+          return fallbackResult;
+        } catch (fallbackError) {
+          this.logger.error(`Fallback provider (${this.fallbackProvider}) also failed: ${fallbackError.message}`);
+          throw new Error(`LLM generation failed with both primary (${this.primaryProvider}) and fallback (${this.fallbackProvider}) providers. Primary Error: ${primaryError.message}, Fallback Error: ${fallbackError.message}`);
+        }
+      } else {
+        this.logger.error(`Primary provider (${this.primaryProvider}) failed and no fallback configured or fallback is same as primary.`);
+        throw new Error(`LLM generation failed with primary provider (${this.primaryProvider}): ${primaryError.message}`);
+      }
+    }
+  }
+
+  private async callProvider(
+    provider: 'anthropic' | 'openai',
+    prompt: string,
+    systemPrompt: string,
+    model: string,
+    temperature: number,
+    maxTokens: number
+  ): Promise<string> {
+    if (provider === 'anthropic') {
+      return this._callAnthropic(prompt, systemPrompt, model, temperature, maxTokens);
+    } else if (provider === 'openai') {
+      return this._callOpenAI(prompt, systemPrompt, model, temperature, maxTokens);
+    } else {
+      this.logger.error(`Unsupported LLM provider requested: ${provider}`);
+      throw new Error(`Unsupported LLM provider: ${provider}`);
+    }
+  }
+
+  private async _callAnthropic(
+    prompt: string,
+    systemPrompt: string,
+    model: string,
+    temperature: number,
+    maxTokens: number
+  ): Promise<string> {
+    if (!this.anthropicApiKey) {
+      this.logger.error('Anthropic API key is missing, cannot make the call.');
+      throw new Error('Anthropic API key is not configured.');
+    }
+    this.logger.debug(`Calling Anthropic API: model=${model}, temp=${temperature}, max_tokens=${maxTokens}`);
+    try {
+      const response = await axios.post<AnthropicMessageResponse>(
+        this.anthropicApiUrl,
         {
-          model,
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt,
-            },
-            {
-              role: 'user',
-              content: prompt,
-            },
-          ],
-          temperature,
+          model: model,
+          system: systemPrompt, // Use 'system' field for system prompt
+          messages: [{ role: 'user', content: prompt }],
+          temperature: temperature,
           max_tokens: maxTokens,
         },
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiKey}`,
+            'x-api-key': this.anthropicApiKey, // Anthropic uses 'x-api-key' header
+            'anthropic-version': '2023-06-01', // Required version header
           },
-        },
+          timeout: 60000 // Add a timeout (e.g., 60 seconds)
+        }
       );
 
-      const result = response.data.choices[0].message.content;
-      this.addToCache(cacheKey, result);
-      return result;
-    } catch (error) {
-      this.logger.error(`Error calling LLM API: ${error.message}`, error.stack);
-      
-      if (error.response) {
-        this.logger.error(`API response: ${JSON.stringify(error.response.data)}`);
+      if (response.data.content && response.data.content.length > 0 && response.data.content[0].type === 'text') {
+         const result = response.data.content[0].text;
+         this.logger.debug(`Anthropic API call successful. Output tokens: ${response.data.usage?.output_tokens}`);
+         return result;
+      } else {
+         this.logger.error(`Anthropic API returned unexpected response format or empty content. Response: ${JSON.stringify(response.data)}`);
+         throw new Error('Anthropic API returned unexpected response format or empty content.');
       }
-      
-      throw new Error(`Failed to generate content using LLM: ${error.message}`);
+    } catch (error) {
+      this.logger.error(`Error calling Anthropic API: ${error.message}`, error.stack);
+      if (error.response) {
+        this.logger.error(`Anthropic API response: Status=${error.response.status}, Data=${JSON.stringify(error.response.data)}`);
+        throw new Error(`Anthropic API request failed with status ${error.response.status}: ${error.message}`);
+      } else if (error.request) {
+         this.logger.error('Anthropic API request made but no response received (e.g., timeout).');
+         throw new Error('Anthropic API request failed: No response received.');
+      } else {
+         this.logger.error(`Error setting up Anthropic API request: ${error.message}`);
+         throw new Error(`Anthropic API request setup failed: ${error.message}`);
+      }
     }
   }
 
-  private generateCacheKey(prompt: string, options: LlmRequestOptions): string {
-    return `${options.model || this.defaultModel}:${options.temperature || this.defaultTemperature}:${prompt}`;
+  private async _callOpenAI(
+    prompt: string,
+    systemPrompt: string,
+    model: string,
+    temperature: number,
+    maxTokens: number
+  ): Promise<string> {
+     if (!this.openaiApiKey) {
+       this.logger.error('OpenAI API key is missing, cannot make the call.');
+       throw new Error('OpenAI API key is not configured.');
+     }
+     this.logger.debug(`Calling OpenAI API: model=${model}, temp=${temperature}, max_tokens=${maxTokens}`);
+    try {
+      const response = await axios.post<OpenAIChatCompletionResponse>(
+        this.openaiApiUrl,
+        {
+          model: model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt },
+          ],
+          temperature: temperature,
+          max_tokens: maxTokens,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.openaiApiKey}`,
+          },
+           timeout: 60000 // Add a timeout (e.g., 60 seconds)
+        }
+      );
+
+      if (response.data.choices && response.data.choices.length > 0 && response.data.choices[0].message) {
+        const result = response.data.choices[0].message.content;
+        this.logger.debug(`OpenAI API call successful. Output tokens: ${response.data.usage?.completion_tokens}`);
+        return result;
+      } else {
+         this.logger.error(`OpenAI API returned unexpected response format or empty content. Response: ${JSON.stringify(response.data)}`);
+         throw new Error('OpenAI API returned unexpected response format or empty content.');
+      }
+    } catch (error) {
+      this.logger.error(`Error calling OpenAI API: ${error.message}`, error.stack);
+      if (error.response) {
+        this.logger.error(`OpenAI API response: Status=${error.response.status}, Data=${JSON.stringify(error.response.data)}`);
+        throw new Error(`OpenAI API request failed with status ${error.response.status}: ${error.message}`);
+      } else if (error.request) {
+         this.logger.error('OpenAI API request made but no response received (e.g., timeout).');
+         throw new Error('OpenAI API request failed: No response received.');
+      } else {
+         this.logger.error(`Error setting up OpenAI API request: ${error.message}`);
+         throw new Error(`OpenAI API request setup failed: ${error.message}`);
+      }
+    }
+  }
+
+
+  private generateCacheKey(prompt: string, options: LlmRequestOptions, providerOverride?: 'anthropic' | 'openai'): string {
+    const provider = providerOverride || this.primaryProvider; // Use override if provided (for fallback caching)
+    const modelKey = options.model || (provider === 'anthropic' ? this.defaultAnthropicModel : this.defaultOpenaiModel);
+    return `${provider}:${modelKey}:${options.temperature || this.defaultTemperature}:${prompt}`;
   }
 
   private getFromCache(key: string): string | null {
