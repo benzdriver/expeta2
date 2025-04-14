@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+
 import { MongooseModule } from '@nestjs/mongoose';
 import { ValidatorController } from './validator.controller';
 import { ValidatorService } from './validator.service';
@@ -13,8 +14,8 @@ import { SemanticMediatorModule } from '../semantic-mediator/semantic-mediator.m
       { name: Validation.name, schema: ValidationSchema },
     ]),
     LlmModule,
-    MemoryModule,
-    SemanticMediatorModule,
+    forwardRef(() => MemoryModule),
+    forwardRef(() => SemanticMediatorModule),
   ],
   controllers: [ValidatorController],
   providers: [ValidatorService],
