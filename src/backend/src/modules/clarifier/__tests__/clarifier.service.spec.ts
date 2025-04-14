@@ -91,37 +91,30 @@ describe('ClarifierService', () => {
       }),
     };
 
-    const mockExpectationModel = {
-      new: jest.fn().mockImplementation((data) => ({
+    const mockSave = jest.fn().mockImplementation(function() { return Promise.resolve(this); });
+    const mockExec = jest.fn().mockResolvedValue({
+      _id: 'test-expectation-id', // Use the ID expected in tests
+      requirementId: 'test-id',
+      model: { id: 'root', name: 'Root Expectation', description: 'Root expectation description', children: [] },
+      save: mockSave, // Ensure found documents have save
+    });
+
+    const mockExpectationModel = jest.fn().mockImplementation((data) => ({
+      ...data,
+      _id: 'test-expectation-id-new',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      save: jest.fn().mockResolvedValue({ // Mock save on the new instance
         ...data,
-        _id: 'test-expectation-id-new',
+        _id: 'test-expectation-id-saved',
         createdAt: new Date(),
         updatedAt: new Date(),
-        save: jest.fn().mockResolvedValue({ // Mock save on the instance
-          _id: 'test-expectation-id-new',
-          ...data,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }),
-      })),
-      findOne: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({
-          _id: 'test-expectation-id-findone',
-          requirementId: 'test-id',
-          model: { id: 'root', name: 'Root Expectation', description: 'Root expectation description', children: [] },
-          save: jest.fn().mockImplementation(function() { return Promise.resolve(this); }), // Mock save on the found document
-        }),
       }),
-      findById: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({
-          _id: 'test-expectation-id-findbyid',
-          requirementId: 'test-id',
-          model: { id: 'root', name: 'Root Expectation', description: 'Root expectation description', children: [] },
-          save: jest.fn().mockImplementation(function() { return Promise.resolve(this); }), // Mock save on the found document
-        }),
-      }),
-      findByIdAndUpdate: jest.fn().mockReturnThis(), // Example
-    };
+    }));
+
+    mockExpectationModel.findOne = jest.fn().mockReturnValue({ exec: mockExec });
+    mockExpectationModel.findById = jest.fn().mockReturnValue({ exec: mockExec });
+    mockExpectationModel.findByIdAndUpdate = jest.fn().mockReturnThis(); // Example: Adjust if needed
 
     const mockLlmService = {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
