@@ -10,7 +10,16 @@ export interface CodeFile {
 export interface CodeMetadata {
   expectationId: string;
   version: number;
-  status: 'draft' | 'generated' | 'validated' | 'approved' | 'structure_generated' | 'architecture_generated' | 'tests_added' | 'refactored' | 'optimized';
+  status:
+    | 'draft'
+    | 'generated'
+    | 'validated'
+    | 'approved'
+    | 'structure_generated'
+    | 'architecture_generated'
+    | 'tests_added'
+    | 'refactored'
+    | 'optimized';
   semanticAnalysisUsed?: boolean;
   semanticAnalysisSummary?: string;
   techStack?: any;
