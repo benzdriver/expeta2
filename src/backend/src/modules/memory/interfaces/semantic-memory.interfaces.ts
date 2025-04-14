@@ -73,6 +73,14 @@ export interface TransformationFeedback {
   providedBy: string;
   /** 反馈时间 */
   timestamp: Date;
+  /** 反馈类别 */
+  category?: 'accuracy' | 'completeness' | 'relevance' | 'other';
+  /** 是否已处理 */
+  processed?: boolean;
+  /** 处理结果 */
+  processingResult?: string;
+  /** 处理时间 */
+  processedAt?: Date;
 }
 
 /**
@@ -87,6 +95,12 @@ export interface ValidationResult {
   score: number;
   /** 建议的修复 */
   suggestedFixes?: Record<string, any>;
+  /** 验证时间戳 */
+  timestamp?: Date;
+  /** 验证上下文 */
+  context?: Record<string, any>;
+  /** 验证者 */
+  validator?: string;
 }
 
 /**
@@ -101,6 +115,12 @@ export interface ValidationMessage {
   field?: string;
   /** 验证规则 */
   rule?: string;
+  /** 消息代码 */
+  code?: string;
+  /** 消息严重性 (1-5) */
+  severity?: number;
+  /** 修复建议 */
+  suggestion?: string;
 }
 
 /**
@@ -117,6 +137,59 @@ export interface SemanticConstraint {
   errorMessage?: string;
   /** 约束严重性 */
   severity: 'error' | 'warning' | 'info';
+  /** 约束ID */
+  id?: string;
+  /** 约束优先级 (1-5) */
+  priority?: number;
+  /** 约束类别 */
+  category?: string;
+  /** 约束描述 */
+  description?: string;
+  /** 约束示例 */
+  examples?: {
+    valid: any[];
+    invalid: any[];
+  };
+}
+
+/**
+ * 语义验证配置
+ */
+export interface SemanticValidationConfig {
+  /** 是否启用验证 */
+  enabled: boolean;
+  /** 验证模式 */
+  mode: 'strict' | 'lenient' | 'adaptive';
+  /** 验证阈值 */
+  threshold: number;
+  /** 自动修复 */
+  autoFix: boolean;
+  /** 验证超时（毫秒） */
+  timeout: number;
+  /** 验证缓存 */
+  cacheResults: boolean;
+  /** 验证策略 */
+  strategy: 'all' | 'critical' | 'sample';
+}
+
+/**
+ * 反馈分析结果
+ */
+export interface FeedbackAnalysisResult {
+  /** 总体评分 */
+  overallRating: number;
+  /** 常见问题 */
+  commonIssues: string[];
+  /** 改进建议 */
+  improvementSuggestions: string[];
+  /** 趋势分析 */
+  trends: {
+    period: string;
+    rating: number;
+    change: number;
+  }[];
+  /** 反馈分类 */
+  categories: Record<string, number>;
 }
 
 /**

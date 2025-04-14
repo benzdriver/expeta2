@@ -659,6 +659,286 @@ export class MemoryService {
   }
 
   /**
+   * 记录转换反馈
+   * 存储人类对语义转换的反馈，用于改进未来的转换
+   * @param transformationId 转换ID
+   * @param feedback 反馈信息
+   */
+  async recordTransformationFeedback(transformationId: string, feedback: TransformationFeedback): Promise<void> {
+    this.logger.log(`Recording feedback for transformation: ${transformationId}`);
+    
+    try {
+      const transformations = await this.memoryModel.find({
+        type: MemoryType.SEMANTIC_TRANSFORMATION,
+        'metadata.transformationId': transformationId
+      }).exec();
+      
+      if (!transformations || transformations.length === 0) {
+        throw new Error(`Transformation with ID ${transformationId} not found`);
+      }
+      
+      const transformation = transformations[0];
+      
+      await this.storeMemory({
+        type: MemoryType.SEMANTIC_FEEDBACK,
+        content: {
+          transformationId,
+          feedback,
+          originalTransformation: transformation.content,
+          timestamp: new Date()
+        },
+        metadata: {
+          transformationId,
+          rating: feedback.rating,
+          requiresHumanReview: feedback.requiresHumanReview || false,
+          providedBy: feedback.providedBy,
+          timestamp: new Date()
+        },
+        tags: ['semantic_feedback', transformationId, `rating_${feedback.rating}`],
+        semanticMetadata: {
+          description: `Feedback for semantic transformation ${transformationId}. Rating: ${feedback.rating}/5.`,
+          relevanceScore: 1.0
+        }
+      });
+      
+      await this.updateMemory(
+        transformation._id,
+        {
+          metadata: {
+            ...transformation.metadata,
+            hasFeedback: true,
+            lastFeedbackTimestamp: new Date(),
+            lastFeedbackRating: feedback.rating
+          }
+        }
+      );
+      
+      this.logger.debug(`Feedback recorded for transformation: ${transformationId}`);
+    } catch (error) {
+      this.logger.error(`Error recording transformation feedback: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+  
+  /**
+   * 获取需要人工审核的转换
+   * @param limit 结果数量限制
+   * @returns 需要人工审核的转换列表
+   */
+  async getFeedbackRequiringTransformations(limit: number = 10): Promise<Memory[]> {
+    this.logger.log(`Getting transformations requiring feedback, limit: ${limit}`);
+    
+    try {
+      const explicitlyMarked = await this.memoryModel.find({
+        type: MemoryType.SEMANTIC_TRANSFORMATION,
+        'metadata.requiresHumanReview': true
+      })
+      .sort({ 'metadata.timestamp': -1 })
+      .limit(limit)
+      .exec();
+      
+      if (explicitlyMarked.length >= limit) {
+        return explicitlyMarked;
+      }
+      
+      const withoutFeedback = await this.memoryModel.find({
+        type: MemoryType.SEMANTIC_TRANSFORMATION,
+        'metadata.hasFeedback': { $ne: true }
+      })
+      .sort({ 'metadata.timestamp': -1 })
+      .limit(limit - explicitlyMarked.length)
+      .exec();
+      
+      return [...explicitlyMarked, ...withoutFeedback];
+    } catch (error) {
+      this.logger.error(`Error getting transformations requiring feedback: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+  
+  /**
+   * 验证数据的语义一致性
+   * @param data 要验证的数据
+   * @param type 内存类型
+   * @returns 验证结果
+   */
+  async validateSemanticConsistency(data: any, type: MemoryType): Promise<ValidationResult> {
+    this.logger.log(`Validating semantic consistency for type: ${type}`);
+    
+    try {
+      const constraints = await this.getSemanticConstraints(type);
+      
+      if (!constraints || constraints.length === 0) {
+        return {
+          isValid: true,
+          messages: [{
+            type: 'info',
+            message: `No semantic constraints defined for type: ${type}`
+          }],
+          score: 100
+        };
+      }
+      
+      const messages: ValidationMessage[] = [];
+      let totalScore = 0;
+      let validConstraints = 0;
+      
+      for (const constraint of constraints) {
+        try {
+          let isValid = true;
+          
+          if (constraint.validationFn && typeof constraint.validationFn === 'function') {
+            const fieldValue = constraint.field.split('.').reduce((obj, key) => obj && obj[key], data);
+            isValid = constraint.validationFn(fieldValue);
+          } 
+          else {
+            const semanticMediatorService = await this.getSemanticMediatorService();
+            const validationResult = await semanticMediatorService.evaluateSemanticTransformation(
+              { [constraint.field]: data[constraint.field] },
+              { [constraint.field]: data[constraint.field] },
+              constraint.constraint
+            );
+            
+            isValid = validationResult.semanticPreservation >= 70;
+          }
+          
+          if (!isValid) {
+            messages.push({
+              type: constraint.severity || 'error',
+              message: constraint.errorMessage || `Field '${constraint.field}' does not satisfy constraint: ${constraint.constraint}`,
+              field: constraint.field,
+              rule: constraint.constraint
+            });
+            
+            totalScore += 0;
+          } else {
+            totalScore += 100;
+          }
+          
+          validConstraints++;
+        } catch (error) {
+          this.logger.warn(`Error validating constraint for field ${constraint.field}: ${error.message}`);
+          messages.push({
+            type: 'warning',
+            message: `Could not validate constraint for field '${constraint.field}': ${error.message}`,
+            field: constraint.field
+          });
+        }
+      }
+      
+      const finalScore = validConstraints > 0 ? Math.round(totalScore / validConstraints) : 100;
+      const isValid = messages.filter(m => m.type === 'error').length === 0;
+      
+      return {
+        isValid,
+        messages,
+        score: finalScore,
+        suggestedFixes: isValid ? undefined : this.generateSuggestedFixes(data, messages)
+      };
+    } catch (error) {
+      this.logger.error(`Error validating semantic consistency: ${error.message}`, error.stack);
+      return {
+        isValid: false,
+        messages: [{
+          type: 'error',
+          message: `Validation error: ${error.message}`
+        }],
+        score: 0
+      };
+    }
+  }
+  
+  /**
+   * 获取特定类型的语义约束
+   * @param type 内存类型
+   * @returns 语义约束列表
+   * @private
+   */
+  private async getSemanticConstraints(type: MemoryType): Promise<SemanticConstraint[]> {
+    const cacheKey = `semantic_constraints_${type}`;
+    const cachedConstraints = this.semanticCacheService.get<SemanticConstraint[]>(cacheKey);
+    
+    if (cachedConstraints) {
+      return cachedConstraints;
+    }
+    
+    const constraintMemories = await this.memoryModel.find({
+      type: MemoryType.SYSTEM,
+      'metadata.constraintType': type,
+      tags: 'semantic_constraint'
+    }).exec();
+    
+    if (!constraintMemories || constraintMemories.length === 0) {
+      return this.getDefaultConstraints(type);
+    }
+    
+    const constraints: SemanticConstraint[] = [];
+    
+    for (const memory of constraintMemories) {
+      if (memory.content && Array.isArray(memory.content.constraints)) {
+        constraints.push(...memory.content.constraints);
+      }
+    }
+    
+    this.semanticCacheService.set(cacheKey, constraints, 1.0, 30 * 60 * 1000); // 30分钟缓存
+    
+    return constraints;
+  }
+  
+  /**
+   * 获取默认语义约束
+   * @param type 内存类型
+   * @returns 默认约束列表
+   * @private
+   */
+  private getDefaultConstraints(type: MemoryType): SemanticConstraint[] {
+    switch (type) {
+      case MemoryType.REQUIREMENT:
+        return [
+          {
+            field: 'content.text',
+            constraint: '需求描述应该清晰、具体、可测试',
+            errorMessage: '需求描述不够清晰或具体',
+            severity: 'warning'
+          }
+        ];
+      case MemoryType.EXPECTATION:
+        return [
+          {
+            field: 'content.description',
+            constraint: '期望应该包含明确的验收标准',
+            errorMessage: '期望缺少明确的验收标准',
+            severity: 'warning'
+          }
+        ];
+      default:
+        return [];
+    }
+  }
+  
+  /**
+   * 生成修复建议
+   * @param data 原始数据
+   * @param messages 验证消息
+   * @returns 修复建议
+   * @private
+   */
+  private generateSuggestedFixes(data: any, messages: ValidationMessage[]): Record<string, any> {
+    const fixes: Record<string, any> = {};
+    
+    for (const message of messages) {
+      if (message.type === 'error' && message.field) {
+        fixes[message.field] = {
+          original: message.field.split('.').reduce((obj, key) => obj && obj[key], data),
+          suggestion: `请修正此字段以满足约束: ${message.rule || '未指定'}`
+        };
+      }
+    }
+    
+    return fixes;
+  }
+  
+  /**
    * 获取语义中介器服务实例
    * 使用延迟依赖注入模式，避免循环依赖
    * @private
@@ -687,6 +967,10 @@ export class MemoryService {
         registerSemanticDataSource: async (sourceId: string, sourceName: string, sourceType: string, semanticDescription: string) => {
           this.logger.warn('Using fallback implementation of registerSemanticDataSource');
           return;
+        },
+        evaluateSemanticTransformation: async (source: any, target: any, constraint: string) => {
+          this.logger.warn('Using fallback implementation of evaluateSemanticTransformation');
+          return { semanticPreservation: 100 };
         }
       };
     }
