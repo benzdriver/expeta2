@@ -9,6 +9,8 @@ import { IntelligentCacheService } from '../components/intelligent-cache/intelli
 import { MonitoringSystemService } from '../components/monitoring-system/monitoring-system.service';
 import { HumanInTheLoopService } from '../components/human-in-the-loop/human-in-the-loop.service';
 
+
+
 describe('SemanticMediatorService Tests', () => {
   let service: SemanticMediatorService;
   let llmRouterService: LlmRouterService;
@@ -19,15 +21,12 @@ describe('SemanticMediatorService Tests', () => {
   let monitoringSystem: MonitoringSystemService;
   let humanInTheLoop: HumanInTheLoopService;
 
+  
   beforeEach(async () => {
-    const llmServiceMock = {
-      translateBetweenModules: jest
-        .fn()
-        .mockResolvedValue({ translated: true, data: 'translated data' }),
+    const mockLlmRouterService = {
+      translateBetweenModules: jest.fn().mockResolvedValue({ translated: true, data: 'translated data' }),
       enrichWithContext: jest.fn().mockResolvedValue({ enriched: true, data: 'enriched data' }),
-      resolveSemanticConflicts: jest
-        .fn()
-        .mockResolvedValue({ resolved: true, data: 'resolved data' }),
+      resolveSemanticConflicts: jest.fn().mockResolvedValue({ resolved: true, data: 'resolved data' }),
       extractSemanticInsights: jest.fn().mockResolvedValue({ insights: ['insight1', 'insight2'] }),
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('translate')) {
@@ -39,52 +38,45 @@ describe('SemanticMediatorService Tests', () => {
         } else if (prompt.includes('insights')) {
           return Promise.resolve(JSON.stringify({ insights: ['insight1', 'insight2'] }));
         } else if (prompt.includes('分析以下两组数据之间的语义差异')) {
-          return Promise.resolve(
-            JSON.stringify({
-              semanticPreservation: { preserved: ['key1'], changed: ['key2'] },
-              transformationQuality: 85,
-              semanticDrift: { detected: false, areas: [] },
-              recommendations: ['recommendation1'],
-            }),
-          );
+          return Promise.resolve(JSON.stringify({
+            semanticPreservation: { preserved: ['key1'], changed: ['key2'] },
+            transformationQuality: 85,
+            semanticDrift: { detected: false, areas: [] },
+            recommendations: ['recommendation1']
+          }));
         } else if (prompt.includes('生成验证上下文')) {
-          return Promise.resolve(
-            JSON.stringify({
-              validationContext: {
-                semanticExpectations: ['expectation1'],
-                validationCriteria: ['criteria1'],
-                priorityAreas: ['area1'],
-              },
-            }),
-          );
+          return Promise.resolve(JSON.stringify({
+            validationContext: {
+              semanticExpectations: ['expectation1'],
+              validationCriteria: ['criteria1'],
+              priorityAreas: ['area1']
+            }
+          }));
         } else {
           return Promise.resolve('{}');
         }
-      }),
+      })
     };
-
+    
     const memoryServiceMock = {
       getRelatedMemories: jest.fn().mockResolvedValue([
         { content: 'memory1', type: MemoryType.EXPECTATION },
-        { content: 'memory2', type: MemoryType.CODE },
+        { content: 'memory2', type: MemoryType.CODE }
       ]),
       storeMemory: jest.fn().mockResolvedValue({ id: 'memory-id' }),
-      getMemoryByType: jest.fn().mockImplementation((type) => {
-        if (type === MemoryType.EXPECTATION) {
-          return Promise.resolve([{ content: { _id: 'exp-123', model: { key: 'value' } } }]);
-        } else if (type === MemoryType.CODE) {
+      getMemoryByType: jest.fn().mockImplementation((type, id) => { // Added id parameter for clarity
+        if (type === MemoryType.EXPECTATION && id === 'exp-123') {
           return Promise.resolve([
-            {
-              content: {
-                _id: 'code-456',
-                files: [{ path: 'test.js', content: 'console.log("test")' }],
-              },
-            },
+            { content: { _id: 'exp-123', model: { key: 'value' } } }
+          ]);
+        } else if (type === MemoryType.CODE && id === 'code-456') {
+          return Promise.resolve([
+            { content: { _id: 'code-456', files: [{ path: 'test.js', content: 'console.log("test")' }] } }
           ]);
         } else {
           return Promise.resolve([]);
         }
-      }),
+      })
     };
 
     const semanticRegistryMock = {
@@ -151,80 +143,83 @@ describe('SemanticMediatorService Tests', () => {
       getFeedbackHistory: jest.fn().mockResolvedValue([{ id: 'feedback-id-1' }]),
       analyzeFeedbackPatterns: jest.fn().mockResolvedValue({ patterns: ['pattern1'] }),
     };
-
+    
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SemanticMediatorService,
-        { provide: LlmRouterService, useValue: llmServiceMock }, // Use LlmRouterService
-        { provide: MemoryService, useValue: memoryServiceMock },
-        { provide: SemanticRegistryService, useValue: semanticRegistryMock }, // Keep new components
-        { provide: TransformationEngineService, useValue: transformationEngineMock }, // Keep new components
-        { provide: IntelligentCacheService, useValue: intelligentCacheMock }, // Keep new components
-        { provide: MonitoringSystemService, useValue: monitoringSystemMock }, // Keep new components
-        { provide: HumanInTheLoopService, useValue: humanInTheLoopMock }, // Keep new components
+        { provide: LlmRouterService, useValue: mockLlmRouterService },
+        { provide: MemoryService, useValue: memoryServiceMock }, // Added comma
+        { provide: SemanticRegistryService, useValue: semanticRegistryMock },
+        { provide: TransformationEngineService, useValue: transformationEngineMock },
+        { provide: IntelligentCacheService, useValue: intelligentCacheMock },
+        { provide: MonitoringSystemService, useValue: monitoringSystemMock },
+        { provide: HumanInTheLoopService, useValue: humanInTheLoopMock },
       ],
     }).compile();
 
     service = module.get<SemanticMediatorService>(SemanticMediatorService);
     llmRouterService = module.get<LlmRouterService>(LlmRouterService);
     memoryService = module.get<MemoryService>(MemoryService);
-    semanticRegistry = module.get<SemanticRegistryService>(SemanticRegistryService);
+    semanticRegistry = module.get<SemanticRegistryService>(SemanticRegistryService); // Moved assignments here
     transformationEngine = module.get<TransformationEngineService>(TransformationEngineService);
     intelligentCache = module.get<IntelligentCacheService>(IntelligentCacheService);
     monitoringSystem = module.get<MonitoringSystemService>(MonitoringSystemService);
     humanInTheLoop = module.get<HumanInTheLoopService>(HumanInTheLoopService);
   });
-
+  
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
-
+  
   it('should translate between modules', async () => {
-    const result = await service.translateBetweenModules('clarifier', 'generator', {
-      key: 'value',
-    });
+    const result = await service.translateBetweenModules('clarifier', 'generator', { key: 'value' });
     expect(result).toBeDefined();
   });
-
+  
   it('should enrich with context', async () => {
     const result = await service.enrichWithContext('generator', { key: 'value' }, 'context query');
     expect(result).toBeDefined();
   });
-
+  
   it('should resolve semantic conflicts', async () => {
-    const result = await service.resolveSemanticConflicts('moduleA', { key: 'source' }, 'moduleB', {
-      key: 'target',
-    });
+    const result = await service.resolveSemanticConflicts(
+      'moduleA',
+      { key: 'source' },
+      'moduleB',
+      { key: 'target' }
+    );
     expect(result).toBeDefined();
   });
-
+  
   it('should extract semantic insights', async () => {
     const result = await service.extractSemanticInsights({ key: 'data' }, 'semantic query');
     expect(result).toBeDefined();
+    expect(llmRouterService.generateContent).toHaveBeenCalled();
   });
-
+  
   it('should track semantic transformation', async () => {
     const result = await service.trackSemanticTransformation(
       'clarifier',
       'generator',
       { original: { key: 'value' } },
-      { transformed: { key: 'new-value' } },
+      { transformed: { key: 'new-value' } }
     );
     expect(result).toBeDefined();
   });
-
+  
   it('should generate validation context', async () => {
-    const result = await service.generateValidationContext('exp-123', 'code-456', [], {
-      strategy: 'balanced',
-    });
+    const result = await service.generateValidationContext('exp-123', 'code-456', [], { strategy: 'balanced' });
     expect(result).toBeDefined();
+    expect(llmRouterService.generateContent).toHaveBeenCalled();
+    expect(memoryService.getMemoryByType).toHaveBeenCalledWith(MemoryType.EXPECTATION, 'exp-123');
+    expect(memoryService.getMemoryByType).toHaveBeenCalledWith(MemoryType.CODE, 'code-456');
   });
-
+  
   it('should evaluate semantic transformation', async () => {
     const result = await service.evaluateSemanticTransformation(
       { source: 'data' },
       { transformed: 'data' },
-      'Expected outcome description',
+      'Expected outcome description'
     );
     expect(result).toBeDefined();
   });

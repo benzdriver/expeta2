@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as templates from './prompt-templates';
 
-interface OpenAIChatCompletionResponse {
+export interface OpenAIChatCompletionResponse {
   id: string;
   object: string;
   created: number;
@@ -23,7 +23,7 @@ interface OpenAIChatCompletionResponse {
   };
 }
 
-interface AnthropicMessageResponse {
+export interface AnthropicMessageResponse {
   id: string;
   type: string;
   role: string;

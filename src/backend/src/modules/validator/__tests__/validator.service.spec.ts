@@ -77,7 +77,7 @@ describe('ValidatorService', () => {
       }),
     };
 
-    const mockLlmService = {
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockImplementation((prompt) => {
         if (prompt.includes('评估代码是否满足期望要求')) {
           return Promise.resolve(JSON.stringify({
@@ -246,7 +246,7 @@ describe('ValidatorService', () => {
         },
         {
           provide: LlmRouterService,
-          useValue: mockLlmService,
+          useValue: mockLlmRouterService,
         },
         {
           provide: MemoryService,
