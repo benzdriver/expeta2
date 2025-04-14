@@ -5,7 +5,7 @@ import { Model } from 'mongoose';
 import { Validation, ValidationSchema } from '../schemas/validation.schema';
 import { getModelToken } from '@nestjs/mongoose';
 import { MemoryService } from '../../memory/memory.service';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
 import { Logger } from '@nestjs/common';
 
@@ -13,7 +13,7 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
   let validatorService: ValidatorService;
   let semanticMediatorService: SemanticMediatorService;
   let memoryService: MemoryService;
-  let llmService: LlmService;
+  let llmService: LlmRouterService;
   let validationModel: Model<Validation>;
 
   beforeEach(async () => {
@@ -64,7 +64,7 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
         ValidatorService,
         { provide: SemanticMediatorService, useValue: semanticMediatorService },
         { provide: MemoryService, useValue: memoryService },
-        { provide: LlmService, useValue: llmService },
+        { provide: LlmRouterService, useValue: llmService },
         { provide: getModelToken(Validation.name), useValue: validationModel },
         { provide: Logger, useValue: { log: jest.fn(), error: jest.fn(), debug: jest.fn() } },
       ],

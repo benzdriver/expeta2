@@ -3,7 +3,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { GeneratorService } from '../generator.service';
 import { Code } from '../schemas/code.schema';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
 import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediator.service';
@@ -12,7 +12,7 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
   let generatorService: GeneratorService;
   let semanticMediatorService: SemanticMediatorService;
   let memoryService: MemoryService;
-  let llmService: LlmService;
+  let llmService: LlmRouterService;
   let codeModel: Model<Code>;
 
   const mockExpectation = {
@@ -174,7 +174,7 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
           useValue: mockCodeModel,
         },
         {
-          provide: LlmService,
+          provide: LlmRouterService,
           useValue: mockLlmService,
         },
         {
@@ -191,7 +191,7 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
     generatorService = module.get<GeneratorService>(GeneratorService);
     semanticMediatorService = module.get<SemanticMediatorService>(SemanticMediatorService);
     memoryService = module.get<MemoryService>(MemoryService);
-    llmService = module.get<LlmService>(LlmService);
+    llmService = module.get<LlmRouterService>(LlmRouterService);
     codeModel = module.get<Model<Code>>(getModelToken(Code.name));
   });
 

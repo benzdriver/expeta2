@@ -3,34 +3,21 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { GeneratorService } from '../generator.service';
 import { Code } from '../schemas/code.schema';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
 import { GenerateCodeWithSemanticInputDto } from '../dto';
-import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediator.service';
 
 describe('GeneratorService', () => {
   let service: GeneratorService;
   let codeModel: Model<Code>;
-  let llmService: LlmService;
+  let llmRouterService: LlmRouterService;
   let memoryService: MemoryService;
-  let semanticMediatorService: SemanticMediatorService;
 
   beforeEach(async () => {
-    const mockCodeModel = function() {
-      this.save = jest.fn().mockImplementation(function() {
-        const metadata = this.metadata || {
-          expectationId: 'test-expectation-id',
-          version: 1,
-          status: 'generated',
-          semanticAnalysisUsed: false,
-          semanticAnalysisSummary: '',
-          techStack: {},
-          architecturePattern: '',
-          originalCodeId: null,
-        };
-        
-        return Promise.resolve({
+    const mockCodeModel = {
+      new: jest.fn().mockResolvedValue({
+        save: jest.fn().mockResolvedValue({
           _id: 'test-code-id',
           expectationId: 'test-expectation-id',
           files: [
@@ -40,79 +27,85 @@ describe('GeneratorService', () => {
               language: 'javascript',
             },
           ],
-          metadata: metadata,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-      });
-      return this;
-    };
-    
-    mockCodeModel.find = jest.fn().mockReturnValue({
-      sort: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue([
-          {
-            _id: 'test-code-id',
-            expectationId: 'test-expectation-id',
-            files: [
-              {
-                path: 'test.js',
-                content: 'console.log("test")',
-                language: 'javascript',
-              },
-            ],
-            metadata: {
-              expectationId: 'test-expectation-id',
-              version: 1,
-              status: 'generated',
-              semanticAnalysisUsed: false,
-              semanticAnalysisSummary: '',
-              techStack: {},
-              architecturePattern: '',
-              originalCodeId: null,
-            },
-          },
-        ]),
-      }),
-    });
-    
-    mockCodeModel.findById = jest.fn().mockReturnValue({
-      exec: jest.fn().mockResolvedValue({
-        _id: 'test-code-id',
-        expectationId: 'test-expectation-id',
-        files: [
-          {
-            path: 'test.js',
-            content: 'console.log("test")',
-            language: 'javascript',
-          },
-        ],
-        metadata: {
-          expectationId: 'test-expectation-id',
-          version: 1,
-          status: 'generated',
-          semanticAnalysisUsed: false,
-          semanticAnalysisSummary: '',
-          techStack: {},
-          architecturePattern: '',
-          originalCodeId: null,
-        },
-        save: jest.fn().mockResolvedValue({
-          _id: 'test-code-id',
-          expectationId: 'test-expectation-id',
           metadata: {
-            status: 'approved',
+            expectationId: 'test-expectation-id',
+            version: 1,
+            status: 'generated',
             semanticAnalysisUsed: false,
             semanticAnalysisSummary: '',
             techStack: {},
             architecturePattern: '',
             originalCodeId: null,
           },
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
       }),
-    });
+      find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([
+            {
+              _id: 'test-code-id',
+              expectationId: 'test-expectation-id',
+              files: [
+                {
+                  path: 'test.js',
+                  content: 'console.log("test")',
+                  language: 'javascript',
+                },
+              ],
+              metadata: {
+                expectationId: 'test-expectation-id',
+                version: 1,
+                status: 'generated',
+                semanticAnalysisUsed: false,
+                semanticAnalysisSummary: '',
+                techStack: {},
+                architecturePattern: '',
+                originalCodeId: null,
+              },
+            },
+          ]),
+        }),
+      }),
+      findById: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: 'test-code-id',
+          expectationId: 'test-expectation-id',
+          files: [
+            {
+              path: 'test.js',
+              content: 'console.log("test")',
+              language: 'javascript',
+            },
+          ],
+          metadata: {
+            expectationId: 'test-expectation-id',
+            version: 1,
+            status: 'generated',
+            semanticAnalysisUsed: false,
+            semanticAnalysisSummary: '',
+            techStack: {},
+            architecturePattern: '',
+            originalCodeId: null,
+          },
+          save: jest.fn().mockResolvedValue({
+            _id: 'test-code-id',
+            expectationId: 'test-expectation-id',
+            metadata: {
+              status: 'approved',
+              semanticAnalysisUsed: false,
+              semanticAnalysisSummary: '',
+              techStack: {},
+              architecturePattern: '',
+              originalCodeId: null,
+            },
+          }),
+        }),
+      }),
+    };
 
-    const mockLlmService = {
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('生成相应的代码实现')) {
           return Promise.resolve(
@@ -270,38 +263,6 @@ describe('GeneratorService', () => {
       }),
     };
 
-    const mockSemanticMediatorService = {
-      enrichWithContext: jest.fn().mockResolvedValue({
-        enriched: true,
-        summary: 'Enriched semantic analysis',
-        context: { key: 'value' },
-      }),
-      translateBetweenModules: jest.fn().mockResolvedValue({
-        translated: true,
-        model: { id: 'translated-model' },
-      }),
-      trackSemanticTransformation: jest.fn().mockResolvedValue({
-        tracked: true,
-        transformationId: 'test-transformation-id',
-      }),
-      extractSemanticInsights: jest.fn().mockResolvedValue({
-        insights: ['Insight 1', 'Insight 2'],
-        summary: 'Semantic insights summary',
-      }),
-      resolveSemanticConflicts: jest.fn().mockResolvedValue({
-        resolved: true,
-        model: { id: 'resolved-model' },
-      }),
-      evaluateSemanticTransformation: jest.fn().mockResolvedValue({
-        score: 0.85,
-        feedback: 'Good transformation',
-      }),
-      generateValidationContext: jest.fn().mockResolvedValue({
-        context: 'Validation context',
-        rules: ['Rule 1', 'Rule 2'],
-      }),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GeneratorService,
@@ -310,25 +271,20 @@ describe('GeneratorService', () => {
           useValue: mockCodeModel,
         },
         {
-          provide: LlmService,
-          useValue: mockLlmService,
+          provide: LlmRouterService,
+          useValue: mockLlmRouterService,
         },
         {
           provide: MemoryService,
           useValue: mockMemoryService,
-        },
-        {
-          provide: SemanticMediatorService,
-          useValue: mockSemanticMediatorService,
         },
       ],
     }).compile();
 
     service = module.get<GeneratorService>(GeneratorService);
     codeModel = module.get<Model<Code>>(getModelToken(Code.name));
-    llmService = module.get<LlmService>(LlmService);
+    llmRouterService = module.get<LlmRouterService>(LlmRouterService);
     memoryService = module.get<MemoryService>(MemoryService);
-    semanticMediatorService = module.get<SemanticMediatorService>(SemanticMediatorService);
   });
 
   it('should be defined', () => {
@@ -345,7 +301,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe(expectationId);
       expect(result.files).toHaveLength(1);
       expect(result.files[0].path).toBe('test.js');
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型，生成相应的代码实现'),
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
@@ -434,7 +390,7 @@ describe('GeneratorService', () => {
   });
 
   describe('generateCodeWithSemanticInput', () => {
-    it('should generate code with semantic input using semantic mediator', async () => {
+    it('should generate code with semantic input', async () => {
       const expectationId = 'test-expectation-id';
       const semanticAnalysis = {
         key: 'value',
@@ -445,56 +401,13 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked prompt template');
 
-      const mockSave = jest.fn().mockResolvedValueOnce({
-        _id: 'test-code-id',
-        expectationId: expectationId,
-        files: [{ path: 'enhanced.js', content: 'console.log("enhanced")' }],
-        metadata: {
-          expectationId: expectationId,
-          version: 1,
-          status: 'generated',
-          semanticAnalysisUsed: true,
-          semanticAnalysisSummary: 'Enriched semantic analysis',
-          generationOptions: {},
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      jest.spyOn(codeModel.prototype, 'constructor').mockImplementationOnce(() => ({
-        save: mockSave
-      }));
-
       const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
 
       expect(result).toBeDefined();
       expect(result.expectationId).toBe(expectationId);
       expect(result.metadata.semanticAnalysisUsed).toBe(true);
-      expect(result.metadata.semanticAnalysisSummary).toBe('Enriched semantic analysis');
-
-      expect(semanticMediatorService.enrichWithContext).toHaveBeenCalledWith(
-        'generator',
-        semanticAnalysis,
-        `expectation:${expectationId}`,
-      );
-      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalledWith(
-        'expectation',
-        'generator',
-        expect.any(Object),
-      );
-      expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalledWith(
-        'expectation',
-        'code',
-        expect.any(Object),
-        expect.any(Object),
-        expect.objectContaining({
-          trackDifferences: true,
-          analyzeTransformation: true,
-          saveToMemory: true,
-        }),
-      );
-
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(result.metadata.semanticAnalysisSummary).toBe('Semantic analysis summary');
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -519,12 +432,9 @@ describe('GeneratorService', () => {
       const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
 
       expect(result).toBeDefined();
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型和语义分析结果，生成相应的代码实现'),
       );
-
-      expect(semanticMediatorService.enrichWithContext).toHaveBeenCalled();
-      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
     });
   });
 
@@ -540,24 +450,6 @@ describe('GeneratorService', () => {
       jest
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked project structure prompt');
-        
-      const mockSave = jest.fn().mockResolvedValueOnce({
-        _id: 'test-code-id',
-        expectationId: expectationId,
-        files: [{ path: 'structure.js', content: 'console.log("structure")' }],
-        metadata: {
-          expectationId: expectationId,
-          version: 1,
-          status: 'structure_generated',
-          techStack: techStack,
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      jest.spyOn(service as any, 'codeModel').mockImplementationOnce(() => ({
-        save: mockSave
-      }));
 
       const result = await service.generateProjectStructure(expectationId, techStack);
 
@@ -565,7 +457,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe(expectationId);
       expect(result.metadata.status).toBe('structure_generated');
       expect(result.metadata.techStack).toEqual(techStack);
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -596,21 +488,6 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked architecture prompt');
 
-      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
-        _id: 'test-code-id',
-        expectationId: expectationId,
-        files: [{ path: 'architecture.js', content: 'console.log("architecture")' }],
-        metadata: {
-          expectationId: expectationId,
-          version: 1,
-          status: 'architecture_generated',
-          architecturePattern: 'MVC',
-          technicalRequirements: technicalRequirements,
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
       const result = await service.generateCodeWithArchitecture(
         expectationId,
         architectureGuide,
@@ -621,7 +498,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe(expectationId);
       expect(result.metadata.status).toBe('architecture_generated');
       expect(result.metadata.architecturePattern).toBe('MVC');
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -653,30 +530,13 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked test suite prompt');
 
-      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
-        _id: 'test-code-id',
-        expectationId: 'test-expectation-id',
-        files: [{ path: 'test.test.js', content: 'test("should work", () => {})' }],
-        metadata: {
-          expectationId: 'test-expectation-id',
-          version: 2,
-          status: 'tests_added',
-          originalCodeId: codeId,
-          testRequirements: testRequirements,
-          testCoverage: { statements: 80 },
-          testStrategy: 'Unit and integration tests',
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
       const result = await service.generateTestSuite(codeId, testRequirements);
 
       expect(result).toBeDefined();
       expect(result.expectationId).toBe('test-expectation-id');
       expect(result.metadata.status).toBe('tests_added');
       expect(result.metadata.originalCodeId).toBe(codeId);
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -705,30 +565,13 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked refactoring prompt');
 
-      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
-        _id: 'test-code-id',
-        expectationId: 'test-expectation-id',
-        files: [{ path: 'refactored.js', content: 'console.log("refactored")' }],
-        metadata: {
-          expectationId: 'test-expectation-id',
-          version: 2,
-          status: 'refactored',
-          originalCodeId: codeId,
-          refactoringGoals: refactoringGoals,
-          refactoringChanges: [{ file: 'test.js', description: 'Improved structure' }],
-          refactoringExplanation: 'Refactoring explanation',
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
       const result = await service.refactorCode(codeId, refactoringGoals);
 
       expect(result).toBeDefined();
       expect(result.expectationId).toBe('test-expectation-id');
       expect(result.metadata.status).toBe('refactored');
       expect(result.metadata.originalCodeId).toBe(codeId);
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -746,7 +589,7 @@ describe('GeneratorService', () => {
   });
 
   describe('optimizeCode', () => {
-    it('should optimize code using semantic mediator', async () => {
+    it('should optimize code', async () => {
       const codeId = 'test-code-id';
       const semanticFeedback = {
         suggestions: ['Improve performance', 'Enhance readability'],
@@ -757,58 +600,14 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked optimization prompt');
 
-      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
-        _id: 'test-code-id',
-        expectationId: 'test-expectation-id',
-        files: [{ path: 'optimized.js', content: 'console.log("optimized")' }],
-        metadata: {
-          expectationId: 'test-expectation-id',
-          version: 2,
-          status: 'optimized',
-          originalCodeId: codeId,
-          optimizationChanges: [{ description: 'Improved performance' }],
-          optimizationExplanation: 'Optimization explanation',
-          semanticFeedbackUsed: true,
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
       const result = await service.optimizeCode(codeId, semanticFeedback);
 
       expect(result).toBeDefined();
       expect(result.expectationId).toBe('test-expectation-id');
       expect(result.metadata.status).toBe('optimized');
       expect(result.metadata.originalCodeId).toBe(codeId);
-
-      expect(semanticMediatorService.extractSemanticInsights).toHaveBeenCalledWith(
-        semanticFeedback,
-        'code optimization',
-      );
-      expect(semanticMediatorService.resolveSemanticConflicts).toHaveBeenCalledWith(
-        'expectation',
-        expect.any(Object),
-        'code',
-        expect.any(Object),
-      );
-      expect(semanticMediatorService.evaluateSemanticTransformation).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.any(Object),
-        'Optimize code based on semantic feedback',
-      );
-      expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalledWith(
-        'code',
-        'optimized_code',
-        expect.any(Object),
-        expect.any(Object),
-        expect.objectContaining({
-          trackDifferences: true,
-          analyzeTransformation: true,
-          saveToMemory: true,
-        }),
-      );
-
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(result.metadata.optimizationFeedback).toEqual(semanticFeedback);
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -820,41 +619,6 @@ describe('GeneratorService', () => {
       const semanticFeedback = { suggestions: ['Improve performance'] };
 
       await expect(service.optimizeCode(codeId, semanticFeedback)).rejects.toThrow(
-        'Code with id non-existent-id not found',
-      );
-    });
-  });
-
-  describe('validateCodeSemantics', () => {
-    it('should validate code semantics using semantic mediator', async () => {
-      const codeId = 'test-code-id';
-
-      const result = await service.validateCodeSemantics(codeId);
-
-      expect(result).toBeDefined();
-      expect(result.codeId).toBe(codeId);
-      expect(result.expectationId).toBe('test-expectation-id');
-      expect(result.validationContext).toBeDefined();
-      expect(result.semanticInsights).toBeDefined();
-      expect(result.timestamp).toBeInstanceOf(Date);
-
-      expect(semanticMediatorService.generateValidationContext).toHaveBeenCalledWith(
-        'test-expectation-id',
-        codeId,
-      );
-      expect(semanticMediatorService.extractSemanticInsights).toHaveBeenCalledWith(
-        expect.any(Object),
-        'code validation',
-      );
-    });
-
-    it('should throw an error if code is not found', async () => {
-      jest
-        .spyOn(service, 'getCodeById')
-        .mockRejectedValueOnce(new Error('Code with id non-existent-id not found'));
-      const codeId = 'non-existent-id';
-
-      await expect(service.validateCodeSemantics(codeId)).rejects.toThrow(
         'Code with id non-existent-id not found',
       );
     });

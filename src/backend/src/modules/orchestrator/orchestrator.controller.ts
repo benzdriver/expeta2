@@ -1,10 +1,10 @@
 import { Controller, Post, Body, Get, Param, Logger } from '@nestjs/common';
 import { OrchestratorService } from './orchestrator.service';
-import { 
-  ExecuteWorkflowDto, 
-  WorkflowStatusDto, 
+import {
+  ExecuteWorkflowDto,
+  WorkflowStatusDto,
   CustomWorkflowDto,
-  WorkflowType
+  WorkflowType,
 } from './dto/workflow.dto';
 
 @Controller('orchestrator')
@@ -42,7 +42,7 @@ export class OrchestratorController {
     this.logger.log('Getting available workflows');
     return {
       standardWorkflows: Object.values(WorkflowType),
-      customWorkflows: await this.orchestratorService.getCustomWorkflows()
+      customWorkflows: await this.orchestratorService.getCustomWorkflows(),
     };
   }
 
@@ -65,53 +65,42 @@ export class OrchestratorController {
   }
 
   @Post('iterative-refinement')
-  async executeIterativeRefinement(@Body() data: { 
-    expectationId: string, 
-    codeId: string,
-    maxIterations?: number 
-  }) {
+  async executeIterativeRefinement(
+    @Body() data: { expectationId: string; codeId: string; maxIterations?: number },
+  ) {
     this.logger.log(`Starting iterative refinement for expectation: ${data.expectationId}`);
-    return this.orchestratorService.executeWorkflow(
-      WorkflowType.ITERATIVE_REFINEMENT, 
-      {
-        expectationId: data.expectationId,
-        codeId: data.codeId,
-        maxIterations: data.maxIterations || 3
-      }
-    );
+    return this.orchestratorService.executeWorkflow(WorkflowType.ITERATIVE_REFINEMENT, {
+      expectationId: data.expectationId,
+      codeId: data.codeId,
+      maxIterations: data.maxIterations || 3,
+    });
   }
 
   @Post('parallel-validation')
-  async executeParallelValidation(@Body() data: { 
-    expectationId: string, 
-    codeIds: string[] 
-  }) {
+  async executeParallelValidation(@Body() data: { expectationId: string; codeIds: string[] }) {
     this.logger.log(`Starting parallel validation for expectation: ${data.expectationId}`);
-    return this.orchestratorService.executeWorkflow(
-      WorkflowType.PARALLEL_VALIDATION, 
-      {
-        expectationId: data.expectationId,
-        codeIds: data.codeIds
-      }
-    );
+    return this.orchestratorService.executeWorkflow(WorkflowType.PARALLEL_VALIDATION, {
+      expectationId: data.expectationId,
+      codeIds: data.codeIds,
+    });
   }
-  
+
   @Post('adaptive-validation')
-  async executeAdaptiveValidation(@Body() data: { 
-    expectationId: string, 
-    codeId: string,
-    previousValidationId?: string,
-    adaptationStrategy?: string
-  }) {
+  async executeAdaptiveValidation(
+    @Body()
+    data: {
+      expectationId: string;
+      codeId: string;
+      previousValidationId?: string;
+      adaptationStrategy?: string;
+    },
+  ) {
     this.logger.log(`Starting adaptive validation for expectation: ${data.expectationId}`);
-    return this.orchestratorService.executeWorkflow(
-      WorkflowType.ADAPTIVE_VALIDATION, 
-      {
-        expectationId: data.expectationId,
-        codeId: data.codeId,
-        previousValidationId: data.previousValidationId,
-        adaptationStrategy: data.adaptationStrategy || 'balanced'
-      }
-    );
+    return this.orchestratorService.executeWorkflow(WorkflowType.ADAPTIVE_VALIDATION, {
+      expectationId: data.expectationId,
+      codeId: data.codeId,
+      previousValidationId: data.previousValidationId,
+      adaptationStrategy: data.adaptationStrategy || 'balanced',
+    });
   }
 }

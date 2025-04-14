@@ -4,7 +4,7 @@ import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediat
 import { Validation } from '../schemas/validation.schema';
 import { getModelToken } from '@nestjs/mongoose';
 import { MemoryService } from '../../memory/memory.service';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
 import { Logger } from '@nestjs/common';
 
@@ -18,7 +18,7 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
   let validatorService: ValidatorService;
   let semanticMediatorService: SemanticMediatorService;
   let memoryService: MemoryService;
-  let llmService: LlmService;
+  let llmService: LlmRouterService;
   let moduleRef: TestingModule;
   
   const expectationId = 'test-expectation-id';
@@ -110,7 +110,7 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
         ValidatorService,
         SemanticMediatorService,
         { provide: MemoryService, useValue: mockMemoryService },
-        { provide: LlmService, useValue: mockLlmService },
+        { provide: LlmRouterService, useValue: mockLlmService },
         { provide: SemanticRegistryService, useValue: semanticRegistryService },
         { provide: TransformationEngineService, useValue: transformationEngineService },
         { provide: IntelligentCacheService, useValue: intelligentCacheService },
@@ -124,7 +124,7 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
     validatorService = moduleRef.get<ValidatorService>(ValidatorService);
     semanticMediatorService = moduleRef.get<SemanticMediatorService>(SemanticMediatorService);
     memoryService = moduleRef.get<MemoryService>(MemoryService);
-    llmService = moduleRef.get<LlmService>(LlmService);
+    llmService = moduleRef.get<LlmRouterService>(LlmRouterService);
   });
 
   afterEach(async () => {
