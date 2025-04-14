@@ -18,11 +18,25 @@ describe('ClarifierService', () => {
   let semanticMediatorService: SemanticMediatorService;
 
   beforeEach(async () => {
-    const mockRequirementModel = function() {
-      this.save = jest.fn().mockResolvedValue({
-        _id: 'test-id',
-        title: 'Test Requirement',
-        text: 'Test requirement text',
+    const mockReqSave = jest.fn().mockImplementation(function() { return Promise.resolve(this); });
+    const mockRequirementInstance = {
+      _id: 'test-id',
+      title: 'Test Requirement',
+      text: 'Test requirement text',
+      status: 'initial',
+      clarifications: [],
+      metadata: {},
+      save: jest.fn().mockResolvedValue({}), // Simplify save mock, return empty object
+    };
+
+    const mockRequirementModel = jest.fn().mockImplementation((data) => ({
+      ...mockRequirementInstance,
+      ...data,
+      _id: 'test-id-new',
+      save: jest.fn().mockResolvedValue({ // Mock save on the new instance
+        ...mockRequirementInstance,
+        ...data,
+        _id: 'test-id-saved-new',
         status: 'initial',
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -30,139 +44,68 @@ describe('ClarifierService', () => {
           requirementId: 'test-uuid',
           creationTimestamp: expect.any(String),
           version: '1.0',
-          source: 'clarifier_service',
-        },
-      });
-      return this;
-    };
-    
-    mockRequirementModel.find = jest.fn().mockReturnValue({
-      exec: jest.fn().mockResolvedValue([
-        {
-          _id: 'test-id',
-          title: 'Test Requirement',
-          text: 'Test requirement text',
-          status: 'initial',
-        },
-      ]),
-    });
-    
-    mockRequirementModel.findById = jest.fn().mockReturnValue({
-      exec: jest.fn().mockResolvedValue({
-        _id: 'test-id',
-        title: 'Test Requirement',
-        text: 'Test requirement text',
-        status: 'initial',
-        clarifications: [],
-        save: jest.fn().mockResolvedValue({
-          _id: 'test-id',
-          title: 'Test Requirement',
-          text: 'Test requirement text',
-          status: 'clarifying',
-          clarifications: [
-            {
-              questionId: 'test-question-id',
-              answer: 'Test answer',
-              timestamp: new Date(),
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          ],
-          metadata: {
-            lastClarificationTimestamp: expect.any(String),
-            clarificationRounds: 1,
-            lastQuestionId: 'test-question-id',
-          },
-        }),
+          source: 'clarifier_service'
+        }
       }),
+    }));
+
+    (mockRequirementModel as any).find = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue([{ ...mockRequirementInstance, save: mockReqSave }]), // Ensure save is present
     });
-    
-    mockRequirementModel.findByIdAndUpdate = jest.fn().mockReturnValue({
-      exec: jest.fn().mockResolvedValue({
-        _id: 'test-id',
+    (mockRequirementModel as any).findById = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue(mockRequirementInstance), // Return the instance with simplified save
+    });
+    (mockRequirementModel as any).findByIdAndUpdate = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({ // Return the updated document
+        ...mockRequirementInstance,
         title: 'Updated Requirement',
         text: 'Updated requirement text',
         status: 'updated',
+        save: jest.fn().mockResolvedValue({}), // Simplify save mock, return empty object // Add save if needed after update
       }),
     });
-    
-    mockRequirementModel.findByIdAndDelete = jest.fn().mockReturnValue({
-      exec: jest.fn().mockResolvedValue({
-        _id: 'test-id',
+    (mockRequirementModel as any).findByIdAndDelete = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({ // Return the deleted document
+        ...mockRequirementInstance,
         title: 'Deleted Requirement',
         text: 'Deleted requirement text',
       }),
     });
 
-    const mockExpectationModel = function() {
-      this.save = jest.fn().mockResolvedValue({
-        _id: 'test-expectation-id',
-        requirementId: 'test-id',
-        model: {
-          id: 'root',
-          name: 'Root Expectation',
-          description: 'Root expectation description',
-          children: [],
-        },
+    const mockExpSave = jest.fn().mockImplementation(function() { return Promise.resolve(this); });
+    const mockExpectationInstance = {
+      _id: 'test-expectation-id',
+      requirementId: 'test-id',
+      model: { id: 'root', name: 'Root Expectation', description: 'Root expectation description', children: [] },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      save: jest.fn().mockResolvedValue({}), // Fix block-scoped error, return empty object
+    };
+
+    const mockExpectationModel = jest.fn().mockImplementation((data) => ({
+      ...mockExpectationInstance,
+      ...data,
+      _id: 'test-expectation-id-new',
+      save: jest.fn().mockResolvedValue({ // Mock save on the new instance
+        ...mockExpectationInstance,
+        ...data,
+        _id: 'test-expectation-id-saved',
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
-      return this;
-    };
-    
-    mockExpectationModel.findOne = jest.fn().mockReturnValue({
-      exec: jest.fn().mockResolvedValue({
-        _id: 'test-expectation-id',
-        requirementId: 'test-id',
-        model: {
-          id: 'root',
-          name: 'Root Expectation',
-          description: 'Root expectation description',
-          children: [],
-        },
-        save: jest.fn().mockResolvedValue({
-          _id: 'test-expectation-id',
-          requirementId: 'test-id',
-          model: {
-            id: 'root',
-            name: 'Root Expectation',
-            description: 'Root expectation description',
-            children: [],
-          },
-          summary: 'Test summary',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }),
       }),
+    }));
+
+    (mockExpectationModel as any).findOne = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({ ...mockExpectationInstance, save: mockExpSave }), // Ensure save is present
     });
-    
-    mockExpectationModel.findById = jest.fn().mockReturnValue({
-      exec: jest.fn().mockResolvedValue({
-        _id: 'test-expectation-id',
-        requirementId: 'test-id',
-        model: {
-          id: 'root',
-          name: 'Root Expectation',
-          description: 'Root expectation description',
-          children: [],
-        },
-        save: jest.fn().mockResolvedValue({
-          _id: 'test-expectation-id',
-          requirementId: 'test-id',
-          model: {
-            id: 'root',
-            name: 'Root Expectation',
-            description: 'Root expectation description',
-            children: [],
-          },
-          summary: 'Test summary',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }),
-      }),
+    (mockExpectationModel as any).findById = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue(mockExpectationInstance), // Return the instance with simplified save
+    });
+    (mockExpectationModel as any).findByIdAndUpdate = jest.fn().mockReturnValue({
+       exec: jest.fn().mockResolvedValue({ ...mockExpectationInstance, status: 'updated', save: mockExpSave }), // Example update
     });
 
-    const mockLlmRouterService = {
+    const mockLlmService = {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('生成5个关键澄清问题')) {
           return Promise.resolve(
@@ -374,9 +317,9 @@ describe('ClarifierService', () => {
     }).compile();
 
     service = module.get<ClarifierService>(ClarifierService);
-    requirementModel = module.get<Model<Requirement>>(getModelToken(Requirement.name));
-    expectationModel = module.get<Model<Expectation>>(getModelToken(Expectation.name));
-    llmRouterService = module.get<LlmRouterService>(LlmRouterService);
+    requirementModel = module.get(getModelToken(Requirement.name));
+    expectationModel = module.get(getModelToken(Expectation.name));
+    llmService = module.get<LlmService>(LlmService);
     memoryService = module.get<MemoryService>(MemoryService);
     semanticMediatorService = module.get<SemanticMediatorService>(SemanticMediatorService);
   });
@@ -709,7 +652,7 @@ describe('ClarifierService', () => {
       const result = await service.generateExpectations(requirementId);
 
       expect(result).toBeDefined();
-      expect(result._id).toBe('test-expectation-id');
+      expect(result._id).toBe('test-expectation-id-saved');
       expect(result.requirementId).toBe('test-id');
       expect(result.model).toBeDefined();
       expect(result.model.id).toBe('root');
@@ -872,7 +815,7 @@ describe('ClarifierService', () => {
       const result = await service.getExpectations(requirementId);
 
       expect(result).toBeDefined();
-      expect(result._id).toBe('test-expectation-id');
+      expect(result._id).toBe('test-expectation-id'); // Reverted: Should match the original mock ID
       expect(result.requirementId).toBe('test-id');
     });
   });
@@ -884,7 +827,7 @@ describe('ClarifierService', () => {
       const result = await service.getExpectationById(expectationId);
 
       expect(result).toBeDefined();
-      expect(result._id).toBe('test-expectation-id');
+      expect(result._id).toBe('test-expectation-id'); // Reverted: Should match the original mock ID
       expect(result.requirementId).toBe('test-id');
     });
   });

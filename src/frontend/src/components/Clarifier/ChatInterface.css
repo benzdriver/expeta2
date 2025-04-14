@@ -27,22 +27,23 @@
   display: flex;
   flex-direction: column;
   max-width: 80%;
-  padding: 12px 16px;
-  border-radius: 12px;
+  padding: 10px 15px; /* Spec: 10px 15px */
+  border-radius: var(--border-radius); /* Spec: var(--border-radius) */
   position: relative;
 }
 
 .system-message {
-  align-self: flex-start;
-  background-color: var(--primary-light);
-  border-bottom-left-radius: 4px;
+  align-self: flex-start; /* Matches spec: left */
+  background-color: #FFFFFF; /* Spec: #FFFFFF */
+  color: var(--text-color); /* Spec: var(--text-color) - Inherited */
+  /* Removed specific border-radius for corners as not specified */
 }
 
 .user-message {
-  align-self: flex-end;
-  background-color: var(--primary-color);
-  color: white;
-  border-bottom-right-radius: 4px;
+  align-self: flex-end; /* Matches spec: right */
+  background-color: var(--primary-light); /* Spec: var(--primary-light) */
+  color: var(--text-color); /* Spec: var(--text-color) */
+  /* Removed specific border-radius for corners as not specified */
 }
 
 /* Special message types */
@@ -149,41 +150,42 @@
   }
 }
 
-.chat-input {
+.chat-input { /* Input Area Container */
   display: flex;
   align-items: center;
-  padding: 15px;
-  border-top: 1px solid var(--border-color);
+  padding: 10px; /* Spec: 10px */
+  border-top: 1px solid var(--border-color); /* Spec: border: 1px solid var(--border-color) - Applied to container */
   background-color: #FFFFFF;
+  border-radius: var(--border-radius); /* Spec: var(--border-radius) - Applied to container */
 }
 
 .chat-input textarea {
   flex: 1;
-  max-height: 120px;
-  padding: 12px 15px;
-  border-radius: 20px;
-  border: 1px solid var(--border-color);
-  background-color: #F5F7FA;
-  transition: var(--transition);
+  max-height: 120px; /* Keep existing max-height */
+  padding: 10px; /* Spec: 10px (Assuming this applies to textarea within the padded container) */
+  border-radius: var(--border-radius); /* Spec: var(--border-radius) */
+  border: 1px solid var(--border-color); /* Spec: 1px solid var(--border-color) */
+  background-color: #F5F7FA; /* Keep existing background */
+  transition: var(--transition); /* Keep existing transition */
 }
 
 .chat-input textarea:focus {
   border-color: var(--primary-color);
   background-color: #FFFFFF;
-  box-shadow: 0 0 0 3px rgba(91, 97, 244, 0.2);
+  box-shadow: 0 0 0 3px rgba(91, 97, 244, 0.2); /* Keep existing focus style */
 }
 
 .send-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px; /* Spec: 36px */
+  height: 36px; /* Spec: 36px */
   margin-left: 10px;
-  border-radius: 50%;
-  background-color: var(--primary-color);
-  color: white;
-  transition: var(--transition);
+  border-radius: 50%; /* Spec: Circular */
+  background-color: var(--primary-color); /* Spec: var(--primary-color) */
+  color: white; /* Spec: white */
+  transition: var(--transition); /* Keep existing transition */
 }
 
 .send-button:hover:not(:disabled) {

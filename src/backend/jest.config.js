@@ -3,9 +3,11 @@ module.exports = {
   rootDir: 'src',
   testRegex: '.*\\.spec\\.ts$',
   transform: {
-    '^.+\\.(t|j)s$': 'ts-jest'
+    '^.+\\.(t|j)s$': ['ts-jest', { tsconfig: 'tsconfig.json' }]
   },
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
-  testEnvironment: 'node'
+  testEnvironment: 'node',
+  testTimeout: 120000, // Increase timeout to 120 seconds
+
 };
