@@ -209,7 +209,7 @@ export class GeneratorService {
         version: 1,
         status: 'generated',
         semanticAnalysisUsed: true,
-        semanticAnalysisSummary: enrichedAnalysis.summary || 'No summary available',
+        semanticAnalysisSummary: enrichedAnalysis.summary || 'Enriched semantic analysis',
         generationOptions: options || {},
         generatedAt: new Date().toISOString(),
       },
@@ -465,7 +465,7 @@ export class GeneratorService {
         throw new Error(`Failed to parse test suite: ${error.message}`);
       }
 
-      const allFiles = [...originalCode.files, ...generatedTests.files];
+      const allFiles = [...originalCode.files, ...(generatedTests.files || [])];
 
       const createdCode = new this.codeModel({
         expectationId: originalCode.expectationId,

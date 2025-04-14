@@ -17,9 +17,20 @@ describe('GeneratorService', () => {
   let semanticMediatorService: SemanticMediatorService;
 
   beforeEach(async () => {
-    const mockCodeModel = {
-      new: jest.fn().mockResolvedValue({
-        save: jest.fn().mockResolvedValue({
+    const mockCodeModel = function() {
+      this.save = jest.fn().mockImplementation(function() {
+        const metadata = this.metadata || {
+          expectationId: 'test-expectation-id',
+          version: 1,
+          status: 'generated',
+          semanticAnalysisUsed: false,
+          semanticAnalysisSummary: '',
+          techStack: {},
+          architecturePattern: '',
+          originalCodeId: null,
+        };
+        
+        return Promise.resolve({
           _id: 'test-code-id',
           expectationId: 'test-expectation-id',
           files: [
@@ -29,83 +40,77 @@ describe('GeneratorService', () => {
               language: 'javascript',
             },
           ],
-          metadata: {
-            expectationId: 'test-expectation-id',
-            version: 1,
-            status: 'generated',
-            semanticAnalysisUsed: false,
-            semanticAnalysisSummary: '',
-            techStack: {},
-            architecturePattern: '',
-            originalCodeId: null,
-          },
+          metadata: metadata,
           createdAt: new Date(),
           updatedAt: new Date(),
-        }),
-      }),
-      find: jest.fn().mockReturnValue({
-        sort: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue([
-            {
-              _id: 'test-code-id',
-              expectationId: 'test-expectation-id',
-              files: [
-                {
-                  path: 'test.js',
-                  content: 'console.log("test")',
-                  language: 'javascript',
-                },
-              ],
-              metadata: {
-                expectationId: 'test-expectation-id',
-                version: 1,
-                status: 'generated',
-                semanticAnalysisUsed: false,
-                semanticAnalysisSummary: '',
-                techStack: {},
-                architecturePattern: '',
-                originalCodeId: null,
-              },
-            },
-          ]),
-        }),
-      }),
-      findById: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({
-          _id: 'test-code-id',
-          expectationId: 'test-expectation-id',
-          files: [
-            {
-              path: 'test.js',
-              content: 'console.log("test")',
-              language: 'javascript',
-            },
-          ],
-          metadata: {
-            expectationId: 'test-expectation-id',
-            version: 1,
-            status: 'generated',
-            semanticAnalysisUsed: false,
-            semanticAnalysisSummary: '',
-            techStack: {},
-            architecturePattern: '',
-            originalCodeId: null,
-          },
-          save: jest.fn().mockResolvedValue({
+        });
+      });
+      return this;
+    };
+    
+    mockCodeModel.find = jest.fn().mockReturnValue({
+      sort: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([
+          {
             _id: 'test-code-id',
             expectationId: 'test-expectation-id',
+            files: [
+              {
+                path: 'test.js',
+                content: 'console.log("test")',
+                language: 'javascript',
+              },
+            ],
             metadata: {
-              status: 'approved',
+              expectationId: 'test-expectation-id',
+              version: 1,
+              status: 'generated',
               semanticAnalysisUsed: false,
               semanticAnalysisSummary: '',
               techStack: {},
               architecturePattern: '',
               originalCodeId: null,
             },
-          }),
+          },
+        ]),
+      }),
+    });
+    
+    mockCodeModel.findById = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({
+        _id: 'test-code-id',
+        expectationId: 'test-expectation-id',
+        files: [
+          {
+            path: 'test.js',
+            content: 'console.log("test")',
+            language: 'javascript',
+          },
+        ],
+        metadata: {
+          expectationId: 'test-expectation-id',
+          version: 1,
+          status: 'generated',
+          semanticAnalysisUsed: false,
+          semanticAnalysisSummary: '',
+          techStack: {},
+          architecturePattern: '',
+          originalCodeId: null,
+        },
+        save: jest.fn().mockResolvedValue({
+          _id: 'test-code-id',
+          expectationId: 'test-expectation-id',
+          metadata: {
+            status: 'approved',
+            semanticAnalysisUsed: false,
+            semanticAnalysisSummary: '',
+            techStack: {},
+            architecturePattern: '',
+            originalCodeId: null,
+          },
         }),
       }),
-    };
+    });
 
     const mockLlmService = {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
@@ -440,6 +445,26 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked prompt template');
 
+      const mockSave = jest.fn().mockResolvedValueOnce({
+        _id: 'test-code-id',
+        expectationId: expectationId,
+        files: [{ path: 'enhanced.js', content: 'console.log("enhanced")' }],
+        metadata: {
+          expectationId: expectationId,
+          version: 1,
+          status: 'generated',
+          semanticAnalysisUsed: true,
+          semanticAnalysisSummary: 'Enriched semantic analysis',
+          generationOptions: {},
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      jest.spyOn(codeModel.prototype, 'constructor').mockImplementationOnce(() => ({
+        save: mockSave
+      }));
+
       const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
 
       expect(result).toBeDefined();
@@ -515,6 +540,24 @@ describe('GeneratorService', () => {
       jest
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked project structure prompt');
+        
+      const mockSave = jest.fn().mockResolvedValueOnce({
+        _id: 'test-code-id',
+        expectationId: expectationId,
+        files: [{ path: 'structure.js', content: 'console.log("structure")' }],
+        metadata: {
+          expectationId: expectationId,
+          version: 1,
+          status: 'structure_generated',
+          techStack: techStack,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      jest.spyOn(service as any, 'codeModel').mockImplementationOnce(() => ({
+        save: mockSave
+      }));
 
       const result = await service.generateProjectStructure(expectationId, techStack);
 
@@ -552,6 +595,21 @@ describe('GeneratorService', () => {
       jest
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked architecture prompt');
+
+      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
+        _id: 'test-code-id',
+        expectationId: expectationId,
+        files: [{ path: 'architecture.js', content: 'console.log("architecture")' }],
+        metadata: {
+          expectationId: expectationId,
+          version: 1,
+          status: 'architecture_generated',
+          architecturePattern: 'MVC',
+          technicalRequirements: technicalRequirements,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       const result = await service.generateCodeWithArchitecture(
         expectationId,
@@ -595,6 +653,23 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked test suite prompt');
 
+      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
+        _id: 'test-code-id',
+        expectationId: 'test-expectation-id',
+        files: [{ path: 'test.test.js', content: 'test("should work", () => {})' }],
+        metadata: {
+          expectationId: 'test-expectation-id',
+          version: 2,
+          status: 'tests_added',
+          originalCodeId: codeId,
+          testRequirements: testRequirements,
+          testCoverage: { statements: 80 },
+          testStrategy: 'Unit and integration tests',
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
       const result = await service.generateTestSuite(codeId, testRequirements);
 
       expect(result).toBeDefined();
@@ -630,6 +705,23 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked refactoring prompt');
 
+      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
+        _id: 'test-code-id',
+        expectationId: 'test-expectation-id',
+        files: [{ path: 'refactored.js', content: 'console.log("refactored")' }],
+        metadata: {
+          expectationId: 'test-expectation-id',
+          version: 2,
+          status: 'refactored',
+          originalCodeId: codeId,
+          refactoringGoals: refactoringGoals,
+          refactoringChanges: [{ file: 'test.js', description: 'Improved structure' }],
+          refactoringExplanation: 'Refactoring explanation',
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
       const result = await service.refactorCode(codeId, refactoringGoals);
 
       expect(result).toBeDefined();
@@ -664,6 +756,23 @@ describe('GeneratorService', () => {
       jest
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked optimization prompt');
+
+      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
+        _id: 'test-code-id',
+        expectationId: 'test-expectation-id',
+        files: [{ path: 'optimized.js', content: 'console.log("optimized")' }],
+        metadata: {
+          expectationId: 'test-expectation-id',
+          version: 2,
+          status: 'optimized',
+          originalCodeId: codeId,
+          optimizationChanges: [{ description: 'Improved performance' }],
+          optimizationExplanation: 'Optimization explanation',
+          semanticFeedbackUsed: true,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       const result = await service.optimizeCode(codeId, semanticFeedback);
 
