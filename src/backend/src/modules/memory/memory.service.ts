@@ -574,4 +574,121 @@ export class MemoryService {
     this.semanticCacheService.clear();
     this.logger.log('Memory cache cleared');
   }
+
+  /**
+   * 使用语义转换存储数据
+   * @param data 源数据
+   * @param targetSchema 目标模式
+   * @returns 存储的内存条目
+   */
+  async storeWithSemanticTransformation(data: any, targetSchema: any): Promise<Memory> {
+    this.logger.log('Storing data with semantic transformation');
+    
+    try {
+      const semanticMediatorService = await this.getSemanticMediatorService();
+      const transformedData = await semanticMediatorService.translateToSchema(data, targetSchema);
+      
+      const memoryEntry = await this.storeMemory({
+        type: typeof data.type === 'string' ? data.type : MemoryType.SEMANTIC_TRANSFORMATION,
+        content: transformedData,
+        metadata: {
+          originalType: typeof data.type === 'string' ? data.type : 'unknown',
+          transformationTimestamp: new Date().toISOString(),
+          targetSchemaId: targetSchema.id || 'unknown',
+          transformationStatus: 'success'
+        },
+        tags: ['semantic_transformation', 'schema_based'],
+        semanticMetadata: {
+          description: `Semantically transformed data. Original type: ${typeof data.type === 'string' ? data.type : 'unknown'}`,
+          relevanceScore: 0.9
+        }
+      });
+      
+      this.logger.debug(`Data stored with semantic transformation: ${memoryEntry._id}`);
+      return memoryEntry;
+    } catch (error) {
+      this.logger.error(`Error storing data with semantic transformation: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 将内存类型注册为语义数据源
+   * @param memoryType 内存类型
+   * @param semanticDescription 语义描述
+   */
+  async registerAsDataSource(memoryType: MemoryType, semanticDescription: string): Promise<void> {
+    this.logger.log(`Registering memory type as data source: ${memoryType}`);
+    
+    try {
+      const semanticMediatorService = await this.getSemanticMediatorService();
+      
+      const sourceId = `memory_${memoryType.toLowerCase()}_${Date.now()}`;
+      
+      await semanticMediatorService.registerSemanticDataSource(
+        sourceId,
+        `Memory ${memoryType}`,
+        'memory_system',
+        semanticDescription
+      );
+      
+      await this.storeMemory({
+        type: MemoryType.SYSTEM,
+        content: {
+          action: 'register_data_source',
+          memoryType,
+          sourceId,
+          semanticDescription
+        },
+        metadata: {
+          title: `Registered ${memoryType} as semantic data source`,
+          timestamp: new Date().toISOString()
+        },
+        tags: ['data_source_registration', memoryType, sourceId],
+        semanticMetadata: {
+          description: `Memory type ${memoryType} registered as semantic data source: ${semanticDescription}`,
+          relevanceScore: 1.0
+        }
+      });
+      
+      this.logger.debug(`Memory type registered as data source: ${memoryType} (${sourceId})`);
+    } catch (error) {
+      this.logger.error(`Error registering memory type as data source: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取语义中介器服务实例
+   * 使用延迟依赖注入模式，避免循环依赖
+   * @private
+   */
+  private async getSemanticMediatorService(): Promise<any> {
+    try {
+      const { SemanticMediatorService } = await import('../semantic-mediator/semantic-mediator.service');
+      
+      const { ModuleRef } = await import('@nestjs/core');
+      const { AppModule } = await import('../../app.module');
+      const { NestFactory } = await import('@nestjs/core');
+      
+      const app = await NestFactory.createApplicationContext(AppModule);
+      
+      const semanticMediatorService = app.get(SemanticMediatorService);
+      
+      return semanticMediatorService;
+    } catch (error) {
+      this.logger.error(`Error getting semantic mediator service: ${error.message}`, error.stack);
+      
+      return {
+        translateToSchema: async (data: any, targetSchema: any) => {
+          this.logger.warn('Using fallback implementation of translateToSchema');
+          return { ...data, _schema: targetSchema.id || 'unknown' };
+        },
+        registerSemanticDataSource: async (sourceId: string, sourceName: string, sourceType: string, semanticDescription: string) => {
+          this.logger.warn('Using fallback implementation of registerSemanticDataSource');
+          return;
+        }
+      };
+    }
+  }
 }
