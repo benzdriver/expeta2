@@ -1,0 +1,149 @@
+# 任务2: 增强LLM路由器与语义中介层的协同
+
+## 背景
+Expeta 2.0系统的LLM路由器和语义中介层是两个核心组件，它们的有效协同对系统性能和准确性至关重要。当前这两个组件已经可以基本协作，但在处理复杂语义转换和优化模型选择方面还有提升空间。
+
+## 目标
+优化LLM路由器与语义中介层之间的协作机制，提高语义转换的准确性、效率和鲁棒性，特别是在处理复杂的多步骤转换和中文语义理解方面。
+
+## 详细任务
+
+### 1. 协作接口优化
+- 设计并实现更高级的协作接口，支持语义中介层传递更详细的上下文
+- 实现LLM路由器针对不同转换类型的模型自动选择机制
+- 建立共享的上下文管理机制，减少冗余信息传递
+- 开发异步处理长时间转换的机制
+
+### 2. 语义转换的LLM优化
+- 为不同类型的语义转换创建专用提示模板
+- 优化`translateBetweenModules`的LLM提示策略
+- 为中文语义理解开发特定的提示增强方法
+- 实现动态提示优化，基于历史转换质量反馈
+
+### 3. 智能模型选择
+- 开发基于转换任务复杂度的模型选择算法
+- 实现模型性能监控和自动切换机制
+- 创建多模型协作策略，用于分步处理复杂转换
+- 实现特定领域的模型专业化（如代码生成vs语义分析）
+
+### 4. 语义缓存增强
+- 实现LLM路由器和语义中介层的共享缓存机制
+- 开发缓存智能预热策略，基于使用模式分析
+- 实现语义相似性缓存，支持近似匹配
+- 设计缓存淘汰策略，平衡性能和准确性
+
+### 5. 失败恢复与降级
+- 实现多级降级策略，应对LLM服务不可用情况
+- 开发失败重试机制，支持不同模型自动切换
+- 实现部分结果缓存，支持转换失败后的恢复
+- 创建监控报警系统，及时发现服务异常
+
+### 6. 中文语义优化
+- 优化中文文本的分词和处理
+- 实现中英文混合内容的智能处理
+- 针对中文技术术语创建专用处理逻辑
+- 开发中文代码注释与自然语言的转换增强
+
+### 7. 性能优化
+- 实现批处理机制，合并相似请求
+- 优化大型语义模型的并行处理
+- 开发模型压缩和量化技术，减少延迟
+- 实现资源自适应分配，根据负载动态调整
+
+### 8. 监控与分析
+- 建立详细的性能指标监控系统
+- 开发语义转换质量评估机制
+- 实现自动化异常检测与报警
+- 创建转换质量反馈循环，持续改进模型选择
+
+## 技术要求
+- 支持OpenAI GPT-4和Claude 3.5 Sonnet等高级模型
+- 实现模型无关的抽象层，便于添加新模型
+- 为所有关键功能提供单元测试和集成测试
+- 关键路径性能指标：平均响应时间<1秒
+
+## 交付物
+- 增强的LLM路由器服务
+- 优化的语义中介层与LLM协作接口
+- 专用提示模板库
+- 性能测试和监控仪表板
+- 详细的API文档和使用指南
+
+## 成功标准
+- 语义转换准确率提升20%（通过人工评估）
+- 平均响应时间减少30%
+- 缓存命中率提高到60%以上
+- 系统在LLM服务部分降级时仍能保持80%功能可用
+- 中文语义处理准确率达到英文水平的95%以上
+
+## 实现路径
+
+增强的LLM路由器与语义中介层协同将在以下路径实现：
+
+```
+src/backend/src/services/
+├── llm-router/                              # LLM路由器服务
+│   ├── llm-router.service.ts                # 主服务文件（增强版）
+│   ├── interfaces/                          # 接口定义
+│   │   ├── llm-request.interface.ts         # 请求接口增强
+│   │   ├── semantic-context.interface.ts    # 语义上下文接口（新增）
+│   │   └── transformation-type.enum.ts      # 转换类型枚举（新增）
+│   ├── strategies/                          # 策略模式实现
+│   │   ├── model-selection.strategy.ts      # 模型选择策略（新增）
+│   │   ├── prompt-optimization.strategy.ts  # 提示优化策略（新增）
+│   │   └── fallback.strategy.ts             # 降级策略（增强版）
+│   ├── templates/                           # 提示模板
+│   │   ├── semantic-translation/            # 语义转换模板（新增）
+│   │   │   ├── module-translation.template.ts # 模块间转换模板
+│   │   │   ├── context-enrichment.template.ts # 上下文丰富模板
+│   │   │   └── chinese-handling.template.ts # 中文处理专用模板
+│   │   └── template-manager.service.ts      # 模板管理器（新增）
+│   └── adapters/                            # 适配器
+│       ├── openai.adapter.ts                # OpenAI适配器（增强版）
+│       ├── anthropic.adapter.ts             # Anthropic适配器（增强版）
+│       └── local-model.adapter.ts           # 本地模型适配器（未来扩展）
+│
+└── shared-cache/                            # 共享缓存服务（新增）
+    ├── shared-cache.service.ts              # 共享缓存服务
+    ├── strategies/                          # 缓存策略
+    │   ├── semantic-similarity.strategy.ts  # 语义相似性策略
+    │   ├── prewarming.strategy.ts           # 预热策略
+    │   └── eviction.strategy.ts             # 淘汰策略
+    └── monitoring/                          # 缓存监控
+        └── cache-analytics.service.ts       # 缓存分析服务
+
+src/backend/src/modules/semantic-mediator/
+├── semantic-mediator.service.ts             # 主服务文件（增强版）
+├── interfaces/                              # 接口定义增强
+│   ├── llm-mediator.interface.ts            # LLM中介接口（新增）
+│   └── transformation-context.interface.ts  # 转换上下文接口（新增）
+├── components/
+│   ├── transformation-engine/               # 转换引擎增强
+│   │   ├── transformation-engine.service.ts # 主服务（增强版）
+│   │   ├── strategies/                      # 转换策略
+│   │   │   ├── batching.strategy.ts         # 批处理策略（新增）
+│   │   │   └── parallel-processing.strategy.ts # 并行处理策略（新增）
+│   │   ├── optimizers/                      # 优化器
+│   │   │   ├── chinese-text.optimizer.ts    # 中文文本优化器（新增）
+│   │   │   └── context-compressor.optimizer.ts # 上下文压缩器（新增）
+│   │   └── recovery/                        # 恢复机制
+│   │       └── partial-result.recovery.ts   # 部分结果恢复（新增）
+│   └── semantic-registry/                   # 语义注册中心增强
+│       └── chinese-terms.registry.ts        # 中文术语注册表（新增）
+└── utils/
+    ├── chinese-tokenizer.util.ts            # 中文分词工具（新增）
+    └── mixed-language-detector.util.ts      # 混合语言检测（新增）
+```
+
+共享配置和监控将实现在：
+
+```
+src/backend/src/config/
+└── llm-semantic-integration.config.ts       # 集成配置文件（新增）
+
+src/backend/src/monitoring/
+└── llm-usage/                               # LLM使用监控（新增）
+    ├── model-performance.monitor.ts         # 模型性能监控
+    ├── cost-tracking.service.ts             # 成本跟踪服务
+    └── quality-assessment.service.ts        # 质量评估服务
+``` 

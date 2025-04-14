@@ -1,0 +1,124 @@
+# 任务1: 完善语义中介层集成测试
+
+## 背景
+语义中介层是Expeta 2.0系统的核心创新，负责处理模块间的语义转换和数据交换。虽然基本功能已实现，但需要更完善的测试套件来验证其在各种复杂场景下的表现。
+
+## 目标
+开发全面的集成测试套件，验证语义中介层在不同模块间数据转换的准确性、一致性和性能。
+
+## 详细任务
+
+### 1. 测试框架设置
+- 建立专门的语义中介层测试环境
+- 配置Jest和Supertest用于API测试
+- 创建测试数据生成器和模拟服务
+
+### 2. 基础功能测试
+- 测试`translateBetweenModules`函数在各种数据类型间的转换
+- 测试`enrichWithContext`函数的上下文丰富能力
+- 测试`resolveSemanticConflicts`函数的冲突解决能力
+- 测试`extractSemanticInsights`函数的洞察提取能力
+
+### 3. 模块间集成测试
+- 测试Clarifier到Generator的语义模型转换
+- 测试Generator到Validator的代码和期望转换
+- 测试Memory System与语义中介层的交互
+- 测试与LLM Router的协作场景
+
+### 4. 边缘情况测试
+- 大规模数据转换测试(>1MB)
+- 高并发请求测试(>100请求/秒)
+- 错误恢复和降级策略测试
+- 不完整或模糊语义描述的处理测试
+
+### 5. 性能测试
+- 测试不同复杂度转换的响应时间
+- 测试缓存命中和未命中情况的性能差异
+- 测试内存使用和资源消耗
+- 建立性能基准和监控指标
+
+### 6. 容错性测试
+- 测试网络延迟和断连情况
+- 测试LLM服务不可用的降级处理
+- 测试部分服务失败的恢复机制
+- 测试无效输入和异常处理
+
+### 7. 长期稳定性测试
+- 设计持续运行测试(>24小时)
+- 监控内存泄漏和资源耗尽
+- 测试系统在长期负载下的稳定性
+- 记录和分析随时间变化的性能指标
+
+### 8. 测试报告和监控
+- 自动生成测试覆盖率和成功率报告
+- 建立持续集成测试流程
+- 设置性能和稳定性监控警报
+- 开发测试结果可视化仪表板
+
+## 技术要求
+- 使用Jest和Supertest进行API测试
+- 使用K6或JMeter进行性能测试
+- 使用Mock Service Worker模拟依赖服务
+- 实现基于Docker的测试环境
+
+## 交付物
+- 完整的测试套件代码
+- 测试文档和运行指南
+- 测试覆盖率和性能基准报告
+- 持续集成配置
+
+## 成功标准
+- 代码覆盖率>85%
+- 所有核心功能通过测试
+- 性能测试满足预定指标(响应时间<500ms)
+- 长期稳定性测试无失败
+
+## 实现路径
+
+测试代码将存放在以下路径：
+
+```
+src/backend/src/modules/semantic-mediator/__tests__/
+├── unit/                              # 单元测试
+│   ├── semantic-mediator.service.spec.ts       # 服务单元测试
+│   ├── components/                    # 组件单元测试
+│   │   ├── semantic-registry.spec.ts  # 语义注册中心测试
+│   │   ├── transformation-engine.spec.ts       # 转换引擎测试
+│   │   ├── intelligent-cache.spec.ts  # 智能缓存测试
+│   │   └── monitoring-system.spec.ts  # 监控系统测试
+│   └── utils/                         # 工具函数测试
+│       └── vector-similarity.spec.ts  # 向量相似度计算测试
+├── integration/                       # 集成测试
+│   ├── module-integration.spec.ts     # 模块间集成测试
+│   ├── semantic-mediator-api.spec.ts  # API集成测试
+│   ├── llm-router-integration.spec.ts # LLM路由器集成测试
+│   └── memory-integration.spec.ts     # 记忆系统集成测试
+├── e2e/                               # 端到端测试
+│   ├── translation-workflow.spec.ts   # 转换工作流测试
+│   └── semantic-resolution.spec.ts    # 语义解析测试
+├── performance/                       # 性能测试
+│   ├── load-tests.js                  # K6负载测试脚本
+│   ├── stress-tests.js                # 压力测试脚本
+│   └── endurance-tests.js             # 长期稳定性测试脚本
+├── fixtures/                          # 测试数据
+│   ├── test-expectations.json         # 测试期望数据
+│   ├── test-code-samples.json         # 测试代码样本
+│   └── test-semantic-descriptors.json # 测试语义描述符
+└── mocks/                             # 模拟服务
+    ├── llm-service-mock.ts            # LLM服务模拟
+    └── memory-service-mock.ts         # 记忆系统模拟
+```
+
+CI/CD配置将存放在：
+
+```
+.github/workflows/
+└── semantic-mediator-tests.yml        # GitHub Actions测试工作流
+```
+
+测试报告和度量将集成到：
+
+```
+src/backend/test-reports/
+└── semantic-mediator/                 # 语义中介层测试报告
+``` 

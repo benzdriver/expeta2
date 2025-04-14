@@ -1,0 +1,189 @@
+# 任务3: 实现端到端验证流程
+
+## 背景
+Expeta 2.0系统的核心价值在于将自然语言需求转化为高质量代码，并确保代码符合期望。虽然验证器模块架构已定义，但完整的端到端验证流程（从期望到代码生成再到验证的闭环）尚未完全实现。
+
+## 目标
+设计并实现完整的端到端验证流程，确保生成的代码满足期望，并提供详细、可操作的反馈，形成闭环改进机制。
+
+## 详细任务
+
+### 1. 验证流程设计
+- 设计完整的验证生命周期模型
+- 制定验证标准和指标体系
+- 建立验证结果分级机制和处理流程
+- 设计验证报告格式和反馈机制
+
+### 2. 期望验证增强
+- 实现期望模型的完整性和一致性验证
+- 开发期望模型的语义清晰度评估机制
+- 设计并实现期望模型与验证规则的自动映射
+- 为验证困难的期望提供澄清建议机制
+
+### 3. 代码对期望的语义验证
+- 实现基于语义理解的代码与期望匹配评估
+- 开发关键功能点验证的自动化方法
+- 实现非功能性需求（如性能、安全）的验证
+- 设计代码结构与设计模式符合性验证
+
+### 4. 自动测试生成与执行
+- 实现基于期望的单元测试自动生成
+- 开发集成测试和端到端测试生成机制
+- 构建测试执行环境和结果收集系统
+- 实现测试覆盖率分析和测试质量评估
+
+### 5. 验证反馈与闭环改进
+- 设计详细的验证反馈格式，包括失败原因和建议
+- 实现验证结果到代码修改建议的自动转换
+- 开发验证历史分析和学习机制
+- 建立验证知识库，积累常见问题和解决方案
+
+### 6. 渐进式验证策略
+- 实现分阶段验证流程，支持增量验证
+- 开发快速验证和深度验证的分级机制
+- 设计关键路径优先验证策略
+- 实现验证资源的智能分配机制
+
+### 7. 人机协作验证
+- 设计人机协作验证界面和工作流
+- 实现难以自动化验证的人工审核流程
+- 开发基于人工反馈的验证学习机制
+- 建立专家知识捕获和应用系统
+
+### 8. 验证报告和可视化
+- 设计综合验证报告格式和生成机制
+- 实现验证结果可视化和趋势分析
+- 开发针对不同角色的定制报告视图
+- 建立验证数据分析和洞察提取功能
+
+## 技术要求
+- 与语义中介层和LLM路由器紧密集成
+- 支持不同编程语言和技术栈的验证
+- 提供REST API和WebSocket接口
+- 验证执行环境使用容器化技术实现隔离
+
+## 交付物
+- 完整的验证流程设计文档
+- 验证器模块的核心实现
+- 测试生成和执行引擎
+- 验证反馈和报告系统
+- 验证知识库初始数据
+- 验证API文档和集成指南
+
+## 成功标准
+- 90%以上的期望能够被自动转化为可验证的标准
+- 代码语义验证准确率达到85%以上
+- 自动生成的测试用例覆盖率达到80%以上
+- 验证报告能够提供具体、可操作的改进建议
+- 验证流程的端到端执行时间控制在可接受范围（小型项目<5分钟）
+- 支持至少3种主流编程语言的验证(TypeScript/JavaScript, Python, Java)
+
+## 实现路径
+
+端到端验证流程将在以下路径实现：
+
+```
+src/backend/src/modules/validator/                  # 验证器模块根目录
+├── validator.module.ts                            # 模块定义
+├── validator.service.ts                           # 主服务（增强版）
+├── validator.controller.ts                        # API控制器
+├── interfaces/                                    # 接口定义
+│   ├── validation-request.interface.ts            # 验证请求接口
+│   ├── validation-result.interface.ts             # 验证结果接口（增强版）
+│   ├── validation-metrics.interface.ts            # 验证指标接口（新增）
+│   └── validation-config.interface.ts             # 验证配置接口（新增）
+├── core/                                          # 核心验证功能
+│   ├── lifecycle/                                 # 生命周期管理
+│   │   ├── validation-lifecycle.service.ts        # 验证生命周期服务（新增）
+│   │   └── validation-state.enum.ts               # 验证状态枚举（新增）
+│   ├── expectation-validation/                    # 期望验证
+│   │   ├── expectation-analyzer.service.ts        # 期望分析服务（新增）
+│   │   ├── completeness-validator.service.ts      # 完整性验证服务（新增）
+│   │   ├── clarity-evaluator.service.ts           # 清晰度评估服务（新增）
+│   │   └── expectations-to-rules.service.ts       # 期望转规则服务（新增）
+│   ├── semantic-validation/                       # 语义验证
+│   │   ├── code-expectation-matching.service.ts   # 代码-期望匹配服务（新增）
+│   │   ├── functionality-analyzer.service.ts      # 功能分析服务（新增）
+│   │   ├── non-functional-validator.service.ts    # 非功能需求验证（新增）
+│   │   └── code-pattern-analyzer.service.ts       # 代码模式分析服务（新增）
+│   ├── test-generation/                           # 测试生成
+│   │   ├── test-generator.service.ts              # 测试生成器服务（增强版）
+│   │   ├── unit-test-generator.service.ts         # 单元测试生成器（新增）
+│   │   ├── integration-test-generator.service.ts  # 集成测试生成器（新增）
+│   │   └── test-executor.service.ts               # 测试执行器（新增）
+│   └── feedback/                                  # 验证反馈
+│       ├── feedback-generator.service.ts          # 反馈生成器（新增）
+│       ├── code-improvement-generator.service.ts  # 代码改进生成器（新增）
+│       └── validation-knowledge-base.service.ts   # 验证知识库服务（新增）
+├── strategies/                                    # 验证策略
+│   ├── progressive-validation.strategy.ts         # 渐进式验证策略（新增）
+│   ├── prioritization.strategy.ts                 # 优先级策略（新增）
+│   ├── resource-allocation.strategy.ts            # 资源分配策略（新增）
+│   └── strategy-selector.service.ts               # 策略选择器（新增）
+├── human-collaboration/                           # 人机协作
+│   ├── human-verification.service.ts              # 人工验证服务（新增）
+│   ├── review-task-generator.service.ts           # 审核任务生成器（新增）
+│   ├── feedback-collector.service.ts              # 反馈收集器（新增）
+│   └── expert-knowledge.service.ts                # 专家知识服务（新增）
+├── reporting/                                     # 报告系统
+│   ├── report-generator.service.ts                # 报告生成器（新增）
+│   ├── visualization.service.ts                   # 可视化服务（新增）
+│   ├── insights-extractor.service.ts              # 洞察提取器（新增）
+│   └── report-customizer.service.ts               # 报告定制器（新增）
+├── adapters/                                      # 语言适配器
+│   ├── typescript-adapter.service.ts              # TypeScript适配器
+│   ├── python-adapter.service.ts                  # Python适配器（新增）
+│   └── java-adapter.service.ts                    # Java适配器（新增）
+└── utils/                                         # 工具函数
+    ├── validation-metrics.util.ts                 # 验证指标工具（新增）
+    ├── test-coverage.util.ts                      # 测试覆盖率工具（新增）
+    └── execution-environment.util.ts              # 执行环境工具（新增）
+```
+
+前端组件将实现在：
+
+```
+src/frontend/src/components/Validator/             # 验证器前端组件
+├── ValidationDashboard.tsx                        # 验证仪表板
+├── ValidationWorkflow.tsx                         # 验证工作流（新增）
+├── ValidationResults.tsx                          # 验证结果（增强版）
+├── ExpectationValidator.tsx                       # 期望验证器（新增）
+├── TestGenerationPanel.tsx                        # 测试生成面板（新增）
+├── FeedbackViewer.tsx                             # 反馈查看器（新增）
+├── HumanReviewInterface.tsx                       # 人工审核界面（新增）
+└── ValidationReports.tsx                          # 验证报告（新增）
+```
+
+执行环境将实现在：
+
+```
+src/backend/execution-environments/                # 执行环境
+├── docker-compose.yml                             # Docker组合配置
+├── typescript/                                    # TypeScript环境
+│   └── Dockerfile                                 # TS环境Docker配置
+├── python/                                        # Python环境
+│   └── Dockerfile                                 # Python环境Docker配置
+└── java/                                          # Java环境
+    └── Dockerfile                                 # Java环境Docker配置
+```
+
+验证知识库将存储在：
+
+```
+src/backend/src/data/validation-knowledge-base/    # 验证知识库
+├── common-issues/                                 # 常见问题
+│   ├── typescript-issues.json                     # TS常见问题
+│   ├── python-issues.json                         # Python常见问题
+│   └── java-issues.json                           # Java常见问题
+├── solution-templates/                            # 解决方案模板
+│   ├── performance-solutions.json                 # 性能优化模板
+│   ├── security-solutions.json                    # 安全增强模板
+│   └── code-quality-solutions.json                # 代码质量模板
+└── validation-rules/                              # 验证规则库
+    ├── semantic-rules.json                        # 语义规则
+    ├── structural-rules.json                      # 结构规则
+    └── language-specific/                         # 语言特定规则
+        ├── typescript-rules.json                  # TS规则
+        ├── python-rules.json                      # Python规则
+        └── java-rules.json                        # Java规则
+``` 

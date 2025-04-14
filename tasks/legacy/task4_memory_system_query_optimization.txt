@@ -1,0 +1,192 @@
+# 任务4: 优化记忆系统查询性能
+
+## 背景
+随着Expeta 2.0系统使用规模的增长，记忆系统中存储的期望、代码和验证结果等数据量将迅速增加。记忆系统的查询性能可能成为整体系统的瓶颈，尤其是在语义中介层需要频繁查询相关记忆以支持复杂转换时。
+
+## 目标
+优化记忆系统的查询性能，提高数据检索效率，降低响应时间，同时保持数据的语义关联性，支持系统在大规模数据集下的高效运行。
+
+## 详细任务
+
+### 1. 性能分析与基准测试
+- 对现有记忆系统进行性能分析和瓶颈识别
+- 建立查询性能基准测试套件和指标体系
+- 分析不同类型查询的性能特征和瓶颈
+- 评估数据量增长对性能影响的趋势预测
+
+### 2. 数据存储优化
+- 实现MongoDB索引优化，针对常用查询模式
+- 设计有效的数据分片策略，支持水平扩展
+- 开发冷热数据分离机制，优化存储层级
+- 实现数据压缩策略，减少存储空间并提高I/O效率
+
+### 3. 缓存策略设计
+- 实现多级缓存架构，包括内存、Redis和数据库层
+- 开发智能缓存预热策略，基于使用模式分析
+- 实现缓存一致性保证机制
+- 设计缓存过期和更新策略，平衡性能和数据新鲜度
+
+### 4. 查询优化
+- 重构复杂查询逻辑，减少数据库往返
+- 实现查询结果分页和流式返回机制
+- 开发查询计划优化器，自动选择最优查询路径
+- 实现查询负载均衡和调度机制
+
+### 5. 语义搜索增强
+- 实现高效的语义向量存储和检索机制
+- 开发混合搜索策略，结合关键词和语义搜索
+- 实现渐进式查询精化，先快速返回近似结果
+- 构建语义相似性缓存，减少重复计算
+
+### 6. 非结构化数据处理
+- 优化代码和文本数据的索引和检索方法
+- 实现代码片段和功能点的快速定位
+- 开发多模态数据的统一检索接口
+- 实现增量更新和实时索引机制
+
+### 7. 异步和批处理优化
+- 设计异步查询处理架构，支持非阻塞操作
+- 实现批量查询和结果合并机制
+- 开发后台预计算和数据准备机制
+- 实现查询优先级和资源分配策略
+
+### 8. 监控与自适应优化
+- 建立详细的性能监控系统，实时追踪查询性能
+- 开发自动性能分析和瓶颈检测机制
+- 实现自适应索引和缓存策略，根据查询模式动态调整
+- 创建性能预警和自动干预系统
+
+## 技术要求
+- MongoDB高级优化技术和最佳实践
+- Redis缓存策略和Lua脚本优化
+- 向量数据库技术（如Pinecone或Milvus）
+- 查询性能分析和监控工具集成
+- 支持水平扩展的架构设计
+
+## 交付物
+- 优化后的记忆系统数据模型和索引设计
+- 多级缓存实现和管理系统
+- 查询优化器和执行计划生成器
+- 语义搜索引擎集成
+- 性能监控和分析仪表板
+- 性能测试报告和优化建议文档
+
+## 成功标准
+- 常用查询响应时间减少70%（在同等数据量条件下）
+- 系统能够支持10倍数据量增长而保持响应时间不超过2倍
+- 缓存命中率达到80%以上
+- 语义搜索准确率不低于90%
+- 支持每秒100+并发查询的处理能力
+- 查询延迟波动控制在20%以内（稳定性）
+- 支持至少10TB数据规模的高效管理
+
+## 实现路径
+
+记忆系统查询优化将在以下路径实现：
+
+```
+src/backend/src/modules/memory/                    # 记忆系统模块根目录
+├── memory.module.ts                              # 模块定义（更新）
+├── memory.service.ts                             # 主服务（优化版）
+├── memory.controller.ts                          # API控制器（更新）
+├── schemas/                                       # 数据库模式
+│   ├── memory.schema.ts                          # 基础记忆模式（优化）
+│   ├── expectation.schema.ts                     # 期望记忆模式（优化）
+│   ├── code.schema.ts                            # 代码记忆模式（优化）
+│   ├── validation.schema.ts                      # 验证记忆模式（优化）
+│   └── index.schema.ts                           # 数据库索引定义（新增）
+├── repositories/                                  # 数据存储层
+│   ├── base.repository.ts                        # 基础仓库模式（优化）
+│   ├── memory.repository.ts                      # 记忆仓库（优化）
+│   └── shard-manager.service.ts                  # 分片管理器（新增）
+├── cache/                                         # 缓存系统
+│   ├── cache.module.ts                           # 缓存模块定义（新增）
+│   ├── multi-level-cache.service.ts              # 多级缓存服务（新增）
+│   ├── strategies/                               # 缓存策略
+│   │   ├── cache-prewarming.strategy.ts          # 预热策略（新增）
+│   │   ├── cache-consistency.service.ts          # 一致性服务（新增）
+│   │   └── expiration.service.ts                 # 过期策略（新增）
+│   ├── adapters/                                 # 缓存适配器
+│   │   ├── in-memory.adapter.ts                  # 内存缓存适配器（新增）
+│   │   ├── redis.adapter.ts                      # Redis缓存适配器（新增）
+│   │   └── database.adapter.ts                   # 数据库缓存适配器（新增）
+│   └── metrics/                                  # 缓存指标
+│       └── cache-metrics.service.ts              # 缓存指标服务（新增）
+├── query/                                         # 查询优化
+│   ├── query-optimizer.service.ts                # 查询优化器（新增）
+│   ├── execution-plan.service.ts                 # 执行计划服务（新增）
+│   ├── pagination.service.ts                     # 分页服务（增强）
+│   ├── query-batching.service.ts                 # 批量查询服务（新增）
+│   └── load-balancer.service.ts                  # 负载均衡服务（新增）
+├── semantic-search/                               # 语义搜索
+│   ├── semantic-search.module.ts                 # 语义搜索模块（新增）
+│   ├── vector-store.service.ts                   # 向量存储服务（新增）
+│   ├── hybrid-search.service.ts                  # 混合搜索服务（新增）
+│   ├── progressive-refinement.service.ts         # 渐进精化服务（新增）
+│   └── adapters/                                 # 向量数据库适配器
+│       ├── milvus.adapter.ts                     # Milvus适配器（新增）
+│       └── pinecone.adapter.ts                   # Pinecone适配器（新增）
+├── unstructured-data/                             # 非结构化数据处理
+│   ├── code-indexer.service.ts                   # 代码索引器（新增）
+│   ├── text-indexer.service.ts                   # 文本索引器（新增）
+│   ├── multimodal-search.service.ts              # 多模态搜索服务（新增）
+│   └── incremental-indexer.service.ts            # 增量索引器（新增）
+├── async/                                         # 异步处理
+│   ├── async-query.service.ts                    # 异步查询服务（新增）
+│   ├── batch-processor.service.ts                # 批处理器（新增）
+│   ├── background-task.service.ts                # 后台任务服务（新增）
+│   └── priority-queue.service.ts                 # 优先级队列（新增）
+└── monitoring/                                    # 监控系统
+    ├── performance-monitor.service.ts            # 性能监控服务（新增）
+    ├── bottleneck-detector.service.ts            # 瓶颈检测器（新增）
+    ├── adaptive-optimizer.service.ts             # 自适应优化器（新增）
+    └── alerts.service.ts                         # 警报服务（新增）
+```
+
+数据库配置和索引将在以下路径实现：
+
+```
+src/backend/src/config/                           # 配置目录
+├── database/                                      # 数据库配置
+│   ├── mongodb.config.ts                         # MongoDB配置（优化）
+│   ├── index-definitions.ts                      # 索引定义（新增）
+│   └── sharding-strategy.ts                      # 分片策略（新增）
+├── redis/                                         # Redis配置
+│   ├── redis.config.ts                           # Redis配置（新增）
+│   └── lua-scripts/                              # Lua脚本
+│       ├── cache-operations.lua                  # 缓存操作脚本（新增）
+│       └── batch-query.lua                       # 批量查询脚本（新增）
+└── vector-db/                                     # 向量数据库配置
+    ├── milvus.config.ts                          # Milvus配置（新增）
+    └── pinecone.config.ts                        # Pinecone配置（新增）
+```
+
+性能测试和监控工具将实现在：
+
+```
+src/backend/tools/                                # 工具目录
+├── performance-testing/                           # 性能测试
+│   ├── memory-benchmark.js                       # 记忆系统基准测试（新增）
+│   ├── load-generator.js                         # 负载生成器（新增）
+│   └── test-scenarios/                           # 测试场景
+│       ├── common-queries.js                     # 常用查询测试（新增）
+│       ├── high-concurrency.js                   # 高并发测试（新增）
+│       └── data-growth.js                        # 数据增长测试（新增）
+└── monitoring/                                    # 监控工具
+    ├── memory-dashboard.js                       # 记忆系统仪表板（新增）
+    ├── performance-metrics.js                    # 性能指标收集（新增）
+    └── alerting-rules.js                         # 告警规则（新增）
+```
+
+负载均衡和水平扩展配置：
+
+```
+deployment/                                        # 部署配置
+├── kubernetes/                                    # Kubernetes配置
+│   ├── memory-service.yaml                       # 记忆服务部署（新增）
+│   ├── redis-cluster.yaml                        # Redis集群部署（新增）
+│   └── mongodb-sharded.yaml                      # MongoDB分片部署（新增）
+└── scaling/                                       # 扩展配置
+    ├── autoscaling.yaml                          # 自动扩展配置（新增）
+    └── load-balancer.yaml                        # 负载均衡配置（新增）
+``` 

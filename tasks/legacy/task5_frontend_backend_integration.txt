@@ -1,0 +1,284 @@
+# 任务5: 完善前后端集成
+
+## 背景
+Expeta 2.0系统的前端界面和后端服务都已具备基本架构，但两者之间的集成还需进一步完善，特别是在充分利用后端语义中介能力、展示代码生成过程和验证结果方面。良好的前后端集成对用户体验和系统功能展现至关重要。
+
+## 目标
+完善前端界面与后端服务的集成，构建流畅、高效的用户体验，充分展示系统的AI辅助代码生成和验证能力，并确保实时数据交互和状态同步的可靠性。
+
+## 详细任务
+
+### 1. API接口优化
+- 审核并优化现有API接口设计，确保一致性和语义明确性
+- 实现RESTful API和GraphQL双模式支持，满足不同场景需求
+- 开发API版本管理和兼容性机制
+- 建立API性能监控和优化体系
+
+### 2. 实时通信增强
+- 实现基于WebSocket的实时状态更新机制
+- 开发事件驱动的前后端通信模型
+- 建立可靠的断线重连和消息重传机制
+- 实现消息压缩和批处理，优化网络传输
+
+### 3. 代码生成过程可视化
+- 设计并实现代码生成过程的实时可视化界面
+- 开发生成步骤和中间状态的展示机制
+- 实现语义转换和决策过程的透明展示
+- 创建交互式生成控制界面，支持用户干预
+
+### 4. 验证结果展示优化
+- 设计详细而直观的验证结果展示界面
+- 实现多维度验证指标的可视化
+- 开发代码问题的精确定位和修改建议展示
+- 创建验证历史和趋势分析视图
+
+### 5. 状态管理和同步
+- 重构前端状态管理，与后端模型保持一致
+- 实现乐观更新和冲突解决机制
+- 开发高效的数据缓存和预加载策略
+- 实现复杂状态的增量同步机制
+
+### 6. 错误处理和恢复
+- 建立全面的前后端错误处理机制
+- 实现友好的错误提示和恢复建议
+- 开发操作回滚和状态恢复能力
+- 创建错误日志和分析系统
+
+### 7. 认证和授权集成
+- 完善JWT认证机制与前端集成
+- 实现基于角色的权限控制UI
+- 开发安全令牌管理和刷新机制
+- 实现API访问控制和限流策略
+
+### 8. 性能优化
+- 实现API响应数据的精确裁剪，减少传输量
+- 开发前端资源的按需加载和代码分割
+- 实现数据预取和智能缓存策略
+- 优化首次加载性能和交互响应速度
+
+## 技术要求
+- 前端使用React 18+和TypeScript
+- 后端使用NestJS和Express
+- 实时通信采用Socket.IO或原生WebSocket
+- 状态管理使用Context API或Redux Toolkit
+- API文档使用Swagger或GraphQL Schema
+
+## 交付物
+- 优化的API接口规范和文档
+- 完整的前后端集成测试套件
+- 改进的前端组件库，支持后端数据展示
+- 实时通信模块的实现
+- 代码生成和验证结果的可视化组件
+- 错误处理和恢复机制的实现
+- 性能优化报告和指标
+
+## 成功标准
+- API响应时间缩短40%（平均<100ms）
+- 前端首次加载时间<2秒（在标准网络条件下）
+- 实时通信延迟<200ms
+- 代码生成过程的可视化更新延迟<500ms
+- 用户操作响应时间<300ms
+- 前端与后端状态同步准确率100%
+- 支持至少50个并发用户无性能下降
+
+## 实现路径
+
+前后端集成改进将在以下路径实现：
+
+### 后端API优化
+
+```
+src/backend/src/
+├── api/                                         # API层
+│   ├── api.module.ts                           # API模块（增强版）
+│   ├── controllers/                            # 控制器
+│   │   ├── base.controller.ts                  # 基础控制器（新增）
+│   │   ├── clarifier.controller.ts             # 澄清器控制器（优化）
+│   │   ├── generator.controller.ts             # 生成器控制器（优化）
+│   │   ├── validator.controller.ts             # 验证器控制器（优化）
+│   │   └── memory.controller.ts                # 记忆系统控制器（优化）
+│   ├── dto/                                    # 数据传输对象
+│   │   ├── common/                             # 通用DTO
+│   │   │   ├── pagination.dto.ts               # 分页DTO（优化）
+│   │   │   └── response.dto.ts                 # 响应DTO（优化）
+│   │   ├── clarifier/                          # 澄清器DTO（优化）
+│   │   ├── generator/                          # 生成器DTO（优化）
+│   │   └── validator/                          # 验证器DTO（优化）
+│   ├── interceptors/                           # 拦截器
+│   │   ├── response-transformer.interceptor.ts # 响应转换器（新增）
+│   │   ├── logging.interceptor.ts              # 日志拦截器（新增）
+│   │   └── performance-monitor.interceptor.ts  # 性能监控拦截器（新增）
+│   ├── filters/                                # 过滤器
+│   │   ├── exception.filter.ts                 # 异常过滤器（优化）
+│   │   └── validation.filter.ts                # 验证过滤器（优化）
+│   ├── middlewares/                            # 中间件
+│   │   ├── request-context.middleware.ts       # 请求上下文中间件（新增）
+│   │   └── api-version.middleware.ts           # API版本中间件（新增）
+│   └── versioning/                             # 版本管理
+│       ├── version-manager.service.ts          # 版本管理器（新增）
+│       └── compatibility.service.ts            # 兼容性服务（新增）
+│
+├── graphql/                                    # GraphQL支持
+│   ├── graphql.module.ts                       # GraphQL模块（新增）
+│   ├── schema.gql                              # GraphQL模式（新增）
+│   ├── resolvers/                              # 解析器
+│   │   ├── clarifier.resolver.ts               # 澄清器解析器（新增）
+│   │   ├── generator.resolver.ts               # 生成器解析器（新增）
+│   │   └── validator.resolver.ts               # 验证器解析器（新增）
+│   ├── types/                                  # GraphQL类型
+│   │   ├── common.types.ts                     # 通用类型（新增）
+│   │   ├── clarifier.types.ts                  # 澄清器类型（新增）
+│   │   ├── generator.types.ts                  # 生成器类型（新增）
+│   │   └── validator.types.ts                  # 验证器类型（新增）
+│   └── directives/                             # GraphQL指令
+│       ├── auth.directive.ts                   # 授权指令（新增）
+│       └── rate-limit.directive.ts             # 速率限制指令（新增）
+│
+└── realtime/                                   # 实时通信
+    ├── realtime.module.ts                      # 实时通信模块（新增）
+    ├── socket.gateway.ts                       # WebSocket网关（新增）
+    ├── events/                                 # 事件定义
+    │   ├── event-types.enum.ts                 # 事件类型枚举（新增）
+    │   └── event-payload.interface.ts          # 事件负载接口（新增）
+    ├── handlers/                               # 事件处理器
+    │   ├── base.handler.ts                     # 基础处理器（新增）
+    │   ├── clarifier.handler.ts                # 澄清器事件处理器（新增）
+    │   ├── generator.handler.ts                # 生成器事件处理器（新增）
+    │   └── validator.handler.ts                # 验证器事件处理器（新增）
+    └── adapters/                               # 适配器
+        ├── websocket.adapter.ts                # WebSocket适配器（新增）
+        └── socket-io.adapter.ts                # Socket.IO适配器（新增）
+```
+
+### 前端集成改进
+
+```
+src/frontend/src/
+├── api/                                         # API客户端
+│   ├── api-client.ts                           # API客户端（优化）
+│   ├── interceptors/                           # 拦截器
+│   │   ├── auth.interceptor.ts                 # 认证拦截器（优化）
+│   │   ├── error.interceptor.ts                # 错误拦截器（优化）
+│   │   └── cache.interceptor.ts                # 缓存拦截器（新增）
+│   ├── services/                               # 服务
+│   │   ├── base.service.ts                     # 基础服务（优化）
+│   │   ├── clarifier.service.ts                # 澄清器服务（优化）
+│   │   ├── generator.service.ts                # 生成器服务（优化）
+│   │   ├── validator.service.ts                # 验证器服务（优化）
+│   │   └── memory.service.ts                   # 记忆服务（优化）
+│   └── graphql/                                # GraphQL客户端
+│       ├── client.ts                           # GraphQL客户端（新增）
+│       └── queries/                            # 查询定义
+│           ├── clarifier.queries.ts            # 澄清器查询（新增）
+│           ├── generator.queries.ts            # 生成器查询（新增）
+│           └── validator.queries.ts            # 验证器查询（新增）
+│
+├── realtime/                                    # 实时通信客户端
+│   ├── socket-client.ts                        # Socket客户端（新增）
+│   ├── event-manager.ts                        # 事件管理器（新增）
+│   ├── reconnection-manager.ts                 # 重连管理器（新增）
+│   └── message-queue.ts                        # 消息队列（新增）
+│
+├── state/                                       # 状态管理
+│   ├── context/                                # Context API实现
+│   │   ├── app-context.tsx                     # 应用上下文（优化）
+│   │   ├── auth-context.tsx                    # 认证上下文（优化）
+│   │   ├── clarifier-context.tsx               # 澄清器上下文（优化）
+│   │   ├── generator-context.tsx               # 生成器上下文（优化）
+│   │   └── validator-context.tsx               # 验证器上下文（优化）
+│   ├── reducers/                               # 状态归约器
+│   │   ├── app.reducer.ts                      # 应用归约器（优化）
+│   │   ├── auth.reducer.ts                     # 认证归约器（优化）
+│   │   ├── clarifier.reducer.ts                # 澄清器归约器（优化）
+│   │   ├── generator.reducer.ts                # 生成器归约器（优化）
+│   │   └── validator.reducer.ts                # 验证器归约器（优化）
+│   └── hooks/                                  # 自定义钩子
+│       ├── use-optimistic-update.ts            # 乐观更新钩子（新增）
+│       ├── use-data-sync.ts                    # 数据同步钩子（新增）
+│       ├── use-api-cache.ts                    # API缓存钩子（新增）
+│       └── use-realtime-events.ts              # 实时事件钩子（新增）
+│
+├── components/                                  # UI组件
+│   ├── common/                                 # 通用组件
+│   │   ├── ErrorBoundary.tsx                   # 错误边界（新增）
+│   │   ├── LoadingIndicator.tsx                # 加载指示器（优化）
+│   │   └── ErrorDisplay.tsx                    # 错误显示（新增）
+│   ├── CodeGeneration/                         # 代码生成组件
+│   │   ├── GenerationProcess.tsx               # 生成过程可视化（新增）
+│   │   ├── StepVisualizer.tsx                  # 步骤可视化（新增）
+│   │   ├── SemanticTransformationView.tsx      # 语义转换视图（新增）
+│   │   └── UserInterventionPanel.tsx           # 用户干预面板（新增）
+│   └── Validation/                             # 验证组件
+│       ├── ValidationResults.tsx               # 验证结果（优化）
+│       ├── MetricsVisualizer.tsx               # 指标可视化（新增）
+│       ├── CodeIssueHighlighter.tsx            # 代码问题高亮（新增）
+│       └── TrendAnalysis.tsx                   # 趋势分析（新增）
+│
+├── utils/                                       # 工具函数
+│   ├── error-handling.ts                       # 错误处理（新增）
+│   ├── state-reconciliation.ts                 # 状态协调（新增）
+│   ├── data-prefetching.ts                     # 数据预取（新增）
+│   └── performance-tracking.ts                 # 性能跟踪（新增）
+```
+
+### 认证与安全增强
+
+```
+src/backend/src/auth/                           # 认证模块
+├── auth.module.ts                              # 认证模块（优化）
+├── auth.service.ts                             # 认证服务（优化）
+├── jwt.strategy.ts                             # JWT策略（优化）
+├── refresh-token.service.ts                    # 刷新令牌服务（新增）
+├── guards/                                     # 守卫
+│   ├── jwt-auth.guard.ts                       # JWT认证守卫（优化）
+│   ├── roles.guard.ts                          # 角色守卫（优化）
+│   └── throttle.guard.ts                       # 节流守卫（新增）
+└── decorators/                                 # 装饰器
+    ├── roles.decorator.ts                      # 角色装饰器（优化）
+    └── public.decorator.ts                     # 公共API装饰器（新增）
+
+src/frontend/src/auth/                          # 前端认证
+├── auth-provider.tsx                           # 认证提供者（优化）
+├── token-manager.ts                            # 令牌管理器（新增）
+├── permission-manager.ts                       # 权限管理器（新增）
+└── protected-route.tsx                         # 受保护路由（优化）
+```
+
+### API文档与测试
+
+```
+src/backend/src/docs/                           # API文档
+├── swagger.ts                                  # Swagger配置（优化）
+└── schema/                                     # API模式
+    ├── clarifier.schema.ts                     # 澄清器模式（优化）
+    ├── generator.schema.ts                     # 生成器模式（优化）
+    └── validator.schema.ts                     # 验证器模式（优化）
+
+tests/integration/                              # 集成测试
+├── api/                                        # API测试
+│   ├── clarifier.test.ts                       # 澄清器API测试（新增）
+│   ├── generator.test.ts                       # 生成器API测试（新增）
+│   └── validator.test.ts                       # 验证器API测试（新增）
+├── realtime/                                   # 实时通信测试
+│   └── socket.test.ts                          # Socket测试（新增）
+└── frontend-backend/                           # 前后端集成测试
+    ├── auth-flow.test.ts                       # 认证流程测试（新增）
+    ├── data-sync.test.ts                       # 数据同步测试（新增）
+    └── error-handling.test.ts                  # 错误处理测试（新增）
+```
+
+### 性能监控与优化
+
+```
+src/backend/src/performance/                    # 性能监控
+├── performance.module.ts                       # 性能模块（新增）
+├── api-metrics.service.ts                      # API指标服务（新增）
+├── response-time.middleware.ts                 # 响应时间中间件（新增）
+└── request-logger.service.ts                   # 请求日志服务（新增）
+
+src/frontend/src/performance/                   # 前端性能
+├── performance-monitor.ts                      # 性能监控（新增）
+├── lazy-loading.ts                             # 懒加载配置（新增）
+├── resource-prefetching.ts                     # 资源预取（新增）
+└── metrics.ts                                  # 指标收集（新增）
+``` 

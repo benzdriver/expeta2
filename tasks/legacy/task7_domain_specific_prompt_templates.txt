@@ -1,0 +1,287 @@
+# 任务7: 设计并实现领域特定的提示模板系统
+
+## 背景
+Expeta 2.0系统需要高质量的领域特定提示模板，以确保不同技术领域和语言的代码生成质量和一致性。当前的通用模板需要扩展和优化，以适应不同的编程任务和上下文。
+
+## 目标
+设计并实现一个灵活、可扩展的领域特定提示模板系统，提高代码生成质量，支持多种编程语言和框架，同时允许用户和系统对模板进行自定义和优化。
+
+## 详细任务
+
+### 1. 模板系统架构设计
+- 设计分层模板架构，包括基础模板、领域特定模板和用户自定义模板
+- 实现模板继承和组合机制
+- 设计模板版本控制和管理系统
+- 开发模板DSL（领域特定语言）或标记系统
+
+### 2. 语言特定模板开发
+- 为主要编程语言（Python、JavaScript、Java、C#、Go等）开发基础模板
+- 实现语言特有特性的专用模板片段
+- 开发语法和代码风格指南模板
+- 设计语言间通用模式转换模板
+
+### 3. 框架和库特定模板
+- 为主流框架（React、Vue、Angular、Spring、Django等）开发专用模板
+- 实现常见设计模式的框架特定实现模板
+- 开发组件和服务架构模板
+- 设计API和接口设计模板
+
+### 4. 任务特定模板
+- 开发用于不同编程任务的专用模板（CRUD、认证、数据处理等）
+- 实现特定算法和优化模式的模板
+- 设计测试和调试相关的提示模板
+- 开发文档生成和注释模板
+
+### 5. 上下文感知和动态模板
+- 实现基于项目结构的上下文感知模板选择
+- 开发基于用户偏好的模板个性化机制
+- 设计历史互动感知的动态模板系统
+- 实现自适应提示强度调节
+
+### 6. 模板评估和优化系统
+- 开发模板性能指标和评估框架
+- 实现基于用户反馈的模板优化机制
+- 设计A/B测试框架用于模板比较
+- 开发自动模板调整和优化算法
+
+### 7. 用户自定义和共享系统
+- 实现用户模板创建和编辑界面
+- 开发模板库和共享平台
+- 设计模板评分和推荐系统
+- 实现模板导入/导出功能
+
+### 8. 多语言和国际化支持
+- 设计多语言提示模板架构
+- 实现语言无关的代码结构模板
+- 开发国际化标准和规范的支持
+- 设计多语言混合代码的处理模板
+
+## 技术要求
+- 模板引擎技术（如Handlebars、Mustache等）
+- 自然语言处理技术
+- 代码分析和AST处理
+- 用户偏好学习算法（可选）
+- 版本控制和差异比较技术
+
+## 交付物
+- 模板系统架构设计文档
+- 领域特定模板库（至少覆盖5种主要编程语言）
+- 框架特定模板集（至少覆盖10个主流框架）
+- 模板管理和编辑界面
+- 模板评估和优化工具
+- 用户指南和最佳实践文档
+
+## 成功标准
+- 支持至少10种编程语言的特定模板
+- 平均代码生成质量提高30%（基于代码审查评分）
+- 用户干预和修改需求减少40%
+- 模板可复用率达到80%以上
+- 用户满意度评分达到4.5/5或更高
+- 系统能够处理95%以上的特定领域请求
+- 支持用户在10分钟内创建和部署新模板
+
+## 实现路径
+
+领域特定的提示模板系统将在以下路径实现：
+
+```
+src/backend/src/modules/prompt-templates/  # 提示模板系统根目录
+├── prompt-templates.module.ts             # 提示模板模块定义
+├── prompt-templates.service.ts            # 提示模板主服务
+├── interfaces/                            # 接口定义
+│   ├── template.interface.ts              # 基本模板接口
+│   ├── template-context.interface.ts      # 模板上下文接口
+│   ├── template-metadata.interface.ts     # 模板元数据接口
+│   └── template-registry.interface.ts     # 模板注册表接口
+├── core/                                  # 核心功能
+│   ├── template-engine.service.ts         # 模板引擎服务
+│   ├── template-parser.service.ts         # 模板解析器
+│   ├── template-renderer.service.ts       # 模板渲染器
+│   ├── template-registry.service.ts       # 模板注册服务
+│   └── template-versioning.service.ts     # 模板版本控制
+├── domain-specific/                       # 领域特定实现
+│   ├── language-templates/                # 语言特定模板
+│   │   ├── python/                        # Python模板
+│   │   │   ├── base.template.ts           # 基础模板
+│   │   │   ├── data-science.template.ts   # 数据科学模板
+│   │   │   ├── web.template.ts            # Web开发模板
+│   │   │   └── testing.template.ts        # 测试模板
+│   │   ├── javascript/                    # JavaScript模板
+│   │   │   ├── base.template.ts           # 基础模板
+│   │   │   ├── node.template.ts           # Node.js模板
+│   │   │   ├── browser.template.ts        # 浏览器模板
+│   │   │   └── testing.template.ts        # 测试模板
+│   │   ├── java/                          # Java模板
+│   │   │   ├── base.template.ts           # 基础模板
+│   │   │   ├── spring.template.ts         # Spring模板
+│   │   │   ├── android.template.ts        # Android模板
+│   │   │   └── testing.template.ts        # 测试模板
+│   │   ├── csharp/                        # C#模板
+│   │   │   ├── base.template.ts           # 基础模板
+│   │   │   ├── dotnet.template.ts         # .NET模板
+│   │   │   ├── azure.template.ts          # Azure模板
+│   │   │   └── testing.template.ts        # 测试模板
+│   │   └── go/                            # Go模板
+│   │       ├── base.template.ts           # 基础模板
+│   │       ├── web.template.ts            # Web模板
+│   │       ├── concurrency.template.ts    # 并发模板
+│   │       └── testing.template.ts        # 测试模板
+│   ├── framework-templates/               # 框架特定模板
+│   │   ├── frontend/                      # 前端框架
+│   │   │   ├── react/                     # React框架
+│   │   │   │   ├── component.template.ts  # 组件模板
+│   │   │   │   ├── hook.template.ts       # Hook模板
+│   │   │   │   └── redux.template.ts      # Redux模板
+│   │   │   ├── vue/                       # Vue框架
+│   │   │   │   ├── component.template.ts  # 组件模板
+│   │   │   │   ├── composition.template.ts # 组合API模板
+│   │   │   │   └── vuex.template.ts       # Vuex模板
+│   │   │   └── angular/                   # Angular框架
+│   │   │       ├── component.template.ts  # 组件模板
+│   │   │       ├── service.template.ts    # 服务模板
+│   │   │       └── module.template.ts     # 模块模板
+│   │   └── backend/                       # 后端框架
+│   │       ├── express/                   # Express框架
+│   │       │   ├── route.template.ts      # 路由模板
+│   │       │   ├── middleware.template.ts # 中间件模板
+│   │       │   └── controller.template.ts # 控制器模板
+│   │       ├── django/                    # Django框架
+│   │       │   ├── view.template.ts       # 视图模板
+│   │       │   ├── model.template.ts      # 模型模板
+│   │       │   └── form.template.ts       # 表单模板
+│   │       └── spring/                    # Spring框架
+│   │           ├── controller.template.ts # 控制器模板
+│   │           ├── service.template.ts    # 服务模板
+│   │           └── repository.template.ts # 仓库模板
+│   └── task-templates/                    # 任务特定模板
+│       ├── crud/                          # CRUD操作
+│       │   ├── create.template.ts         # 创建模板
+│       │   ├── read.template.ts           # 读取模板
+│       │   ├── update.template.ts         # 更新模板
+│       │   └── delete.template.ts         # 删除模板
+│       ├── auth/                          # 认证操作
+│       │   ├── login.template.ts          # 登录模板
+│       │   ├── register.template.ts       # 注册模板
+│       │   ├── jwt.template.ts            # JWT模板
+│       │   └── oauth.template.ts          # OAuth模板
+│       ├── data/                          # 数据操作
+│       │   ├── validation.template.ts     # 验证模板
+│       │   ├── transformation.template.ts # 转换模板
+│       │   ├── filtering.template.ts      # 过滤模板
+│       │   └── aggregation.template.ts    # 聚合模板
+│       └── testing/                       # 测试模板
+│           ├── unit.template.ts           # 单元测试模板
+│           ├── integration.template.ts    # 集成测试模板
+│           ├── e2e.template.ts            # 端到端测试模板
+│           └── mock.template.ts           # 模拟模板
+├── context-aware/                         # 上下文感知系统
+│   ├── context-analyzer.service.ts        # 上下文分析器
+│   ├── project-structure.service.ts       # 项目结构分析
+│   ├── user-preference.service.ts         # 用户偏好服务
+│   └── history-tracker.service.ts         # 历史追踪服务
+├── evaluation/                            # 评估和优化
+│   ├── template-evaluator.service.ts      # 模板评估器
+│   ├── feedback-collector.service.ts      # 反馈收集器
+│   ├── ab-testing.service.ts              # A/B测试服务
+│   └── template-optimizer.service.ts      # 模板优化器
+├── user-customization/                    # 用户自定义
+│   ├── template-editor.service.ts         # 模板编辑器
+│   ├── template-library.service.ts        # 模板库服务
+│   ├── template-sharing.service.ts        # 模板共享服务
+│   └── import-export.service.ts           # 导入导出服务
+└── i18n/                                  # 国际化支持
+    ├── i18n.service.ts                    # 国际化服务
+    ├── translation.service.ts             # 翻译服务
+    ├── locale-detector.service.ts         # 地区检测器
+    └── multi-language-code.service.ts     # 多语言代码服务
+```
+
+前端界面实现：
+
+```
+src/frontend/src/components/prompt-templates/ # 前端模板界面
+├── TemplateManager.tsx                       # 模板管理器组件
+├── TemplateEditor.tsx                        # 模板编辑器组件
+├── TemplateBrowser.tsx                       # 模板浏览器组件
+├── TemplatePreview.tsx                       # 模板预览组件
+├── TemplateVersionHistory.tsx                # 版本历史组件
+├── TemplateFeedback.tsx                      # 反馈组件
+├── TemplateSharing.tsx                       # 共享功能组件
+└── TemplateSettings.tsx                      # 设置组件
+```
+
+存储和数据模型：
+
+```
+src/backend/src/modules/prompt-templates/schemas/ # 数据模型
+├── template.schema.ts                            # 模板架构
+├── template-version.schema.ts                    # 版本架构
+├── template-metadata.schema.ts                   # 元数据架构
+├── template-feedback.schema.ts                   # 反馈架构
+└── user-preference.schema.ts                     # 用户偏好架构
+```
+
+API端点：
+
+```
+src/backend/src/modules/prompt-templates/controllers/ # API控制器
+├── templates.controller.ts                           # 模板控制器
+├── template-library.controller.ts                    # 模板库控制器
+├── template-feedback.controller.ts                   # 反馈控制器
+├── template-versioning.controller.ts                 # 版本控制器
+└── template-sharing.controller.ts                    # 共享控制器
+```
+
+工具和CLI：
+
+```
+src/backend/src/tools/template-tools/ # 模板工具集
+├── template-validator.js             # 模板验证器
+├── template-converter.js             # 格式转换器
+├── template-migrator.js              # 版本迁移工具
+└── performance-analyzer.js           # 性能分析工具
+
+src/backend/src/cli/templates/ # 命令行工具
+├── create-template.cli.ts     # 创建模板命令
+├── import-template.cli.ts     # 导入模板命令
+├── export-template.cli.ts     # 导出模板命令
+└── analyze-template.cli.ts    # 分析模板命令
+```
+
+测试套件：
+
+```
+src/backend/src/modules/prompt-templates/__tests__/ # 测试套件
+├── unit/                                           # 单元测试
+│   ├── template-engine.spec.ts                     # 引擎测试
+│   ├── template-parser.spec.ts                     # 解析器测试
+│   ├── template-renderer.spec.ts                   # 渲染器测试
+│   └── template-registry.spec.ts                   # 注册表测试
+├── integration/                                    # 集成测试
+│   ├── domain-templates.spec.ts                    # 领域模板测试
+│   ├── user-customization.spec.ts                  # 用户自定义测试
+│   ├── context-aware.spec.ts                       # 上下文感知测试
+│   └── i18n.spec.ts                                # 国际化测试
+└── e2e/                                            # 端到端测试
+    ├── template-creation.e2e.ts                    # 创建流程测试
+    ├── template-application.e2e.ts                 # 应用流程测试
+    ├── template-sharing.e2e.ts                     # 共享流程测试
+    └── template-versioning.e2e.ts                  # 版本控制测试
+```
+
+文档和示例：
+
+```
+docs/prompt-templates/ # 文档
+├── architecture.md    # 架构文档
+├── api-reference.md   # API参考
+├── user-guide.md      # 用户指南
+├── developer-guide.md # 开发者指南
+├── best-practices.md  # 最佳实践
+└── examples/          # 示例
+    ├── python-django.md       # Python Django示例
+    ├── javascript-react.md    # JavaScript React示例
+    ├── java-spring.md         # Java Spring示例
+    ├── csharp-dotnet.md       # C# .NET示例
+    └── custom-template.md     # 自定义模板示例
+``` 
