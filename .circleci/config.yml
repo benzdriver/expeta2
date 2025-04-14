@@ -1,14 +1,21 @@
 version: 2.1
+orbs:
+  node: circleci/node@5
+
 executors:
   node-executor:
     docker:
       - image: cimg/node:18.20.5
     working_directory: ~/project
+
 jobs:
   install-backend:
     executor: node-executor
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - backend-npm-cache-{{ checksum "src/backend/package-lock.json" }}
       - run:
           name: Install Backend Dependencies
           command: |
@@ -18,10 +25,14 @@ jobs:
           paths:
             - src/backend/node_modules
           key: backend-npm-cache-{{ checksum "src/backend/package-lock.json" }}
+
   install-frontend:
     executor: node-executor
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - frontend-npm-cache-{{ checksum "src/frontend/package-lock.json" }}
       - run:
           name: Install Frontend Dependencies
           command: |
@@ -31,9 +42,100 @@ jobs:
           paths:
             - src/frontend/node_modules
           key: frontend-npm-cache-{{ checksum "src/frontend/package-lock.json" }}
+
+  test-backend:
+    executor: node-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - backend-npm-cache-{{ checksum "src/backend/package-lock.json" }}
+      - run:
+          name: Install Jest JUnit Reporter
+          command: |
+            cd src/backend
+            npm install jest-junit --save-dev
+      - run:
+          name: Run Backend Tests
+          command: |
+            cd src/backend
+            mkdir -p test-results
+            JEST_JUNIT_OUTPUT_DIR=./test-results/ npm test -- --ci --runInBand --reporters=default --reporters=jest-junit
+      - store_test_results:
+          path: src/backend/test-results
+      - store_artifacts:
+          path: src/backend/test-results
+
+  test-frontend:
+    executor: node-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - frontend-npm-cache-{{ checksum "src/frontend/package-lock.json" }}
+      - run:
+          name: Install Jest JUnit Reporter
+          command: |
+            cd src/frontend
+            npm install jest-junit --save-dev
+      - run:
+          name: Run Frontend Tests
+          command: |
+            cd src/frontend
+            mkdir -p test-results
+            JEST_JUNIT_OUTPUT_DIR=./test-results/ npm test -- --ci --runInBand --reporters=default --reporters=jest-junit
+      - store_test_results:
+          path: src/frontend/test-results
+      - store_artifacts:
+          path: src/frontend/test-results
+
+  build-backend:
+    executor: node-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - backend-npm-cache-{{ checksum "src/backend/package-lock.json" }}
+      - run:
+          name: Build Backend
+          command: |
+            cd src/backend
+            npm run build
+      - store_artifacts:
+          path: src/backend/dist
+          destination: backend-build
+
+  build-frontend:
+    executor: node-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - frontend-npm-cache-{{ checksum "src/frontend/package-lock.json" }}
+      - run:
+          name: Build Frontend
+          command: |
+            cd src/frontend
+            npm run build
+      - store_artifacts:
+          path: src/frontend/build
+          destination: frontend-build
+
 workflows:
   version: 2
-  install-dependencies:
+  build-test-deploy:
     jobs:
       - install-backend
       - install-frontend
+      - test-backend:
+          requires:
+            - install-backend
+      - test-frontend:
+          requires:
+            - install-frontend
+      - build-backend:
+          requires:
+            - test-backend
+      - build-frontend:
+          requires:
+            - test-frontend
