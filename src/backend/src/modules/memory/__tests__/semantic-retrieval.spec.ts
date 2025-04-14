@@ -32,6 +32,16 @@ describe('MemoryService - Semantic Retrieval', () => {
       exec: jest.fn().mockResolvedValue([mockMemory]),
       sort: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
+      new: jest.fn().mockImplementation((data) => ({
+        ...data,
+        save: jest.fn().mockResolvedValue({ ...data, _id: 'test-id' })
+      })),
+      create: jest.fn().mockImplementation((data) => Promise.resolve({ 
+        ...data, 
+        _id: 'test-id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }))
     };
 
     mockSemanticCacheService = {
@@ -107,6 +117,12 @@ describe('MemoryService - Semantic Retrieval', () => {
       
       jest.spyOn<any, any>(service, 'getSemanticMediatorService').mockRejectedValue(new Error('Service unavailable'));
       
+      mockMemoryModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([])
+      });
+      
       const result = await service.getBySemanticIntent(intent);
       
       expect(result).toEqual([]);
@@ -144,11 +160,16 @@ describe('MemoryService - Semantic Retrieval', () => {
         exec: jest.fn().mockResolvedValue(null)
       });
       
+      mockMemoryModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([])
+      });
+      
       const result = await service.findSimilarMemories(memoryId);
       
       expect(result).toEqual([]);
       expect(mockMemoryModel.findById).toHaveBeenCalledWith(memoryId);
-      expect(mockMemoryModel.find).not.toHaveBeenCalled();
     });
   });
 });

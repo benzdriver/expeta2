@@ -43,15 +43,29 @@ describe('MemoryService', () => {
   };
 
   beforeEach(async () => {
-    mockMemoryModel = {
-      new: jest.fn().mockResolvedValue(mockMemory),
-      constructor: jest.fn().mockResolvedValue(mockMemory),
-      find: jest.fn(),
-      findOne: jest.fn(),
-      deleteOne: jest.fn(),
-      save: jest.fn(),
-      exec: jest.fn()
-    };
+    mockMemoryModel = jest.fn().mockImplementation((data) => {
+      return {
+        ...data,
+        save: jest.fn().mockResolvedValue({
+          ...data,
+          _id: 'test-id',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+      };
+    });
+    
+    mockMemoryModel.find = jest.fn();
+    mockMemoryModel.findOne = jest.fn();
+    mockMemoryModel.findById = jest.fn();
+    mockMemoryModel.deleteOne = jest.fn();
+    mockMemoryModel.create = jest.fn().mockImplementation((data) => Promise.resolve({
+      ...data,
+      _id: 'test-id',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }));
+    mockMemoryModel.exec = jest.fn();
 
     const mockSemanticCacheService = {
       get: jest.fn(),
@@ -100,8 +114,8 @@ describe('MemoryService', () => {
         status: 'active'
       };
 
-      mockMemoryModel.new = jest.fn().mockImplementation(() => ({
-        ...mockMemory,
+      mockMemoryModel.mockImplementationOnce((data) => ({
+        ...data,
         save: jest.fn().mockResolvedValue({
           _id: 'test-id',
           type: MemoryType.REQUIREMENT,
@@ -133,8 +147,8 @@ describe('MemoryService', () => {
         status: 'active'
       };
 
-      mockMemoryModel.new = jest.fn().mockImplementation(() => ({
-        ...mockMemory,
+      mockMemoryModel.mockImplementationOnce((data) => ({
+        ...data,
         save: jest.fn().mockRejectedValue(new Error('Database error'))
       }));
 
@@ -245,13 +259,17 @@ describe('MemoryService', () => {
       
       const result = await service.getRelatedMemories(query);
       expect(result).toEqual(mockResults);
-      expect(mockMemoryModel.find).toHaveBeenCalledWith({
+      
+      const expectedQuery = {
         $or: [
           { 'metadata.title': { $regex: query, $options: 'i' } },
           { 'content.text': { $regex: query, $options: 'i' } },
           { 'content.description': { $regex: query, $options: 'i' } },
+          { 'semanticMetadata.description': { $regex: query, $options: 'i' } }
         ]
-      });
+      };
+      
+      expect(mockMemoryModel.find).toHaveBeenCalledWith(expect.objectContaining(expectedQuery));
     });
   });
 
@@ -286,8 +304,8 @@ describe('MemoryService', () => {
         semanticTracking: { key: 'value' }
       };
 
-      mockMemoryModel.new = jest.fn().mockImplementation(() => ({
-        ...mockMemory,
+      mockMemoryModel.mockImplementationOnce((data) => ({
+        ...data,
         type: MemoryType.EXPECTATION,
         content: expectation,
         save: jest.fn().mockResolvedValue({
@@ -323,8 +341,8 @@ describe('MemoryService', () => {
         tags: ['code', 'test']
       };
 
-      mockMemoryModel.new = jest.fn().mockImplementation(() => ({
-        ...mockMemory,
+      mockMemoryModel.mockImplementationOnce((modelData) => ({
+        ...modelData,
         type: data.type,
         content: data.content,
         metadata: {

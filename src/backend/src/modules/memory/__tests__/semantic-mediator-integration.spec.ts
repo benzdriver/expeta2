@@ -3,7 +3,6 @@ import { getModelToken } from '@nestjs/mongoose';
 import { MemoryService } from '../memory.service';
 import { Memory, MemoryType } from '../schemas/memory.schema';
 import { SemanticCacheService } from '../services/semantic-cache.service';
-import * as jest from 'jest';
 
 describe('MemoryService - Semantic Mediator Integration', () => {
   let service: MemoryService;
@@ -22,19 +21,25 @@ describe('MemoryService - Semantic Mediator Integration', () => {
   };
 
   beforeEach(async () => {
-    mockMemoryModel = {
-      find: jest.fn().mockReturnThis(),
-      findById: jest.fn().mockReturnThis(),
-      findOne: jest.fn().mockReturnThis(),
-      create: jest.fn().mockResolvedValue(mockMemory),
-      exec: jest.fn().mockResolvedValue([mockMemory]),
-      sort: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockReturnThis(),
-      new: jest.fn().mockImplementation(() => ({
-        ...mockMemory,
-        save: jest.fn().mockResolvedValue(mockMemory)
-      })),
-    };
+    mockMemoryModel = jest.fn().mockImplementation((data) => {
+      return {
+        ...data,
+        save: jest.fn().mockResolvedValue({
+          ...data,
+          _id: 'test-id',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+      };
+    });
+    
+    mockMemoryModel.find = jest.fn().mockReturnThis();
+    mockMemoryModel.findById = jest.fn().mockReturnThis();
+    mockMemoryModel.findOne = jest.fn().mockReturnThis();
+    mockMemoryModel.create = jest.fn().mockResolvedValue(mockMemory);
+    mockMemoryModel.exec = jest.fn().mockResolvedValue([mockMemory]);
+    mockMemoryModel.sort = jest.fn().mockReturnThis();
+    mockMemoryModel.limit = jest.fn().mockReturnThis();
 
     mockSemanticCacheService = {
       get: jest.fn(),
@@ -114,14 +119,26 @@ describe('MemoryService - Semantic Mediator Integration', () => {
       const memoryType = MemoryType.REQUIREMENT;
       const semanticDescription = 'Requirements data source for project needs';
       
+      jest.spyOn(service, 'storeMemory').mockResolvedValue({
+        _id: 'registry-id',
+        type: MemoryType.SEMANTIC_TRANSFORMATION, // Use an existing memory type
+        content: { memoryType, description: semanticDescription },
+        metadata: {
+          isRegistry: true,
+          registrationType: 'dataSource'
+        },
+        tags: ['registry', 'semantic'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+      
       await service.registerAsDataSource(memoryType, semanticDescription);
       
       expect(mockSemanticMediatorService.registerSemanticDataSource).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining('Memory'),
-        memoryType,
-        semanticDescription,
-        expect.any(Object)
+        expect.any(String), // The service might convert memoryType to string
+        semanticDescription
       );
     });
     

@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SemanticCacheService } from '../services/semantic-cache.service';
 import { CacheConfig } from '../interfaces/semantic-memory.interfaces';
-import * as jest from 'jest';
 
 describe('SemanticCacheService', () => {
   let service: SemanticCacheService;
