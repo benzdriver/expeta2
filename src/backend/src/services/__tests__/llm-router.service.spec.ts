@@ -39,7 +39,10 @@ describe('LlmRouterService', () => {
             }),
           },
         },
-        HttpService,
+        {
+          provide: HttpService,
+          useValue: { post: jest.fn() }, // Provide a mock object with a jest function
+        },
       ],
     }).compile();
 
@@ -60,13 +63,14 @@ describe('LlmRouterService', () => {
 
   describe('generateContent', () => {
     beforeEach(() => {
+      (httpService.post as jest.Mock).mockReset(); // Reset mock before each test in this block
+
     });
 
 
     const prompt = 'Test prompt';
     const options = { temperature: 0.7 };
 
-      jest.spyOn(httpService, 'post'); // Spy on the method before resetting/mocking
 
     const mockAnthropicSuccessResponse: AxiosResponse<AnthropicMessageResponse> = {
       data: {
