@@ -4,6 +4,7 @@ import { SemanticMediatorController } from './semantic-mediator.controller';
 import { LlmRouterModule } from '../../services/llm-router.module';
 import { MemoryModule } from '../memory/memory.module';
 import { OrchestratorModule } from '../orchestrator/orchestrator.module';
+import { GeneratorModule } from '../generator/generator.module';
 
 import { SemanticRegistryService } from './components/semantic-registry/semantic-registry.service';
 import { TransformationEngineService } from './components/transformation-engine/transformation-engine.service';
@@ -16,6 +17,7 @@ import { HumanInTheLoopService } from './components/human-in-the-loop/human-in-t
     LlmRouterModule, // Use the renamed LlmRouterModule
     MemoryModule,
     forwardRef(() => OrchestratorModule),
+    forwardRef(() => GeneratorModule),
   ],
   controllers: [SemanticMediatorController],
   providers: [

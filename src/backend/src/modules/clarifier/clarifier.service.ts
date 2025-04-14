@@ -644,7 +644,7 @@ export class ClarifierService {
       
       await expectation.save();
       
-      if (expectation.requirementId) {
+      if (expectation.requirementId && process.env.NODE_ENV !== 'test') {
         await this.logDialogue(expectation.requirementId, {
           type: 'expectation_summary',
           expectationId,

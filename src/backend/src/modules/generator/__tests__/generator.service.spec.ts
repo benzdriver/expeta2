@@ -345,7 +345,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe(expectationId);
       expect(result.files).toHaveLength(1);
       expect(result.files[0].path).toBe('test.js');
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型，生成相应的代码实现'),
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
@@ -445,7 +445,7 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked prompt template');
 
-      const mockSave = jest.fn().mockResolvedValueOnce({
+      const mockResult = {
         _id: 'test-code-id',
         expectationId: expectationId,
         files: [{ path: 'enhanced.js', content: 'console.log("enhanced")' }],
@@ -459,11 +459,9 @@ describe('GeneratorService', () => {
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
-
-      jest.spyOn(codeModel.prototype, 'constructor').mockImplementationOnce(() => ({
-        save: mockSave
-      }));
+      };
+      
+      jest.spyOn(service as any, 'createCode').mockResolvedValueOnce(mockResult);
 
       const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
 
@@ -494,7 +492,7 @@ describe('GeneratorService', () => {
         }),
       );
 
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -519,7 +517,7 @@ describe('GeneratorService', () => {
       const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
 
       expect(result).toBeDefined();
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型和语义分析结果，生成相应的代码实现'),
       );
 
@@ -596,7 +594,7 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked architecture prompt');
 
-      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
+      const mockResult = {
         _id: 'test-code-id',
         expectationId: expectationId,
         files: [{ path: 'architecture.js', content: 'console.log("architecture")' }],
@@ -609,7 +607,9 @@ describe('GeneratorService', () => {
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      };
+      
+      jest.spyOn(service as any, 'createCode').mockResolvedValueOnce(mockResult);
 
       const result = await service.generateCodeWithArchitecture(
         expectationId,
@@ -653,7 +653,7 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked test suite prompt');
 
-      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
+      const mockResult = {
         _id: 'test-code-id',
         expectationId: 'test-expectation-id',
         files: [{ path: 'test.test.js', content: 'test("should work", () => {})' }],
@@ -668,7 +668,9 @@ describe('GeneratorService', () => {
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      };
+      
+      jest.spyOn(service as any, 'createCode').mockResolvedValueOnce(mockResult);
 
       const result = await service.generateTestSuite(codeId, testRequirements);
 
@@ -705,7 +707,7 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked refactoring prompt');
 
-      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
+      const mockSave = jest.fn().mockResolvedValueOnce({
         _id: 'test-code-id',
         expectationId: 'test-expectation-id',
         files: [{ path: 'refactored.js', content: 'console.log("refactored")' }],
@@ -757,7 +759,7 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked optimization prompt');
 
-      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
+      const mockSave = jest.fn().mockResolvedValueOnce({
         _id: 'test-code-id',
         expectationId: 'test-expectation-id',
         files: [{ path: 'optimized.js', content: 'console.log("optimized")' }],
@@ -772,6 +774,7 @@ describe('GeneratorService', () => {
         },
         createdAt: new Date(),
         updatedAt: new Date(),
+      });
 
       const result = await service.optimizeCode(codeId, semanticFeedback);
 
@@ -807,7 +810,7 @@ describe('GeneratorService', () => {
         }),
       );
 
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
