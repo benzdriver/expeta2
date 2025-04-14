@@ -587,7 +587,6 @@ export class MemoryService {
     this.semanticCacheService.clear();
     this.logger.log('Memory cache cleared');
   }
-<<<<<<< HEAD
 
   /**
    * 使用语义转换存储数据
