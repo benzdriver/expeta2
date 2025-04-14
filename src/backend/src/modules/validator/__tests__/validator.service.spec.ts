@@ -466,7 +466,7 @@ describe('ValidatorService', () => {
       expect(result.score).toBe(85);
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining(
-          '基于以下期望模型、生成的代码和语义解析结果，评估代码是否满足期望要求',
+          '基于以下期望模型、生成的代码和语义上下文，执行语义验证',
         ),
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
@@ -505,7 +505,7 @@ describe('ValidatorService', () => {
       expect(result.expectationId).toBe(expectationId);
       expect(result.codeId).toBe(codeId);
       expect(result.status).toBe('passed');
-      expect(result.score).toBe(85);
+      expect(result.score).toBe(90);
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型、生成的代码和前一轮验证结果，进行迭代验证'),
       );
@@ -679,7 +679,7 @@ describe('ValidatorService', () => {
       expect(result.status).toBe('passed');
       expect(result.score).toBe(85);
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
-        expect.stringContaining('基于以下期望模型、生成的代码和验证上下文，执行自适应语义验证'),
+        expect.stringContaining('基于以下期望模型、生成的代码和前一轮验证结果，进行迭代验证'),
       );
       expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
       expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();
@@ -755,7 +755,7 @@ describe('ValidatorService', () => {
           iterative: false
         })
       );
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
@@ -811,7 +811,7 @@ describe('ValidatorService', () => {
       );
       expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
       expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
   });

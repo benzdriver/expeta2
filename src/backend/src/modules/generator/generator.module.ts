@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GeneratorController } from './generator.controller';
 import { GeneratorService } from './generator.service';
@@ -12,7 +12,7 @@ import { SemanticMediatorModule } from '../semantic-mediator/semantic-mediator.m
     MongooseModule.forFeature([{ name: Code.name, schema: CodeSchema }]),
     LlmRouterModule,
     MemoryModule,
-    SemanticMediatorModule,
+    forwardRef(() => SemanticMediatorModule),
   ],
   controllers: [GeneratorController],
   providers: [GeneratorService],

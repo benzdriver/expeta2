@@ -18,81 +18,108 @@ describe('ClarifierService', () => {
   let semanticMediatorService: SemanticMediatorService;
 
   beforeEach(async () => {
-    const mockRequirementModel = {
-      new: jest.fn().mockResolvedValue({
+    const mockRequirementModel = function() {
+      this.save = jest.fn().mockResolvedValue({
+        _id: 'test-id',
+        title: 'Test Requirement',
+        text: 'Test requirement text',
+        status: 'initial',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        metadata: {
+          requirementId: 'test-uuid',
+          creationTimestamp: expect.any(String),
+          version: '1.0',
+          source: 'clarifier_service',
+        },
+      });
+      return this;
+    };
+    
+    mockRequirementModel.find = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue([
+        {
+          _id: 'test-id',
+          title: 'Test Requirement',
+          text: 'Test requirement text',
+          status: 'initial',
+        },
+      ]),
+    });
+    
+    mockRequirementModel.findById = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({
+        _id: 'test-id',
+        title: 'Test Requirement',
+        text: 'Test requirement text',
+        status: 'initial',
+        clarifications: [],
         save: jest.fn().mockResolvedValue({
           _id: 'test-id',
           title: 'Test Requirement',
           text: 'Test requirement text',
-          status: 'initial',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          metadata: {
-            requirementId: 'test-uuid',
-            creationTimestamp: expect.any(String),
-            version: '1.0',
-            source: 'clarifier_service',
-          },
-        }),
-      }),
-      find: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue([
-          {
-            _id: 'test-id',
-            title: 'Test Requirement',
-            text: 'Test requirement text',
-            status: 'initial',
-          },
-        ]),
-      }),
-      findById: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({
-          _id: 'test-id',
-          title: 'Test Requirement',
-          text: 'Test requirement text',
-          status: 'initial',
-          clarifications: [],
-          save: jest.fn().mockResolvedValue({
-            _id: 'test-id',
-            title: 'Test Requirement',
-            text: 'Test requirement text',
-            status: 'clarifying',
-            clarifications: [
-              {
-                questionId: 'test-question-id',
-                answer: 'Test answer',
-                timestamp: new Date(),
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              },
-            ],
-            metadata: {
-              lastClarificationTimestamp: expect.any(String),
-              clarificationRounds: 1,
-              lastQuestionId: 'test-question-id',
+          status: 'clarifying',
+          clarifications: [
+            {
+              questionId: 'test-question-id',
+              answer: 'Test answer',
+              timestamp: new Date(),
+              createdAt: new Date(),
+              updatedAt: new Date(),
             },
-          }),
+          ],
+          metadata: {
+            lastClarificationTimestamp: expect.any(String),
+            clarificationRounds: 1,
+            lastQuestionId: 'test-question-id',
+          },
         }),
       }),
-      findByIdAndUpdate: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({
-          _id: 'test-id',
-          title: 'Updated Requirement',
-          text: 'Updated requirement text',
-          status: 'updated',
-        }),
+    });
+    
+    mockRequirementModel.findByIdAndUpdate = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({
+        _id: 'test-id',
+        title: 'Updated Requirement',
+        text: 'Updated requirement text',
+        status: 'updated',
       }),
-      findByIdAndDelete: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({
-          _id: 'test-id',
-          title: 'Deleted Requirement',
-          text: 'Deleted requirement text',
-        }),
+    });
+    
+    mockRequirementModel.findByIdAndDelete = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({
+        _id: 'test-id',
+        title: 'Deleted Requirement',
+        text: 'Deleted requirement text',
       }),
-    };
+    });
 
-    const mockExpectationModel = {
-      new: jest.fn().mockResolvedValue({
+    const mockExpectationModel = function() {
+      this.save = jest.fn().mockResolvedValue({
+        _id: 'test-expectation-id',
+        requirementId: 'test-id',
+        model: {
+          id: 'root',
+          name: 'Root Expectation',
+          description: 'Root expectation description',
+          children: [],
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      return this;
+    };
+    
+    mockExpectationModel.findOne = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({
+        _id: 'test-expectation-id',
+        requirementId: 'test-id',
+        model: {
+          id: 'root',
+          name: 'Root Expectation',
+          description: 'Root expectation description',
+          children: [],
+        },
         save: jest.fn().mockResolvedValue({
           _id: 'test-expectation-id',
           requirementId: 'test-id',
@@ -102,12 +129,24 @@ describe('ClarifierService', () => {
             description: 'Root expectation description',
             children: [],
           },
+          summary: 'Test summary',
           createdAt: new Date(),
           updatedAt: new Date(),
         }),
       }),
-      findOne: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({
+    });
+    
+    mockExpectationModel.findById = jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({
+        _id: 'test-expectation-id',
+        requirementId: 'test-id',
+        model: {
+          id: 'root',
+          name: 'Root Expectation',
+          description: 'Root expectation description',
+          children: [],
+        },
+        save: jest.fn().mockResolvedValue({
           _id: 'test-expectation-id',
           requirementId: 'test-id',
           model: {
@@ -116,21 +155,12 @@ describe('ClarifierService', () => {
             description: 'Root expectation description',
             children: [],
           },
+          summary: 'Test summary',
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
       }),
-      findById: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({
-          _id: 'test-expectation-id',
-          requirementId: 'test-id',
-          model: {
-            id: 'root',
-            name: 'Root Expectation',
-            description: 'Root expectation description',
-            children: [],
-          },
-        }),
-      }),
-    };
+    });
 
     const mockLlmRouterService = {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
@@ -444,7 +474,7 @@ describe('ClarifierService', () => {
         expect.stringContaining('生成5个关键澄清问题')
       );
       
-      expect(llmService.generateContent).not.toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('分析以下需求，并生成5个关键澄清问题'),
         expect.any(Object),
       );
@@ -558,7 +588,7 @@ describe('ClarifierService', () => {
         expect.stringContaining('判断是否需要更多澄清')
       );
       
-      expect(llmService.generateContent).not.toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('分析以下需求及其澄清问题和答案'),
         expect.any(Object),
       );
@@ -700,7 +730,7 @@ describe('ClarifierService', () => {
         })
       );
       
-      expect(llmService.generateContent).not.toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('基于以下需求及其澄清信息，生成结构化的纯语义期望模型')
       );
       
@@ -940,7 +970,7 @@ describe('ClarifierService', () => {
         })
       );
       
-      expect(llmService.generateContent).not.toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('分析以下多轮对话的需求澄清过程'),
         expect.any(Object),
       );
@@ -1191,7 +1221,7 @@ describe('ClarifierService', () => {
         expect.any(Object)
       );
       
-      expect(llmService.generateContent).not.toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('生成期望模型摘要'),
         expect.any(Object)
       );

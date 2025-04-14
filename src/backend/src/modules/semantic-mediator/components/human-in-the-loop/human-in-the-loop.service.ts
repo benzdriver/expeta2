@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { IHumanInTheLoop } from '../../interfaces/human-in-the-loop.interface';
 import { MemoryService } from '../../../memory/memory.service';
 import { MemoryType } from '../../../memory/schemas/memory.schema';
-import { LlmService } from '../../../../services/llm.service';
+import { LlmRouterService } from '../../../../services/llm-router.service';
 
 /**
  * 人机协作系统服务
@@ -16,7 +16,7 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
 
   constructor(
     private readonly memoryService: MemoryService,
-    private readonly llmService: LlmService,
+    private readonly llmRouterService: LlmRouterService,
   ) {}
 
   /**
@@ -382,7 +382,7 @@ ${JSON.stringify(analysisData, null, 2)}
 `;
 
     try {
-      const analysisResult = await this.llmService.generateContent(analysisPrompt, {
+      const analysisResult = await this.llmRouterService.generateContent(analysisPrompt, {
         temperature: 0.3,
         maxTokens: 2000,
       });

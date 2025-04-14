@@ -89,10 +89,52 @@ describe('SemanticMediatorService Basic Tests', () => {
         { provide: LlmRouterService, useValue: mockLlmRouterService },
         { provide: MemoryService, useValue: memoryServiceMock },
         { provide: SemanticRegistryService, useValue: {} },
-        { provide: TransformationEngineService, useValue: {} },
-        { provide: IntelligentCacheService, useValue: {} },
-        { provide: MonitoringSystemService, useValue: {} },
-        { provide: HumanInTheLoopService, useValue: {} },
+        { 
+          provide: TransformationEngineService, 
+          useValue: { 
+            executeTransformation: jest.fn().mockResolvedValue({
+              result: 'transformed data',
+              metadata: { quality: 0.9 }
+            })
+          } 
+        },
+        { 
+          provide: IntelligentCacheService, 
+          useValue: { 
+            retrieveTransformationPath: jest.fn().mockResolvedValue({
+              path: ['moduleA', 'moduleB'],
+              transformations: [{ from: 'moduleA', to: 'moduleB', quality: 0.9 }]
+            }),
+            storeTransformationPath: jest.fn().mockResolvedValue(true),
+            getCachedTransformation: jest.fn().mockResolvedValue(null),
+            storeCachedTransformation: jest.fn().mockResolvedValue(true),
+            updateUsageStatistics: jest.fn().mockResolvedValue(true)
+          } 
+        },
+        { 
+          provide: MonitoringSystemService, 
+          useValue: { 
+            logError: jest.fn().mockResolvedValue({}),
+            trackOperation: jest.fn().mockResolvedValue({}),
+            recordMetric: jest.fn().mockResolvedValue({}),
+            logTransformationEvent: jest.fn().mockResolvedValue({}),
+            createDebugSession: jest.fn().mockResolvedValue({ sessionId: 'debug-123' }),
+            logDebugData: jest.fn().mockResolvedValue({})
+          } 
+        },
+        { 
+          provide: HumanInTheLoopService, 
+          useValue: {
+            requestHumanFeedback: jest.fn().mockResolvedValue({
+              feedback: 'Test human feedback',
+              approved: true
+            }),
+            recordHumanDecision: jest.fn().mockResolvedValue(true),
+            getHumanFeedbackHistory: jest.fn().mockResolvedValue([
+              { timestamp: new Date(), feedback: 'Previous feedback', approved: true }
+            ])
+          } 
+        },
       ],
     }).compile();
 
