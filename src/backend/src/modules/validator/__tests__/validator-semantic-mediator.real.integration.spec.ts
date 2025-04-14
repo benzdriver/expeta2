@@ -110,7 +110,7 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
       }),
     };
     
-    const mockLlmService = {
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockResolvedValue('{"status":"passed","score":90,"details":[]}'),
     };
     
@@ -119,7 +119,7 @@ describe('ValidatorService and SemanticMediatorService Real Integration', () => 
         ValidatorService,
         SemanticMediatorService,
         { provide: MemoryService, useValue: mockMemoryService },
-        { provide: LlmRouterService, useValue: mockLlmService },
+        { provide: LlmRouterService, useValue: mockLlmRouterService },
         { provide: SemanticRegistryService, useValue: semanticRegistryService },
         { provide: TransformationEngineService, useValue: transformationEngineService },
         { provide: IntelligentCacheService, useValue: intelligentCacheService },
