@@ -47,7 +47,7 @@ jobs:
         npm run build
         
     - name: Upload Backend Coverage
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       if: always()
       with:
         name: backend-coverage
@@ -55,7 +55,7 @@ jobs:
         retention-days: 30
     
     - name: Upload Test Results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       if: always()
       with:
         name: backend-test-results
@@ -98,7 +98,7 @@ jobs:
         npm run build
         
     - name: Upload Frontend Coverage
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       if: always()
       with:
         name: frontend-coverage
@@ -133,7 +133,7 @@ jobs:
         npx playwright test
     
     - name: Upload Playwright Report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       if: always()
       with:
         name: playwright-report
@@ -141,7 +141,7 @@ jobs:
         retention-days: 30
     
     - name: Upload Playwright Traces
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       if: always()
       with:
         name: playwright-traces
