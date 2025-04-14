@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { Requirement } from './schemas/requirement.schema';
 import { Expectation } from './schemas/expectation.schema';
 import { CreateRequirementDto, UpdateRequirementDto } from './dto';
-import { LlmService } from '../../services/llm.service';
+import { LlmRouterService } from '../../services/llm-router.service';
 import { MemoryService } from '../memory/memory.service';
 import { SemanticMediatorService } from '../semantic-mediator/semantic-mediator.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -16,7 +16,7 @@ export class ClarifierService {
   constructor(
     @InjectModel(Requirement.name) private requirementModel: Model<Requirement>,
     @InjectModel(Expectation.name) private expectationModel: Model<Expectation>,
-    private readonly llmService: LlmService,
+    private readonly llmRouterService: LlmRouterService,
     private readonly memoryService: MemoryService,
     private readonly semanticMediatorService: SemanticMediatorService,
   ) {
@@ -377,7 +377,7 @@ export class ClarifierService {
       - dialogueEffectiveness: 对话有效性评估，包含score、strengths、weaknesses和recommendations
     `;
     
-    const analysisText = await this.llmService.generateContent(analysisPrompt, {
+    const analysisText = await this.llmRouterService.generateContent(analysisPrompt, {
       systemPrompt: `你是一个专业的软件需求分析师，擅长将模糊的需求转化为清晰的期望模型。
       在多轮对话中，你应该记住之前的交流内容，并基于这些信息提出更有针对性的问题。
       每轮对话结束时，你应该明确总结你对需求的理解，并请用户确认。`

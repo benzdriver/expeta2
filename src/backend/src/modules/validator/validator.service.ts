@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Validation } from './schemas/validation.schema';
-import { LlmService } from '../../services/llm.service';
+import { LlmRouterService } from '../../services/llm-router.service';
 import { MemoryService } from '../memory/memory.service';
 import { MemoryType } from '../memory/schemas/memory.schema';
 import { SemanticMediatorService } from '../semantic-mediator/semantic-mediator.service';
@@ -11,7 +11,7 @@ import { SemanticMediatorService } from '../semantic-mediator/semantic-mediator.
 export class ValidatorService {
   constructor(
     @InjectModel(Validation.name) private validationModel: Model<Validation>,
-    private readonly llmService: LlmService,
+    private readonly llmRouterService: LlmRouterService,
     private readonly memoryService: MemoryService,
     private readonly semanticMediatorService: SemanticMediatorService,
   ) {}
@@ -54,7 +54,7 @@ export class ValidatorService {
       }
     `;
 
-    const validationResultText = await this.llmService.generateContent(validationPrompt);
+    const validationResultText = await this.llmRouterService.generateContent(validationPrompt);
     const validationResult = JSON.parse(validationResultText);
 
     const validation = new this.validationModel({
@@ -161,7 +161,7 @@ export class ValidatorService {
     );
     
     logger.debug('Sending transformed validation prompt to LLM service');
-    const validationResultText = await this.llmService.generateContent(transformedPrompt);
+    const validationResultText = await this.llmRouterService.generateContent(transformedPrompt);
     
     let validationResult;
     try {
@@ -270,7 +270,7 @@ export class ValidatorService {
     );
     
     logger.debug('Sending transformed validation prompt to LLM service');
-    const validationResultText = await this.llmService.generateContent(transformedPrompt);
+    const validationResultText = await this.llmRouterService.generateContent(transformedPrompt);
     
     let validationResult;
     try {
@@ -410,7 +410,7 @@ export class ValidatorService {
     `;
     
     logger.debug('Sending iterative validation prompt to LLM service');
-    const validationResultText = await this.llmService.generateContent(validationPrompt);
+    const validationResultText = await this.llmRouterService.generateContent(validationPrompt);
     
     let validationResult;
     try {
@@ -525,7 +525,7 @@ export class ValidatorService {
     `;
     
     logger.debug('Sending feedback generation prompt to LLM service');
-    const feedbackText = await this.llmService.generateContent(feedbackPrompt);
+    const feedbackText = await this.llmRouterService.generateContent(feedbackPrompt);
     
     let feedback;
     try {
@@ -659,7 +659,7 @@ export class ValidatorService {
     );
     
     logger.debug('Sending adaptive validation prompt to LLM service');
-    const validationResultText = await this.llmService.generateContent(transformedPrompt);
+    const validationResultText = await this.llmRouterService.generateContent(transformedPrompt);
     
     let validationResult;
     try {

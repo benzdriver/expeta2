@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { ClarifierService } from '../clarifier.service';
 import { Requirement } from '../schemas/requirement.schema';
 import { Expectation } from '../schemas/expectation.schema';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediator.service';
 import { CreateRequirementDto } from '../dto';
@@ -13,7 +13,7 @@ describe('ClarifierService', () => {
   let service: ClarifierService;
   let requirementModel: Model<Requirement>;
   let expectationModel: Model<Expectation>;
-  let llmService: LlmService;
+  let llmRouterService: LlmRouterService;
   let memoryService: MemoryService;
   let semanticMediatorService: SemanticMediatorService;
 
@@ -319,7 +319,7 @@ describe('ClarifierService', () => {
           useValue: mockExpectationModel,
         },
         {
-          provide: LlmService,
+          provide: LlmRouterService,
           useValue: mockLlmService,
         },
         {
@@ -336,7 +336,7 @@ describe('ClarifierService', () => {
     service = module.get<ClarifierService>(ClarifierService);
     requirementModel = module.get<Model<Requirement>>(getModelToken(Requirement.name));
     expectationModel = module.get<Model<Expectation>>(getModelToken(Expectation.name));
-    llmService = module.get<LlmService>(LlmService);
+    llmRouterService = module.get<LlmRouterService>(LlmRouterService);
     memoryService = module.get<MemoryService>(MemoryService);
     semanticMediatorService = module.get<SemanticMediatorService>(SemanticMediatorService);
   });
@@ -434,7 +434,7 @@ describe('ClarifierService', () => {
         expect.stringContaining('生成5个关键澄清问题')
       );
       
-      expect(llmService.generateContent).not.toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('分析以下需求，并生成5个关键澄清问题'),
         expect.any(Object)
       );
@@ -548,7 +548,7 @@ describe('ClarifierService', () => {
         expect.stringContaining('判断是否需要更多澄清')
       );
       
-      expect(llmService.generateContent).not.toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('分析以下需求及其澄清问题和答案'),
         expect.any(Object)
       );
@@ -690,7 +690,7 @@ describe('ClarifierService', () => {
         })
       );
       
-      expect(llmService.generateContent).not.toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('基于以下需求及其澄清信息，生成结构化的纯语义期望模型')
       );
       
@@ -856,7 +856,7 @@ describe('ClarifierService', () => {
       const result = await service.analyzeClarificationProgress(requirementId);
 
       expect(result).toBeDefined();
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('分析以下需求及其澄清问题和答案'),
         expect.any(Object)
       );
@@ -930,7 +930,7 @@ describe('ClarifierService', () => {
         })
       );
       
-      expect(llmService.generateContent).not.toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('分析以下多轮对话的需求澄清过程'),
         expect.any(Object)
       );
@@ -1181,7 +1181,7 @@ describe('ClarifierService', () => {
         expect.any(Object)
       );
       
-      expect(llmService.generateContent).not.toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).not.toHaveBeenCalledWith(
         expect.stringContaining('生成期望模型摘要'),
         expect.any(Object)
       );

@@ -11,8 +11,8 @@ interface LlmRequestOptions {
 }
 
 @Injectable()
-export class LlmService {
-  private readonly logger = new Logger(LlmService.name);
+export class LlmRouterService {
+  private readonly logger = new Logger(LlmRouterService.name);
   private apiKey: string;
   private apiUrl: string;
   private defaultModel: string;
