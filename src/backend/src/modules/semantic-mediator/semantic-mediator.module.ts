@@ -12,7 +12,7 @@ import { MonitoringSystemService } from './components/monitoring-system/monitori
 import { HumanInTheLoopService } from './components/human-in-the-loop/human-in-the-loop.service';
 
 @Module({
-  imports: [LlmModule, MemoryModule, forwardRef(() => OrchestratorModule)],
+  imports: [LlmModule, forwardRef(() => MemoryModule), forwardRef(() => OrchestratorModule)],
   controllers: [SemanticMediatorController],
   providers: [
     SemanticMediatorService,
