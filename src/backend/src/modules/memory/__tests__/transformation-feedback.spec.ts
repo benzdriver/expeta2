@@ -12,13 +12,13 @@ describe('MemoryService - Transformation Feedback', () => {
   const mockTransformation = {
     _id: 'transformation-id',
     type: MemoryType.SEMANTIC_TRANSFORMATION,
-    content: { 
+    content: {
       sourceData: { text: 'Original text' },
-      transformedData: { text: 'Transformed text' }
+      transformedData: { text: 'Transformed text' },
     },
-    metadata: { 
+    metadata: {
       transformationId: 'test-transformation-123',
-      timestamp: new Date()
+      timestamp: new Date(),
     },
     tags: ['semantic_transformation'],
     createdAt: new Date(),
@@ -32,17 +32,19 @@ describe('MemoryService - Transformation Feedback', () => {
       findOne: jest.fn().mockReturnThis(),
       findByIdAndUpdate: jest.fn().mockResolvedValue({ ...mockTransformation }),
       findByIdAndDelete: jest.fn().mockReturnThis(),
-      create: jest.fn().mockImplementation((data) => Promise.resolve({
-        ...data,
-        _id: 'new-id',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })),
+      create: jest.fn().mockImplementation((data) =>
+        Promise.resolve({
+          ...data,
+          _id: 'new-id',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ),
       exec: jest.fn().mockResolvedValue([mockTransformation]),
       sort: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
       deleteOne: jest.fn().mockResolvedValue({ deletedCount: 1 }),
-      save: jest.fn().mockImplementation(function() {
+      save: jest.fn().mockImplementation(function () {
         return Promise.resolve(this);
       }),
     };
@@ -89,7 +91,7 @@ describe('MemoryService - Transformation Feedback', () => {
       metadata: {
         hasFeedback: true,
         lastFeedbackTimestamp: expect.any(Date),
-        lastFeedbackRating: 4
+        lastFeedbackRating: 4,
       },
       tags: [],
       createdAt: new Date(),
@@ -103,23 +105,25 @@ describe('MemoryService - Transformation Feedback', () => {
       suggestedImprovements: ['Better handling of edge cases'],
       providedBy: 'test-user',
       timestamp: new Date(),
-      category: 'accuracy'
+      category: 'accuracy',
     };
 
     await service.recordTransformationFeedback('test-transformation-123', feedback);
 
     expect(mockMemoryModel.find).toHaveBeenCalledWith({
       type: MemoryType.SEMANTIC_TRANSFORMATION,
-      'metadata.transformationId': 'test-transformation-123'
+      'metadata.transformationId': 'test-transformation-123',
     });
 
-    expect(service.storeMemory).toHaveBeenCalledWith(expect.objectContaining({
-      type: MemoryType.SEMANTIC_FEEDBACK,
-      content: expect.objectContaining({
-        transformationId: 'test-transformation-123',
-        feedback
-      })
-    }));
+    expect(service.storeMemory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MemoryType.SEMANTIC_FEEDBACK,
+        content: expect.objectContaining({
+          transformationId: 'test-transformation-123',
+          feedback,
+        }),
+      }),
+    );
 
     expect(service.updateMemory).toHaveBeenCalledWith(
       MemoryType.SEMANTIC_TRANSFORMATION,
@@ -127,9 +131,9 @@ describe('MemoryService - Transformation Feedback', () => {
       expect.objectContaining({
         metadata: expect.objectContaining({
           hasFeedback: true,
-          lastFeedbackRating: 4
-        })
-      })
+          lastFeedbackRating: 4,
+        }),
+      }),
     );
   });
 
@@ -138,48 +142,51 @@ describe('MemoryService - Transformation Feedback', () => {
       {
         _id: 'transformation-1',
         type: MemoryType.SEMANTIC_TRANSFORMATION,
-        metadata: { requiresHumanReview: true }
+        metadata: { requiresHumanReview: true },
       },
       {
         _id: 'transformation-2',
         type: MemoryType.SEMANTIC_TRANSFORMATION,
-        metadata: { requiresHumanReview: true }
-      }
+        metadata: { requiresHumanReview: true },
+      },
     ];
 
     const mockTransformationsWithoutFeedback = [
       {
         _id: 'transformation-3',
         type: MemoryType.SEMANTIC_TRANSFORMATION,
-        metadata: { hasFeedback: false }
-      }
+        metadata: { hasFeedback: false },
+      },
     ];
 
     mockMemoryModel.find.mockImplementationOnce(() => ({
       sort: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
-      exec: jest.fn().mockResolvedValue(mockTransformationsRequiringReview)
+      exec: jest.fn().mockResolvedValue(mockTransformationsRequiringReview),
     }));
 
     mockMemoryModel.find.mockImplementationOnce(() => ({
       sort: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
-      exec: jest.fn().mockResolvedValue(mockTransformationsWithoutFeedback)
+      exec: jest.fn().mockResolvedValue(mockTransformationsWithoutFeedback),
     }));
 
     const result = await service.getFeedbackRequiringTransformations(5);
 
     expect(result.length).toBe(3);
-    expect(result).toEqual([...mockTransformationsRequiringReview, ...mockTransformationsWithoutFeedback]);
-    
+    expect(result).toEqual([
+      ...mockTransformationsRequiringReview,
+      ...mockTransformationsWithoutFeedback,
+    ]);
+
     expect(mockMemoryModel.find).toHaveBeenCalledWith({
       type: MemoryType.SEMANTIC_TRANSFORMATION,
-      'metadata.requiresHumanReview': true
+      'metadata.requiresHumanReview': true,
     });
-    
+
     expect(mockMemoryModel.find).toHaveBeenCalledWith({
       type: MemoryType.SEMANTIC_TRANSFORMATION,
-      'metadata.hasFeedback': { $ne: true }
+      'metadata.hasFeedback': { $ne: true },
     });
   });
 });

@@ -15,10 +15,10 @@ export enum MemoryType {
 
 @Schema()
 export class Memory extends Document {
-  @Prop({ 
-    type: String, 
+  @Prop({
+    type: String,
     enum: Object.values(MemoryType),
-    required: true 
+    required: true,
   })
   type: MemoryType;
 
@@ -56,7 +56,11 @@ export const MemorySchema = SchemaFactory.createForClass(Memory);
 
 MemorySchema.index({ type: 1 });
 MemorySchema.index({ tags: 1 });
-MemorySchema.index({ 'metadata.title': 'text', 'content.text': 'text', 'content.description': 'text' });
+MemorySchema.index({
+  'metadata.title': 'text',
+  'content.text': 'text',
+  'content.description': 'text',
+});
 
 MemorySchema.index({ 'semanticMetadata.relevanceScore': -1 });
 MemorySchema.index({ 'semanticMetadata.description': 'text' });

@@ -13,7 +13,7 @@ export class SemanticCacheService {
     defaultTTL: 30 * 60 * 1000, // 30分钟
     maxEntries: 1000,
     minSemanticRelevance: 0.5,
-    adaptiveCache: true
+    adaptiveCache: true,
   };
 
   constructor() {
@@ -37,20 +37,20 @@ export class SemanticCacheService {
    */
   get<T>(key: string): T | undefined {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       return undefined;
     }
-    
+
     if (entry.expiresAt < new Date()) {
       this.logger.debug(`Cache entry expired: ${key}`);
       this.cache.delete(key);
       return undefined;
     }
-    
+
     entry.accessCount++;
     entry.lastAccessed = new Date();
-    
+
     this.logger.debug(`Cache hit: ${key}, access count: ${entry.accessCount}`);
     return entry.data as T;
   }
@@ -64,26 +64,28 @@ export class SemanticCacheService {
    */
   set<T>(key: string, data: T, semanticRelevance: number = 1.0, ttl?: number): void {
     if (semanticRelevance < this.config.minSemanticRelevance) {
-      this.logger.debug(`Skipping cache for low relevance item: ${key}, relevance: ${semanticRelevance}`);
+      this.logger.debug(
+        `Skipping cache for low relevance item: ${key}, relevance: ${semanticRelevance}`,
+      );
       return;
     }
-    
+
     if (this.cache.size >= this.config.maxEntries) {
       this.evictLeastValuableEntry();
     }
-    
+
     const now = new Date();
     const expiresAt = new Date(now.getTime() + (ttl || this.config.defaultTTL));
-    
+
     const entry: CacheEntry = {
       data,
       timestamp: now,
       expiresAt,
       accessCount: 0,
       lastAccessed: now,
-      semanticRelevance
+      semanticRelevance,
     };
-    
+
     this.cache.set(key, entry);
     this.logger.debug(`Cache set: ${key}, expires: ${expiresAt.toISOString()}`);
   }
@@ -111,16 +113,18 @@ export class SemanticCacheService {
   getStats(): Record<string, any> {
     const now = new Date();
     const entries = Array.from(this.cache.entries());
-    
+
     const activeEntries = entries.filter(([_, entry]) => entry.expiresAt > now);
     const expiredEntries = entries.filter(([_, entry]) => entry.expiresAt <= now);
-    
-    const avgRelevance = activeEntries.reduce((sum, [_, entry]) => sum + entry.semanticRelevance, 0) / 
-                         (activeEntries.length || 1);
-    
-    const avgAccessCount = activeEntries.reduce((sum, [_, entry]) => sum + entry.accessCount, 0) / 
-                           (activeEntries.length || 1);
-    
+
+    const avgRelevance =
+      activeEntries.reduce((sum, [_, entry]) => sum + entry.semanticRelevance, 0) /
+      (activeEntries.length || 1);
+
+    const avgAccessCount =
+      activeEntries.reduce((sum, [_, entry]) => sum + entry.accessCount, 0) /
+      (activeEntries.length || 1);
+
     return {
       totalEntries: this.cache.size,
       activeEntries: activeEntries.length,
@@ -139,14 +143,14 @@ export class SemanticCacheService {
   private cleanExpiredCache(): void {
     const now = new Date();
     let expiredCount = 0;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       if (entry.expiresAt <= now) {
         this.cache.delete(key);
         expiredCount++;
       }
     }
-    
+
     if (expiredCount > 0) {
       this.logger.debug(`Cleaned ${expiredCount} expired cache entries`);
     }
@@ -159,17 +163,17 @@ export class SemanticCacheService {
   private evictLeastValuableEntry(): void {
     let leastValuableKey: string | null = null;
     let leastValue = Number.MAX_VALUE;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       const recency = (new Date().getTime() - entry.lastAccessed.getTime()) / 1000 / 3600; // 小时
-      const value = entry.semanticRelevance * (entry.accessCount + 1) / (recency + 1);
-      
+      const value = (entry.semanticRelevance * (entry.accessCount + 1)) / (recency + 1);
+
       if (value < leastValue) {
         leastValue = value;
         leastValuableKey = key;
       }
     }
-    
+
     if (leastValuableKey) {
       this.cache.delete(leastValuableKey);
       this.logger.debug(`Evicted least valuable cache entry: ${leastValuableKey}`);
