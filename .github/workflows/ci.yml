@@ -36,15 +36,23 @@ jobs:
         cd src/backend
         npm run lint
     
-    - name: Run Backend Tests
+    - name: Run Backend Tests with Coverage
       run: |
         cd src/backend
-        npm test
+        npm run test:cov
     
     - name: Build Backend
       run: |
         cd src/backend
         npm run build
+        
+    - name: Upload Backend Coverage
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: backend-coverage
+        path: src/backend/coverage/
+        retention-days: 30
     
     - name: Upload Test Results
       uses: actions/upload-artifact@v3
@@ -79,15 +87,23 @@ jobs:
         cd src/frontend
         npm run lint
     
-    - name: Run Frontend Tests
+    - name: Run Frontend Tests with Coverage
       run: |
         cd src/frontend
-        npm test
+        npm run test:cov
     
     - name: Build Frontend
       run: |
         cd src/frontend
         npm run build
+        
+    - name: Upload Frontend Coverage
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: frontend-coverage
+        path: src/frontend/coverage/
+        retention-days: 30
 
   ui-tests:
     runs-on: ubuntu-latest
