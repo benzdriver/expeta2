@@ -23,90 +23,100 @@ describe('SemanticMediatorService', () => {
 
   beforeEach(async () => {
     mockLlmRouterService = {
-      translateBetweenModules: jest.fn().mockResolvedValue({ translated: true, data: 'translated data' }),
+      translateBetweenModules: jest
+        .fn()
+        .mockResolvedValue({ translated: true, data: 'translated data' }),
       enrichWithContext: jest.fn().mockResolvedValue({ enriched: true, data: 'enriched data' }),
-      resolveSemanticConflicts: jest.fn().mockResolvedValue({ resolved: true, data: 'resolved data' }),
+      resolveSemanticConflicts: jest
+        .fn()
+        .mockResolvedValue({ resolved: true, data: 'resolved data' }),
       extractSemanticInsights: jest.fn().mockResolvedValue({ insights: ['insight1', 'insight2'] }),
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('分析以下两组数据之间的语义差异')) {
-          return Promise.resolve(JSON.stringify({
-            semanticPreservation: { preserved: ['key1'], changed: ['key2'] },
-            structuralChanges: [{ change: 'structure change', purpose: 'improve readability' }],
-            informationChanges: { added: ['info1'], removed: ['info2'] },
-            potentialIssues: [{ issue: 'potential issue', severity: 'low' }],
-            overallAssessment: 'Good transformation with minor issues'
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              semanticPreservation: { preserved: ['key1'], changed: ['key2'] },
+              structuralChanges: [{ change: 'structure change', purpose: 'improve readability' }],
+              informationChanges: { added: ['info1'], removed: ['info2'] },
+              potentialIssues: [{ issue: 'potential issue', severity: 'low' }],
+              overallAssessment: 'Good transformation with minor issues',
+            }),
+          );
         } else if (prompt.includes('生成以下语义转换的分析报告')) {
-          return Promise.resolve(JSON.stringify({
-            purpose: 'Improve data structure',
-            transformationRules: ['rule1', 'rule2'],
-            completeness: 85,
-            accuracy: 90,
-            applicability: 95,
-            innovations: ['innovation1'],
-            recommendations: ['recommendation1']
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              purpose: 'Improve data structure',
+              transformationRules: ['rule1', 'rule2'],
+              completeness: 85,
+              accuracy: 90,
+              applicability: 95,
+              innovations: ['innovation1'],
+              recommendations: ['recommendation1'],
+            }),
+          );
         } else if (prompt.includes('评估以下语义转换的质量')) {
-          return Promise.resolve(JSON.stringify({
-            semanticPreservation: 90,
-            structuralAdaptability: 85,
-            informationCompleteness: 95,
-            overallQuality: 90,
-            improvements: ['improvement1', 'improvement2']
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              semanticPreservation: 90,
+              structuralAdaptability: 85,
+              informationCompleteness: 95,
+              overallQuality: 90,
+              improvements: ['improvement1', 'improvement2'],
+            }),
+          );
         } else if (prompt.includes('分析以下代码，提取其主要特征')) {
-          return Promise.resolve(JSON.stringify({
-            complexity: 'medium',
-            modules: ['module1', 'module2'],
-            designPatterns: ['pattern1'],
-            performanceBottlenecks: ['bottleneck1'],
-            securityConsiderations: ['security1'],
-            maintainabilityFeatures: ['feature1']
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              complexity: 'medium',
+              modules: ['module1', 'module2'],
+              designPatterns: ['pattern1'],
+              performanceBottlenecks: ['bottleneck1'],
+              securityConsiderations: ['security1'],
+              maintainabilityFeatures: ['feature1'],
+            }),
+          );
         } else if (prompt.includes('分析以下期望模型和代码之间的语义关系')) {
-          return Promise.resolve(JSON.stringify({
-            matchDegree: 85,
-            implementedFeatures: ['feature1', 'feature2'],
-            unimplementedFeatures: ['feature3'],
-            extraFeatures: ['extraFeature1'],
-            semanticDifferences: ['difference1']
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              matchDegree: 85,
+              implementedFeatures: ['feature1', 'feature2'],
+              unimplementedFeatures: ['feature3'],
+              extraFeatures: ['extraFeature1'],
+              semanticDifferences: ['difference1'],
+            }),
+          );
         } else {
           return Promise.resolve('{}');
         }
-      })
+      }),
     };
 
     memoryServiceMock = {
       getRelatedMemories: jest.fn().mockResolvedValue([
         { content: 'memory1', type: MemoryType.EXPECTATION },
-        { content: 'memory2', type: MemoryType.CODE }
+        { content: 'memory2', type: MemoryType.CODE },
       ]),
       storeMemory: jest.fn().mockResolvedValue({ id: 'memory-id' }),
       getMemoryByType: jest.fn().mockImplementation((type) => {
         if (type === MemoryType.EXPECTATION) {
-          return Promise.resolve([
-            { content: { _id: 'exp-1', model: { key: 'value' } } }
-          ]);
+          return Promise.resolve([{ content: { _id: 'exp-1', model: { key: 'value' } } }]);
         } else if (type === MemoryType.CODE) {
           return Promise.resolve([
-            { 
-              content: { 
-                _id: 'code-1', 
+            {
+              content: {
+                _id: 'code-1',
                 files: [
                   { path: 'file1.js', content: 'console.log("test")' },
-                  { path: 'file2.js', content: 'function test() { return true; }' }
-                ] 
-              } 
-            }
+                  { path: 'file2.js', content: 'function test() { return true; }' },
+                ],
+              },
+            },
           ]);
         } else if (type === MemoryType.VALIDATION) {
-          return Promise.resolve([
-            { content: { _id: 'val-1', results: { passed: true } } }
-          ]);
+          return Promise.resolve([{ content: { _id: 'val-1', results: { passed: true } } }]);
         }
         return Promise.resolve([]);
-      })
+      }),
     };
 
     semanticRegistryMock = {
@@ -262,14 +272,13 @@ describe('SemanticMediatorService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SemanticMediatorService,
-        { provide: LlmRouterService, useValue: mockLlmRouterService }, // Use LlmRouterService
-        { provide: MemoryService, useValue: memoryServiceMock }
+        { provide: LlmRouterService, useValue: mockLlmRouterService },
+        { provide: MemoryService, useValue: memoryServiceMock },
         { provide: SemanticRegistryService, useValue: semanticRegistryMock },
         { provide: TransformationEngineService, useValue: transformationEngineMock },
         { provide: IntelligentCacheService, useValue: intelligentCacheMock },
         { provide: MonitoringSystemService, useValue: monitoringSystemMock },
         { provide: HumanInTheLoopService, useValue: humanInTheLoopMock },
-
       ],
     }).compile();
 
@@ -280,8 +289,6 @@ describe('SemanticMediatorService', () => {
     expect(service).toBeDefined();
   });
 
-
-
   describe('translateBetweenModules', () => {
     it('should translate data between modules', async () => {
       const sourceModule = 'clarifier';
@@ -289,11 +296,11 @@ describe('SemanticMediatorService', () => {
       const data = { key: 'value' };
 
       const result = await service.translateBetweenModules(sourceModule, targetModule, data);
-      
+
       expect(mockLlmRouterService.translateBetweenModules).toHaveBeenCalledWith(
-        sourceModule, 
-        targetModule, 
-        JSON.stringify(data, null, 2)
+        sourceModule,
+        targetModule,
+        JSON.stringify(data, null, 2),
       );
       expect(result).toEqual({ translated: true, data: 'translated data' });
     });
@@ -302,13 +309,16 @@ describe('SemanticMediatorService', () => {
       const sourceModule = 'clarifier';
       const targetModule = 'generator';
       const data = { key: 'value' };
-      
+
       (mockLlmRouterService.translateBetweenModules as jest.Mock).mockRejectedValueOnce(
-        new Error('Translation error')
+        new Error('Translation error'),
       );
 
-      await expect(service.translateBetweenModules(sourceModule, targetModule, data))
-        .rejects.toThrow(`Failed to translate data from ${sourceModule} to ${targetModule}: Translation error`);
+      await expect(
+        service.translateBetweenModules(sourceModule, targetModule, data),
+      ).rejects.toThrow(
+        `Failed to translate data from ${sourceModule} to ${targetModule}: Translation error`,
+      );
     });
   });
 
@@ -319,7 +329,7 @@ describe('SemanticMediatorService', () => {
       const contextQuery = 'context query';
 
       const result = await service.enrichWithContext(module, data, contextQuery);
-      
+
       expect(memoryServiceMock.getRelatedMemories).toHaveBeenCalledWith(contextQuery);
       expect(mockLlmRouterService.enrichWithContext).toHaveBeenCalled(); // Assuming LlmRouterService has this method
       expect(result).toEqual({ enriched: true, data: 'enriched data' });
@@ -329,11 +339,11 @@ describe('SemanticMediatorService', () => {
       const module = 'generator';
       const data = { key: 'value' };
       const contextQuery = 'context query';
-      
+
       (memoryServiceMock.getRelatedMemories as jest.Mock).mockResolvedValueOnce([]);
 
       const result = await service.enrichWithContext(module, data, contextQuery);
-      
+
       expect(memoryServiceMock.getRelatedMemories).toHaveBeenCalledWith(contextQuery);
       expect(mockLlmRouterService.enrichWithContext).not.toHaveBeenCalled();
       expect(result).toEqual(data);
@@ -343,13 +353,14 @@ describe('SemanticMediatorService', () => {
       const module = 'generator';
       const data = { key: 'value' };
       const contextQuery = 'context query';
-      
+
       (mockLlmRouterService.enrichWithContext as jest.Mock).mockRejectedValueOnce(
-        new Error('Enrichment error')
+        new Error('Enrichment error'),
       );
 
-      await expect(service.enrichWithContext(module, data, contextQuery))
-        .rejects.toThrow('Failed to enrich data with context: Enrichment error');
+      await expect(service.enrichWithContext(module, data, contextQuery)).rejects.toThrow(
+        'Failed to enrich data with context: Enrichment error',
+      );
     });
   });
 
@@ -361,12 +372,13 @@ describe('SemanticMediatorService', () => {
       const dataB = { key: 'valueB' };
 
       const result = await service.resolveSemanticConflicts(moduleA, dataA, moduleB, dataB);
-      
-      expect(mockLlmRouterService.resolveSemanticConflicts).toHaveBeenCalledWith( // Assuming LlmRouterService has this method
-        moduleA, 
+
+      expect(mockLlmRouterService.resolveSemanticConflicts).toHaveBeenCalledWith(
+        // Assuming LlmRouterService has this method
+        moduleA,
         JSON.stringify(dataA, null, 2),
         moduleB,
-        JSON.stringify(dataB, null, 2)
+        JSON.stringify(dataB, null, 2),
       );
       expect(result).toEqual({ resolved: true, data: 'resolved data' });
     });
@@ -376,13 +388,16 @@ describe('SemanticMediatorService', () => {
       const dataA = { key: 'valueA' };
       const moduleB = 'generator';
       const dataB = { key: 'valueB' };
-      
+
       (mockLlmRouterService.resolveSemanticConflicts as jest.Mock).mockRejectedValueOnce(
-        new Error('Resolution error')
+        new Error('Resolution error'),
       );
 
-      await expect(service.resolveSemanticConflicts(moduleA, dataA, moduleB, dataB))
-        .rejects.toThrow(`Failed to resolve semantic conflicts between ${moduleA} and ${moduleB}: Resolution error`);
+      await expect(
+        service.resolveSemanticConflicts(moduleA, dataA, moduleB, dataB),
+      ).rejects.toThrow(
+        `Failed to resolve semantic conflicts between ${moduleA} and ${moduleB}: Resolution error`,
+      );
     });
   });
 
@@ -392,10 +407,11 @@ describe('SemanticMediatorService', () => {
       const query = 'insight query';
 
       const result = await service.extractSemanticInsights(data, query);
-      
-      expect(mockLlmRouterService.extractSemanticInsights).toHaveBeenCalledWith( // Assuming LlmRouterService has this method
+
+      expect(mockLlmRouterService.extractSemanticInsights).toHaveBeenCalledWith(
+        // Assuming LlmRouterService has this method
         JSON.stringify(data, null, 2),
-        query
+        query,
       );
       expect(result).toEqual({ insights: ['insight1', 'insight2'] });
     });
@@ -403,13 +419,14 @@ describe('SemanticMediatorService', () => {
     it('should handle errors during insight extraction', async () => {
       const data = { key: 'value' };
       const query = 'insight query';
-      
+
       (mockLlmRouterService.extractSemanticInsights as jest.Mock).mockRejectedValueOnce(
-        new Error('Extraction error')
+        new Error('Extraction error'),
       );
 
-      await expect(service.extractSemanticInsights(data, query))
-        .rejects.toThrow('Failed to extract semantic insights: Extraction error');
+      await expect(service.extractSemanticInsights(data, query)).rejects.toThrow(
+        'Failed to extract semantic insights: Extraction error',
+      );
     });
   });
 
@@ -421,12 +438,12 @@ describe('SemanticMediatorService', () => {
       const transformedData = { key: 'transformedValue' };
 
       const result = await service.trackSemanticTransformation(
-        sourceModule, 
-        targetModule, 
-        sourceData, 
-        transformedData
+        sourceModule,
+        targetModule,
+        sourceData,
+        transformedData,
       );
-      
+
       expect(mockLlmRouterService.generateContent).toHaveBeenCalledTimes(2);
       expect(memoryServiceMock.storeMemory).toHaveBeenCalled();
       expect(result).toHaveProperty('sourceModule', sourceModule);
@@ -445,17 +462,16 @@ describe('SemanticMediatorService', () => {
       const options = {
         trackDifferences: false,
         analyzeTransformation: true,
-        saveToMemory: false
+        saveToMemory: false,
       };
 
       const result = await service.trackSemanticTransformation(
-        sourceModule, 
-        targetModule, 
-        sourceData, 
+        sourceModule,
+        targetModule,
+        sourceData,
         transformedData,
-        options
+        options,
       );
-      
 
       expect(mockLlmRouterService.generateContent).toHaveBeenCalledTimes(1); // Only for analysis
       expect(memoryServiceMock.storeMemory).not.toHaveBeenCalled(); // saveToMemory is false
@@ -472,13 +488,19 @@ describe('SemanticMediatorService', () => {
       const targetModule = 'generator';
       const sourceData = { key: 'sourceValue' };
       const transformedData = { key: 'transformedValue' };
-      
+
       (mockLlmRouterService.generateContent as jest.Mock).mockRejectedValueOnce(
-        new Error('Tracking error')
+        new Error('Tracking error'),
       );
 
-      await expect(service.trackSemanticTransformation(sourceModule, targetModule, sourceData, transformedData))
-        .rejects.toThrow('Failed to track semantic transformation: Tracking error');
+      await expect(
+        service.trackSemanticTransformation(
+          sourceModule,
+          targetModule,
+          sourceData,
+          transformedData,
+        ),
+      ).rejects.toThrow('Failed to track semantic transformation: Tracking error');
     });
   });
 
@@ -489,11 +511,11 @@ describe('SemanticMediatorService', () => {
       const expectedOutcome = 'expected outcome description';
 
       const result = await service.evaluateSemanticTransformation(
-        sourceData, 
-        transformedData, 
-        expectedOutcome
+        sourceData,
+        transformedData,
+        expectedOutcome,
       );
-      
+
       expect(mockLlmRouterService.generateContent).toHaveBeenCalled();
       expect(result).toHaveProperty('semanticPreservation', 90);
       expect(result).toHaveProperty('structuralAdaptability', 85);
@@ -506,13 +528,14 @@ describe('SemanticMediatorService', () => {
       const sourceData = { key: 'sourceValue' };
       const transformedData = { key: 'transformedValue' };
       const expectedOutcome = 'expected outcome description';
-      
+
       (mockLlmRouterService.generateContent as jest.Mock).mockRejectedValueOnce(
-        new Error('Evaluation error')
+        new Error('Evaluation error'),
       );
 
-      await expect(service.evaluateSemanticTransformation(sourceData, transformedData, expectedOutcome))
-        .rejects.toThrow('Failed to evaluate semantic transformation: Evaluation error');
+      await expect(
+        service.evaluateSemanticTransformation(sourceData, transformedData, expectedOutcome),
+      ).rejects.toThrow('Failed to evaluate semantic transformation: Evaluation error');
     });
   });
 
@@ -522,7 +545,7 @@ describe('SemanticMediatorService', () => {
       const codeId = 'code-1';
 
       const result = await service.generateValidationContext(expectationId, codeId);
-      
+
       expect(memoryServiceMock.getMemoryByType).toHaveBeenCalledWith(MemoryType.EXPECTATION);
       expect(memoryServiceMock.getMemoryByType).toHaveBeenCalledWith(MemoryType.CODE);
       expect(mockLlmRouterService.generateContent).toHaveBeenCalledTimes(2); // For code features and semantic relationship
@@ -539,16 +562,16 @@ describe('SemanticMediatorService', () => {
       const options = {
         focusAreas: ['security', 'performance'],
         strategy: 'strict' as const,
-        customWeights: { security: 0.8 }
+        customWeights: { security: 0.8 },
       };
 
       const result = await service.generateValidationContext(
-        expectationId, 
+        expectationId,
         codeId,
         previousValidations,
-        options
+        options,
       );
-      
+
       expect(memoryServiceMock.getMemoryByType).toHaveBeenCalledWith(MemoryType.EXPECTATION);
       expect(memoryServiceMock.getMemoryByType).toHaveBeenCalledWith(MemoryType.CODE);
       expect(memoryServiceMock.getMemoryByType).toHaveBeenCalledWith(MemoryType.VALIDATION);
@@ -563,24 +586,25 @@ describe('SemanticMediatorService', () => {
     it('should handle errors when expectation or code not found', async () => {
       const expectationId = 'non-existent';
       const codeId = 'non-existent';
-      
+
       (memoryServiceMock.getMemoryByType as jest.Mock).mockResolvedValueOnce([]);
 
-      await expect(service.generateValidationContext(expectationId, codeId))
-        .rejects.toThrow('Expectation or Code not found');
+      await expect(service.generateValidationContext(expectationId, codeId)).rejects.toThrow(
+        'Expectation or Code not found',
+      );
     });
 
     it('should handle errors during validation context generation', async () => {
       const expectationId = 'exp-1';
       const codeId = 'code-1';
-      
+
       (mockLlmRouterService.generateContent as jest.Mock).mockRejectedValueOnce(
-        new Error('Context generation error')
+        new Error('Context generation error'),
       );
 
-      await expect(service.generateValidationContext(expectationId, codeId))
-        .rejects.toThrow('Failed to generate validation context: Context generation error');
+      await expect(service.generateValidationContext(expectationId, codeId)).rejects.toThrow(
+        'Failed to generate validation context: Context generation error',
+      );
     });
   });
-
 });

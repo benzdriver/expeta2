@@ -25,15 +25,20 @@ export class Validation extends Document {
   @Prop({ required: true, min: 0, max: 100 })
   score: number;
 
-  @Prop({ type: [{ 
-    expectationId: String, 
-    status: String, 
-    score: Number, 
-    message: String,
-    semanticInsights: String,
-    improvement: String,
-    remainingIssues: String
-  }], required: true })
+  @Prop({
+    type: [
+      {
+        expectationId: String,
+        status: String,
+        score: Number,
+        message: String,
+        semanticInsights: String,
+        improvement: String,
+        remainingIssues: String,
+      },
+    ],
+    required: true,
+  })
   details: ValidationDetail[];
 
   @Prop({ type: Object })

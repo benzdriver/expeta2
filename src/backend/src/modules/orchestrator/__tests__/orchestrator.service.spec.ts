@@ -214,7 +214,7 @@ describe('OrchestratorService', () => {
       const requirementId = 'non-existent-id';
 
       await expect(service.processRequirement(requirementId)).rejects.toThrow(
-        'Requirement not found'
+        'Requirement not found',
       );
     });
   });
@@ -310,20 +310,23 @@ describe('OrchestratorService', () => {
       const params = { expectationId: 'exp-456', codeId: 'code-789', maxIterations: 2 };
 
       // Mock validatorService.validateCode to return a score below threshold first, then above
-      jest.spyOn(validatorService, 'validateCode')
+      jest
+        .spyOn(validatorService, 'validateCode')
         .mockResolvedValueOnce({
           _id: 'val-123',
           codeId: 'code-789',
           expectationId: 'exp-456',
           score: 0.7,
           status: 'partial',
-          details: [{ 
-            expectationId: 'exp-456-sub', 
-            status: 'failed', 
-            score: 0.7, 
-            message: 'Test issue',
-            semanticInsights: 'Needs improvement'
-          }],
+          details: [
+            {
+              expectationId: 'exp-456-sub',
+              status: 'failed',
+              score: 0.7,
+              message: 'Test issue',
+              semanticInsights: 'Needs improvement',
+            },
+          ],
         })
         .mockResolvedValueOnce({
           _id: 'val-124',
@@ -366,11 +369,11 @@ describe('OrchestratorService', () => {
 
     it('should execute an adaptive validation workflow', async () => {
       const workflowId = WorkflowType.ADAPTIVE_VALIDATION;
-      const params = { 
-        expectationId: 'exp-456', 
-        codeId: 'code-789', 
+      const params = {
+        expectationId: 'exp-456',
+        codeId: 'code-789',
         previousValidationId: 'val-123',
-        adaptationStrategy: 'balanced'
+        adaptationStrategy: 'balanced',
       };
 
       const result = await service.executeWorkflow(workflowId, params);
@@ -394,7 +397,7 @@ describe('OrchestratorService', () => {
       const params = {};
 
       await expect(service.executeWorkflow(workflowId, params)).rejects.toThrow(
-        `Unknown workflow: ${workflowId}`
+        `Unknown workflow: ${workflowId}`,
       );
     });
   });
@@ -408,9 +411,9 @@ describe('OrchestratorService', () => {
             moduleId: 'clarifier',
             operation: 'generateExpectations',
             inputMapping: { requirementId: 'req-123' },
-            outputMapping: { expectationId: 'output.expectationId' }
-          }
-        ]
+            outputMapping: { expectationId: 'output.expectationId' },
+          },
+        ],
       };
 
       const result = await service.createCustomWorkflow(customWorkflowDto);

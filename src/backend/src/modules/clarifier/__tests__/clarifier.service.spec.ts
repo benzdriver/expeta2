@@ -29,8 +29,8 @@ describe('ClarifierService', () => {
             requirementId: 'test-uuid',
             creationTimestamp: expect.any(String),
             version: '1.0',
-            source: 'clarifier_service'
-          }
+            source: 'clarifier_service',
+          },
         }),
       }),
       find: jest.fn().mockReturnValue({
@@ -133,63 +133,73 @@ describe('ClarifierService', () => {
     const mockLlmRouterService = {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('生成5个关键澄清问题')) {
-          return Promise.resolve(JSON.stringify([
-            {
-              id: 'functional-1',
-              text: 'What are the primary features you need?',
-              category: 'functional',
-              priority: 'high',
-            },
-            {
-              id: 'non-functional-1',
-              text: 'What performance requirements do you have?',
-              category: 'non-functional',
-              priority: 'medium',
-            },
-          ]));
+          return Promise.resolve(
+            JSON.stringify([
+              {
+                id: 'functional-1',
+                text: 'What are the primary features you need?',
+                category: 'functional',
+                priority: 'high',
+              },
+              {
+                id: 'non-functional-1',
+                text: 'What performance requirements do you have?',
+                category: 'non-functional',
+                priority: 'medium',
+              },
+            ]),
+          );
         } else if (prompt.includes('判断是否需要更多澄清')) {
-          return Promise.resolve(JSON.stringify({
-            needMoreClarification: true,
-            summary: 'Need more clarification on performance requirements',
-            missingAspects: ['performance', 'security'],
-            dialogueEffectiveness: {
-              score: 70,
-              strengths: ['Good initial understanding'],
-              weaknesses: ['Missing technical details'],
-            },
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              needMoreClarification: true,
+              summary: 'Need more clarification on performance requirements',
+              missingAspects: ['performance', 'security'],
+              dialogueEffectiveness: {
+                score: 70,
+                strengths: ['Good initial understanding'],
+                weaknesses: ['Missing technical details'],
+              },
+            }),
+          );
         } else if (prompt.includes('生成结构化的纯语义期望模型')) {
-          return Promise.resolve(JSON.stringify({
-            id: 'root',
-            name: 'Root Expectation',
-            description: 'Root expectation description',
-            children: [],
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              id: 'root',
+              name: 'Root Expectation',
+              description: 'Root expectation description',
+              children: [],
+            }),
+          );
         } else if (prompt.includes('分析多轮对话的需求澄清过程')) {
-          return Promise.resolve(JSON.stringify({
-            dialogueEffectiveness: {
-              score: 85,
-              strengths: ['Progressive clarification', 'Good follow-up questions'],
-              weaknesses: ['Some redundant questions'],
-              recommendations: ['Focus more on technical requirements'],
-            },
-            keyInsights: ['User needs a responsive UI', 'Security is a priority'],
-            conversationFlow: {
-              quality: 'good',
-              improvements: ['More focused questions'],
-            },
-            requirementCompleteness: {
-              score: 75,
-              missingAspects: ['Deployment details'],
-            },
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              dialogueEffectiveness: {
+                score: 85,
+                strengths: ['Progressive clarification', 'Good follow-up questions'],
+                weaknesses: ['Some redundant questions'],
+                recommendations: ['Focus more on technical requirements'],
+              },
+              keyInsights: ['User needs a responsive UI', 'Security is a priority'],
+              conversationFlow: {
+                quality: 'good',
+                improvements: ['More focused questions'],
+              },
+              requirementCompleteness: {
+                score: 75,
+                missingAspects: ['Deployment details'],
+              },
+            }),
+          );
         } else if (prompt.includes('生成期望模型的简洁总结')) {
-          return Promise.resolve(JSON.stringify({
-            title: 'Expectation Summary',
-            summary: 'A system that provides X functionality with Y performance',
-            keyPoints: ['Feature X', 'Performance Y'],
-            technicalConsiderations: ['Consider Z architecture'],
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              title: 'Expectation Summary',
+              summary: 'A system that provides X functionality with Y performance',
+              keyPoints: ['Feature X', 'Performance Y'],
+              technicalConsiderations: ['Consider Z architecture'],
+            }),
+          );
         } else {
           return Promise.resolve('{}');
         }
@@ -340,7 +350,7 @@ describe('ClarifierService', () => {
       expect(result[0].category).toBe('functional');
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('分析以下需求，并生成5个关键澄清问题'),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });
@@ -358,7 +368,7 @@ describe('ClarifierService', () => {
       expect(result.summary).toBe('Need more clarification on performance requirements');
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('分析以下需求及其澄清问题和答案'),
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(memoryService.updateRequirement).toHaveBeenCalled();
     });
@@ -374,7 +384,7 @@ describe('ClarifierService', () => {
       expect(result._id).toBe('test-expectation-id');
       expect(result.requirementId).toBe('test-id');
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
-        expect.stringContaining('基于以下需求及其澄清信息，生成结构化的纯语义期望模型')
+        expect.stringContaining('基于以下需求及其澄清信息，生成结构化的纯语义期望模型'),
       );
       expect(memoryService.storeExpectation).toHaveBeenCalled();
     });
@@ -413,7 +423,7 @@ describe('ClarifierService', () => {
       expect(result).toBeDefined();
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('分析以下需求及其澄清问题和答案'),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });
@@ -466,7 +476,7 @@ describe('ClarifierService', () => {
       expect(result.dialogueEffectiveness.score).toBe(85);
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('分析以下多轮对话的需求澄清过程'),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -490,7 +500,7 @@ describe('ClarifierService', () => {
       const requirementId = 'test-id';
 
       await expect(service.analyzeMultiRoundDialogue(requirementId)).rejects.toThrow(
-        '需要至少两轮对话才能进行多轮对话分析'
+        '需要至少两轮对话才能进行多轮对话分析',
       );
     });
   });

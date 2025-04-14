@@ -8,9 +8,7 @@ import { MemoryModule } from '../memory/memory.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Code.name, schema: CodeSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Code.name, schema: CodeSchema }]),
     LlmRouterModule,
     MemoryModule,
   ],
