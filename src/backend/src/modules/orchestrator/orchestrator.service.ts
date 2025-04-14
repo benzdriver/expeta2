@@ -771,16 +771,15 @@ export class OrchestratorService {
     })}`);
     
     let validation;
-    if (
-      previousValidationId &&
-      validationContext.focusAreas &&
-      validationContext.focusAreas.length > 0
-    ) {
-      validation = await this.validatorService.validateCodeIteratively(
+    if (previousValidationId && validationContext.focusAreas && validationContext.focusAreas.length > 0) {
+      validation = await this.validatorService.validateWithAdaptiveContext(
         expectationId,
         codeId,
-        previousValidationId,
-        validationContext.focusAreas,
+        {
+          ...validationContext,
+          previousValidationId,
+          focusOnAreas: validationContext.focusAreas
+        }
       );
     } else {
       validation = await this.validatorService.validateWithAdaptiveContext(
