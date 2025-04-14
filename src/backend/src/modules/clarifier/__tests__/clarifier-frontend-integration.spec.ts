@@ -38,7 +38,7 @@ describe('Clarifier Frontend-Backend Integration (e2e)', () => {
     const requirementDto = { title: 'Test Requirement', text: 'Initial description' };
     
     const createResponse = await request(app.getHttpServer())
-      .post('/requirements') // Assuming this is the endpoint
+      .post('/clarifier/requirements') // Correct endpoint
       .send(requirementDto)
       .expect(201); // Expecting resource created status
 
@@ -46,7 +46,7 @@ describe('Clarifier Frontend-Backend Integration (e2e)', () => {
     expect(requirementId).toBeDefined();
 
     const statusResponse = await request(app.getHttpServer())
-      .get(`/requirements/${requirementId}`)
+      .get(`/clarifier/requirements/${requirementId}`)
       .expect(200);
       
     expect(statusResponse.body.status).toEqual('clarifying'); // Or 'initial' depending on flow
@@ -54,15 +54,16 @@ describe('Clarifier Frontend-Backend Integration (e2e)', () => {
 
   it('should process a user clarification message', async () => {
     const requirementId = 'req-test-clarify'; // Need a way to set this up or mock it
-    const clarificationDto = { message: 'User provides more details' };
+    const questionId = 'q-test-clarify'; // Need a way to set this up or mock it
+    const clarificationDto = { requirementId, questionId, answer: 'User provides more details' }; // Correct payload
 
     const clarifyResponse = await request(app.getHttpServer())
-      .post(`/requirements/${requirementId}/clarify`) // Assuming endpoint
+      .post(`/clarifier/answer`) // Correct endpoint
       .send(clarificationDto)
-      .expect(200); // Or 201 if a new message resource is created
+      .expect(200); // Expecting OK status
 
     const updatedStatusResponse = await request(app.getHttpServer())
-      .get(`/requirements/${requirementId}`) // Or a dedicated chat state endpoint
+      .get(`/clarifier/requirements/${requirementId}`) // Correct endpoint
       .expect(200);
 
   });
@@ -71,14 +72,15 @@ describe('Clarifier Frontend-Backend Integration (e2e)', () => {
     const requirementId = 'req-test-complete'; // Need setup/mocking
 
 
-    const finalMessageDto = { message: 'Looks good!' };
+    const finalQuestionId = 'q-test-complete'; // Need setup/mocking
+    const finalMessageDto = { requirementId, questionId: finalQuestionId, answer: 'Looks good!' }; // Correct payload
     await request(app.getHttpServer())
-      .post(`/requirements/${requirementId}/clarify`)
+      .post(`/clarifier/answer`) // Correct endpoint
       .send(finalMessageDto)
       .expect(200);
 
     const finalStatusResponse = await request(app.getHttpServer())
-      .get(`/requirements/${requirementId}`)
+      .get(`/clarifier/requirements/${requirementId}`) // Correct endpoint
       .expect(200);
 
     expect(finalStatusResponse.body.status).toEqual('expectations_generated'); // Or the next expected status
