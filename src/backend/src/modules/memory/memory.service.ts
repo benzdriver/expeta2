@@ -381,10 +381,10 @@ export class MemoryService {
       this.logger.debug(`Found existing memory entry, updating content`);
       memoryEntry.content = data.content;
       memoryEntry.metadata = {
-        ...(data.metadata || memoryEntry.metadata),
+        ...(data.metadata || memoryEntry.metadata || {}),
         lastUpdatedAt: new Date().toISOString(),
         updateHistory: [
-          ...(memoryEntry.metadata.updateHistory || []),
+          ...((memoryEntry.metadata && memoryEntry.metadata.updateHistory) || []),
           {
             timestamp: new Date().toISOString(),
             updatedFields: Object.keys(data.content).filter(
