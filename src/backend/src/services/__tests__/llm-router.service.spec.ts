@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 
+import { HttpModule } from '@nestjs/axios';
+
 import { HttpService } from '@nestjs/axios';
 import { of, throwError } from 'rxjs';
 import axios from 'axios';
@@ -20,6 +22,7 @@ describe('LlmRouterService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [HttpModule], // Import HttpModule directly in the test module
       providers: [
         LlmRouterService,
         {
