@@ -10,6 +10,7 @@ import { TransformationEngineService } from './components/transformation-engine/
 import { IntelligentCacheService } from './components/intelligent-cache/intelligent-cache.service';
 import { MonitoringSystemService } from './components/monitoring-system/monitoring-system.service';
 import { HumanInTheLoopService } from './components/human-in-the-loop/human-in-the-loop.service';
+import { ResolverService } from './components/resolver/resolver.service';
 
 @Injectable()
 export class SemanticMediatorService {
@@ -23,6 +24,7 @@ export class SemanticMediatorService {
     private readonly intelligentCache: IntelligentCacheService,
     private readonly monitoringSystem: MonitoringSystemService,
     private readonly humanInTheLoop: HumanInTheLoopService,
+    private readonly resolver: ResolverService,
   ) {}
 
   /**
@@ -239,76 +241,43 @@ export class SemanticMediatorService {
 
   /**
    * 解决不同模块之间的语义冲突
+   * 增强版本：使用专用的Resolver组件
    */
   async resolveSemanticConflicts(
     moduleA: string,
     dataA: any,
     moduleB: string,
     dataB: any,
+    options?: {
+      forceStrategy?: string;
+      context?: any;
+      cacheResults?: boolean;
+    },
   ): Promise<any> {
     try {
       this.logger.debug(`Resolving semantic conflicts between ${moduleA} and ${moduleB}`);
 
-      const descriptorA: SemanticDescriptor = {
-        entity: moduleA,
-        description: `Data from ${moduleA} module`,
-        attributes: {
-          data: {
-            type: typeof dataA,
-            description: `Data content from ${moduleA}`,
-          },
-        },
-        metadata: {
-          module: moduleA,
-        },
-      };
-
-      const descriptorB: SemanticDescriptor = {
-        entity: moduleB,
-        description: `Data from ${moduleB} module`,
-        attributes: {
-          data: {
-            type: typeof dataB,
-            description: `Data content from ${moduleB}`,
-          },
-        },
-        metadata: {
-          module: moduleB,
-        },
-      };
-
-      const transformationPath = {
-        source: {
-          type: 'composite',
-          components: [descriptorA, descriptorB],
-        },
-        target: {
-          type: 'resolved',
-          components: [descriptorA, descriptorB],
-        },
-        steps: [
-          {
-            type: 'conflict_resolution',
-            modules: [moduleA, moduleB],
-          },
-        ],
-        recommendedStrategy: 'semantic_conflict_resolution',
-      };
-
-      const result = await this.transformationEngine.executeTransformation(
-        { moduleA: dataA, moduleB: dataB },
-        transformationPath,
-        { moduleA, moduleB },
+      const result = await this.resolver.resolveConflicts(
+        moduleA,
+        dataA,
+        moduleB,
+        dataB,
+        options,
       );
 
-      await this.monitoringSystem.logTransformationEvent({
-        type: 'conflict_resolution',
+      await this.trackSemanticTransformation(
         moduleA,
         moduleB,
-        timestamp: new Date().toISOString(),
-      });
+        dataA,
+        result.resolvedData,
+        {
+          trackDifferences: true,
+          analyzeTransformation: true,
+          saveToMemory: true,
+        },
+      );
 
-      return result;
+      return result.resolvedData;
     } catch (error) {
       this.logger.error(`Error resolving semantic conflicts: ${error.message}`, error.stack);
 
@@ -1874,6 +1843,109 @@ export class SemanticMediatorService {
       });
 
       throw new Error(`Failed to analyze feedback patterns: ${error.message}`);
+    }
+  }
+  
+  /**
+   * 将数据转换为指定的模式
+   * @param data 源数据
+   * @param targetSchema 目标模式
+   * @returns 转换后的数据
+   */
+  async translateToSchema(data: any, targetSchema: any): Promise<any> {
+    this.logger.log('Translating data to target schema');
+    
+    try {
+      const sourceData = JSON.stringify(data, null, 2);
+      const schemaData = JSON.stringify(targetSchema, null, 2);
+      
+      const translationPrompt = `
+        将以下数据转换为目标模式：
+        
+        源数据：
+        ${sourceData}
+        
+        目标模式：
+        ${schemaData}
+        
+        请确保转换后的数据符合目标模式的结构和语义要求。
+        返回转换后的JSON数据。
+      `;
+      
+      const translatedText = await this.llmService.generateContent(translationPrompt, {
+        systemPrompt: '你是一个专业的数据转换专家，擅长将数据从一种模式转换为另一种模式，同时保持语义一致性。',
+      });
+      
+      const transformedData = JSON.parse(translatedText);
+      
+      await this.trackSemanticTransformation(
+        'generic',
+        'schema_based',
+        data,
+        transformedData,
+        {
+          trackDifferences: true,
+          analyzeTransformation: true,
+          saveToMemory: true
+        }
+      );
+      
+      this.logger.debug('Data successfully translated to target schema');
+      return transformedData;
+    } catch (error) {
+      this.logger.error(`Error translating data to schema: ${error.message}`, error.stack);
+      throw new Error(`Failed to translate data to schema: ${error.message}`);
+    }
+  }
+
+  /**
+   * 注册语义数据源
+   * @param sourceId 数据源ID
+   * @param sourceName 数据源名称
+   * @param sourceType 数据源类型
+   * @param semanticDescription 语义描述
+   * @param schema 数据模式（可选）
+   */
+  async registerSemanticDataSource(
+    sourceId: string,
+    sourceName: string,
+    sourceType: string,
+    semanticDescription: string,
+    schema?: any
+  ): Promise<void> {
+    this.logger.log(`Registering semantic data source: ${sourceName} (${sourceId})`);
+    
+    try {
+      const dataSourceRecord = {
+        id: sourceId,
+        name: sourceName,
+        type: sourceType,
+        semanticDescription,
+        schema,
+        registrationTime: new Date(),
+        status: 'active'
+      };
+      
+      await this.memoryService.storeMemory({
+        type: MemoryType.SYSTEM,
+        content: dataSourceRecord,
+        metadata: {
+          title: `Semantic Data Source: ${sourceName}`,
+          sourceId,
+          sourceType,
+          registrationTime: new Date()
+        },
+        tags: ['semantic_data_source', sourceType, sourceId],
+        semanticMetadata: {
+          description: `Semantic data source: ${sourceName}. ${semanticDescription}`,
+          relevanceScore: 1.0
+        }
+      });
+      
+      this.logger.debug(`Semantic data source registered successfully: ${sourceId}`);
+    } catch (error) {
+      this.logger.error(`Error registering semantic data source: ${error.message}`, error.stack);
+      throw new Error(`Failed to register semantic data source: ${error.message}`);
     }
   }
 }
