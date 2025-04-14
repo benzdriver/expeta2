@@ -38,7 +38,7 @@ describe('ValidatorService', () => {
       });
       return this;
     }
-    
+
     MockValidationModel.find = jest.fn().mockImplementation(() => {
       return {
         sort: jest.fn().mockReturnValue({
@@ -94,7 +94,7 @@ describe('ValidatorService', () => {
         ]),
       };
     });
-    
+
     MockValidationModel.findById = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue({
         _id: 'test-validation-id',
@@ -115,7 +115,7 @@ describe('ValidatorService', () => {
         },
       }),
     });
-    
+
     const mockValidationModel = MockValidationModel;
 
     const mockLlmRouterService = {
@@ -228,7 +228,7 @@ describe('ValidatorService', () => {
           functionality: 1.0,
           performance: 1.0,
           security: 1.0,
-          maintainability: 1.0
+          maintainability: 1.0,
         },
         focusAreas: [],
         previousValidations: [],
@@ -236,8 +236,8 @@ describe('ValidatorService', () => {
           codeFeatures: { features: ['Feature 1', 'Feature 2'] },
           semanticRelationship: { relationship: 'Strong match' },
           expectationSummary: 'Expectation summary',
-          validationHistory: 'Validation history'
-        }
+          validationHistory: 'Validation history',
+        },
       }),
       translateBetweenModules: jest.fn().mockResolvedValue(
         `基于以下期望模型、生成的代码和语义上下文，执行语义验证：
@@ -252,22 +252,22 @@ describe('ValidatorService', () => {
         语义上下文：
         {"codeFeatures":{"features":["Feature 1","Feature 2"]},"semanticRelationship":{"relationship":"Strong match"}}
         
-        请评估代码对期望的满足程度，并提供JSON结果。`
+        请评估代码对期望的满足程度，并提供JSON结果。`,
       ),
       enrichWithContext: jest.fn().mockImplementation((module, data, context) => {
         return Promise.resolve({
           ...data,
           enriched: true,
-          context
+          context,
         });
       }),
       trackSemanticTransformation: jest.fn().mockResolvedValue(true),
       extractCodeFeatures: jest.fn().mockResolvedValue({
-        features: ['Feature 1', 'Feature 2']
+        features: ['Feature 1', 'Feature 2'],
       }),
       analyzeSemanticRelationship: jest.fn().mockResolvedValue({
-        relationship: 'Strong match'
-      })
+        relationship: 'Strong match',
+      }),
     };
 
     const mockMemoryService = {
@@ -390,10 +390,10 @@ describe('ValidatorService', () => {
     });
 
     it('should throw an error if expectation or code is not found', async () => {
-      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
-        if (type === MemoryType.EXPECTATION) {
+      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((_type) => {
+        if (_type === MemoryType.EXPECTATION) {
           return Promise.resolve([]);
-        } else if (type === MemoryType.CODE) {
+        } else if (_type === MemoryType.CODE) {
           return Promise.resolve([]);
         } else {
           return Promise.resolve([]);
@@ -465,15 +465,13 @@ describe('ValidatorService', () => {
       expect(result.status).toBe('passed');
       expect(result.score).toBe(85);
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
-        expect.stringContaining(
-          '基于以下期望模型、生成的代码和语义上下文，执行语义验证',
-        ),
+        expect.stringContaining('基于以下期望模型、生成的代码和语义上下文，执行语义验证'),
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
     it('should throw an error if expectation or code is not found', async () => {
-      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
+      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((_type) => {
         return Promise.resolve([]);
       });
 
@@ -513,7 +511,7 @@ describe('ValidatorService', () => {
     });
 
     it('should throw an error if expectation, code, or previous validation is not found', async () => {
-      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
+      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((_type) => {
         return Promise.resolve([]);
       });
       jest.spyOn(validationModel, 'findById').mockReturnValueOnce({
@@ -598,7 +596,7 @@ describe('ValidatorService', () => {
     });
 
     it('should throw an error if related expectation or code is not found', async () => {
-      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
+      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((_type) => {
         return Promise.resolve([]);
       });
 
@@ -628,9 +626,9 @@ describe('ValidatorService', () => {
           key: 'value',
         },
       };
-      
+
       jest.clearAllMocks();
-      
+
       jest.spyOn(validationModel, 'find').mockReturnValue({
         sort: jest.fn().mockReturnThis(),
         exec: jest.fn().mockResolvedValue([
@@ -687,7 +685,7 @@ describe('ValidatorService', () => {
     });
 
     it('should throw an error if expectation or code is not found', async () => {
-      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
+      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((_type) => {
         return Promise.resolve([]);
       });
 
@@ -721,14 +719,10 @@ describe('ValidatorService', () => {
           security: 1.1,
         },
         previousValidations: ['prev-validation-1'],
-        iterative: false
+        iterative: false,
       };
 
-      const result = await service.validateWithSemanticMediation(
-        expectationId,
-        codeId,
-        options
-      );
+      const result = await service.validateWithSemanticMediation(expectationId, codeId, options);
 
       expect(result).toBeDefined();
       expect(result.expectationId).toBe(expectationId);
@@ -742,8 +736,8 @@ describe('ValidatorService', () => {
         {
           strategy: options.strategy,
           focusAreas: options.focusAreas,
-          customWeights: options.weights
-        }
+          customWeights: options.weights,
+        },
       );
       expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalledWith(
         'validator',
@@ -752,8 +746,8 @@ describe('ValidatorService', () => {
           expectationId,
           codeId,
           validationType: 'semantic_mediation',
-          iterative: false
-        })
+          iterative: false,
+        }),
       );
       expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();
@@ -761,7 +755,7 @@ describe('ValidatorService', () => {
     });
 
     it('should throw an error if expectation or code is not found', async () => {
-      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
+      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((_type) => {
         return Promise.resolve([]);
       });
 
@@ -778,11 +772,11 @@ describe('ValidatorService', () => {
         previousValidations?: string[];
         iterative?: boolean;
       } = {
-        strategy: 'balanced'
+        strategy: 'balanced',
       };
 
       await expect(
-        service.validateWithSemanticMediation(expectationId, codeId, options)
+        service.validateWithSemanticMediation(expectationId, codeId, options),
       ).rejects.toThrow('Expectation or Code not found');
     });
   });
@@ -799,7 +793,7 @@ describe('ValidatorService', () => {
       const result = await service.validateCodeWithSemanticInput(
         expectationId,
         codeId,
-        semanticInput
+        semanticInput,
       );
 
       expect(result).toBeDefined();
@@ -807,7 +801,7 @@ describe('ValidatorService', () => {
       expect(semanticMediatorService.enrichWithContext).toHaveBeenCalledWith(
         'validator',
         semanticInput,
-        expect.stringContaining(`expectation:${expectationId} code:${codeId}`)
+        expect.stringContaining(`expectation:${expectationId} code:${codeId}`),
       );
       expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
       expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();

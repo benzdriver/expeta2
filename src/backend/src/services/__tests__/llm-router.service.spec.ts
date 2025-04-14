@@ -3,16 +3,13 @@ import { ConfigService } from '@nestjs/config';
 
 import { HttpModule } from '@nestjs/axios';
 
-import { HttpService } from '@nestjs/axios';
-import { of, throwError } from 'rxjs';
-import axios from 'axios';
 import { AxiosResponse, AxiosError } from 'axios';
 import { LlmRouterService } from '../llm-router.service';
 import { AnthropicMessageResponse, OpenAIChatCompletionResponse } from '../llm-router.service';
 
 describe('LlmRouterService', () => {
   let service: LlmRouterService;
-  let configService: ConfigService;
+  let _configService: ConfigService;
 
   const mockAnthropicApiKey = 'test-anthropic-key';
   const mockOpenaiApiKey = 'test-openai-key';
@@ -61,7 +58,7 @@ describe('LlmRouterService', () => {
     }).compile();
 
     service = module.get<LlmRouterService>(LlmRouterService);
-    configService = module.get<ConfigService>(ConfigService); // Keep reference if needed, but use mockConfigGet for mocking
+    _configService = module.get<ConfigService>(ConfigService); // Keep reference if needed, but use mockConfigGet for mocking
 
     jest.clearAllMocks(); // Clear other mocks like spies
   });
@@ -79,7 +76,7 @@ describe('LlmRouterService', () => {
       jest.spyOn(service as any, '_callOpenAI').mockClear();
     });
 
-    const mockAnthropicSuccessResponse: AxiosResponse<AnthropicMessageResponse> = {
+    const _mockAnthropicSuccessResponse: AxiosResponse<AnthropicMessageResponse> = {
       data: {
         id: 'anthropic-test-id',
         type: 'message',
@@ -96,7 +93,7 @@ describe('LlmRouterService', () => {
       config: { headers: {} as any }, // Use 'as any' to bypass strict type checks if needed
     };
 
-    const mockOpenaiSuccessResponse: AxiosResponse<OpenAIChatCompletionResponse> = {
+    const _mockOpenaiSuccessResponse: AxiosResponse<OpenAIChatCompletionResponse> = {
       data: {
         id: 'openai-test-id',
         object: 'chat.completion',
@@ -117,7 +114,7 @@ describe('LlmRouterService', () => {
       config: { headers: {} as any }, // Use 'as any' to bypass strict type checks if needed
     };
 
-    const mockAnthropicApiError = new AxiosError(
+    const _mockAnthropicApiError = new AxiosError(
       'Anthropic API Error',
       '500',
       undefined,
@@ -131,7 +128,7 @@ describe('LlmRouterService', () => {
       } as AxiosResponse,
     );
 
-    const mockOpenaiApiError = new AxiosError('OpenAI API Error', '500', undefined, undefined, {
+    const _mockOpenaiApiError = new AxiosError('OpenAI API Error', '500', undefined, undefined, {
       status: 500,
       statusText: 'Internal Server Error',
       data: {},
@@ -217,16 +214,16 @@ describe('LlmRouterService', () => {
       }).compile();
       const testService = module.get<LlmRouterService>(LlmRouterService);
 
-      const anthropicSpy = jest.spyOn(testService as any, '_callAnthropic');
-      const openaiSpy = jest
+      const _anthropicSpy = jest.spyOn(testService as any, '_callAnthropic');
+      const _openaiSpy = jest
         .spyOn(testService as any, '_callOpenAI')
         .mockResolvedValue('OpenAI response');
 
       const result = await testService.generateContent(prompt, options);
 
-      expect(anthropicSpy).not.toHaveBeenCalled();
-      expect(openaiSpy).toHaveBeenCalledTimes(1);
-      expect(openaiSpy).toHaveBeenCalledWith(
+      expect(_anthropicSpy).not.toHaveBeenCalled();
+      expect(_openaiSpy).toHaveBeenCalledTimes(1);
+      expect(_openaiSpy).toHaveBeenCalledWith(
         prompt,
         'You are a helpful assistant.',
         mockOpenaiModel, // Should use OpenAI model now
@@ -256,24 +253,24 @@ describe('LlmRouterService', () => {
       }).compile();
       const testService = module.get<LlmRouterService>(LlmRouterService);
 
-      const anthropicSpy = jest.spyOn(testService as any, '_callAnthropic');
-      const openaiSpy = jest.spyOn(testService as any, '_callOpenAI');
+      const _anthropicSpy = jest.spyOn(testService as any, '_callAnthropic');
+      const _openaiSpy = jest.spyOn(testService as any, '_callOpenAI');
 
       await expect(testService.generateContent(prompt, options)).rejects.toThrow(
         'LLM generation failed with primary provider (openai): Primary provider (openai) is configured but API key is missing.',
       );
 
-      expect(anthropicSpy).not.toHaveBeenCalled();
+      expect(_anthropicSpy).not.toHaveBeenCalled();
     });
 
     it('should use OpenAI if specified as provider', async () => {
       jest.spyOn(service as any, '_callOpenAI').mockResolvedValue('OpenAI response');
-      const anthropicSpy = jest.spyOn(service as any, '_callAnthropic');
+      const _anthropicSpy = jest.spyOn(service as any, '_callAnthropic');
 
       const specificOptions = { ...options, provider: 'openai' as const };
       const result = await service.generateContent(prompt, specificOptions);
 
-      expect(anthropicSpy).not.toHaveBeenCalled();
+      expect(_anthropicSpy).not.toHaveBeenCalled();
       expect(service['_callOpenAI']).toHaveBeenCalledTimes(1);
       expect(service['_callOpenAI']).toHaveBeenCalledWith(
         prompt,

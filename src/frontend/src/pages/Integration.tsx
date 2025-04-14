@@ -4,8 +4,8 @@ import SemanticMediatorPanel from '../components/SemanticIntegration/SemanticMed
 import '../components/SemanticIntegration/SemanticIntegration.css';
 
 const Integration: React.FC = () => {
-  const [selectedRequirementId, setSelectedRequirementId] = useState<string>('');
-  const [initialData, setInitialData] = useState<any>(null);
+  const [selectedRequirementId, _setSelectedRequirementId] = useState<string>('');
+  const [initialData, _setInitialData] = useState<any>(null);
   
   return (
     <div className="page-container">

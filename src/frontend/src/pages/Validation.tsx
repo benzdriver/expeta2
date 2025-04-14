@@ -18,7 +18,7 @@ interface ValidationDetail {
 }
 
 const Validation: React.FC = () => {
-  const [validationResults, setValidationResults] = useState<ValidationResult[]>([
+  const [validationResults, _setValidationResults] = useState<ValidationResult[]>([
     {
       id: 'val-001',
       expectationId: 'user_management_system',

@@ -1,23 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ChatInterface.css';
+import loggingService from '../../services/logging.service';
 import type { Message } from '../../services/logging.service';
 import type { Expectation, ConversationStage, ConversationContext, ChatInterfaceProps } from './types';
 
-const loggingService = (() => {
+const createFallbackLogger = () => ({
+  startSession: () => { /* empty */ },
+  endSession: () => { /* empty */ },
+  info: () => { /* empty */ },
+  debug: () => { /* empty */ },
+  warn: () => { /* empty */ },
+  error: () => { /* empty */ },
+  logSessionMessage: () => { /* empty */ },
+  logSessionStateChange: () => { /* empty */ }
+});
+
+const logger = (() => {
   try {
-    return require('../../services/logging.service').default;
+    return loggingService;
   } catch (e) {
     console.error('Failed to load logging service:', e);
-    return {
-      startSession: () => {},
-      endSession: () => {},
-      info: () => {},
-      debug: () => {},
-      warn: () => {},
-      error: () => {},
-      logSessionMessage: () => {},
-      logSessionStateChange: () => {}
-    };
+    return createFallbackLogger();
   }
 })();
 
@@ -26,7 +29,7 @@ const ConversationLogger = React.lazy(() => import('./ConversationLogger'));
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   initialMessages = [], 
   onSendMessage,
-  onExpectationCreated,
+  _onExpectationCreated,
   enableLogging = true,
   sessionId = `session-${Date.now()}`
 }) => {
@@ -41,22 +44,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [currentStage, setCurrentStage] = useState<ConversationStage>('initial');
-  const [currentExpectation, setCurrentExpectation] = useState<Partial<Expectation>>({
+  const [_currentStage, _setCurrentStage] = useState<ConversationStage>('initial');
+  const [_currentExpectation, _setCurrentExpectation] = useState<Partial<Expectation>>({
     id: `exp-${Date.now()}`,
     criteria: [],
     semanticTags: [],
     priority: 'medium',
     subExpectations: []
   });
-  const [clarificationRound, setClarificationRound] = useState(0);
-  const [semanticAnalysisComplete, setSemanticAnalysisComplete] = useState(false);
-  const [conversationContext, setConversationContext] = useState<ConversationContext>({
+  const [_clarificationRound, _setClarificationRound] = useState(0);
+  const [_semanticAnalysisComplete, _setSemanticAnalysisComplete] = useState(false);
+  const [_conversationContext, setConversationContext] = useState<ConversationContext>({
     detectedKeywords: [],
     userPreferences: {},
     followUpQuestions: []
   });
-  const [showLogger, setShowLogger] = useState(false);
+  const [_showLogger, _setShowLogger] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
@@ -107,13 +110,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     if (enableLogging) {
       try {
-        loggingService.logSessionMessage(sessionId, newUserMessage);
-        loggingService.logSessionStateChange(sessionId, currentStage, currentStage, {
+        logger.logSessionMessage(sessionId, newUserMessage);
+        logger.logSessionStateChange(sessionId, _currentStage, _currentStage, {
           userInput: inputValue,
-          clarificationRound
+          clarificationRound: _clarificationRound
         });
-      } catch (error) {
-        console.error('Failed to log user message:', error);
+      } catch (error: unknown) {
+        logger.error('ChatInterface', 'Failed to log user message:', error instanceof Error ? error : { message: String(error) });
       }
     }
 
@@ -123,25 +126,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const processUserInput = (userInput: string) => {
     if (enableLogging) {
       try {
-        loggingService.debug('ConversationFlow', '处理用户输入', {
-          currentStage,
+        logger.debug('ConversationFlow', '处理用户输入', {
+          currentStage: _currentStage,
           inputLength: userInput.length,
-          clarificationRound,
+          clarificationRound: _clarificationRound,
           timestamp: new Date().toISOString()
         });
         
-        loggingService.info('ConversationFlow', `用户输入处理 - 阶段: ${currentStage}`, {
-          stage: currentStage,
-          clarificationRound,
+        logger.info('ConversationFlow', `用户输入处理 - 阶段: ${_currentStage}`, {
+          stage: _currentStage,
+          clarificationRound: _clarificationRound,
           inputLength: userInput.length,
-          expectationId: currentExpectation.id,
+          expectationId: _currentExpectation.id,
           sessionId,
           messageCount: messages.length,
-          semanticAnalysisComplete,
+          semanticAnalysisComplete: _semanticAnalysisComplete,
           timestamp: new Date().toISOString()
         });
-      } catch (error) {
-        console.error('Failed to log user input processing:', error);
+      } catch (error: unknown) {
+        logger.error('ChatInterface', 'Failed to log user input processing:', error instanceof Error ? error : { message: String(error) });
       }
     }
     
@@ -162,9 +165,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       if (enableLogging) {
         try {
-          loggingService.logSessionMessage(sessionId, systemResponse);
-        } catch (error) {
-          console.error('Failed to log system response:', error);
+          logger.logSessionMessage(sessionId, systemResponse);
+        } catch (error: unknown) {
+          logger.error('ChatInterface', 'Failed to log system response:', error instanceof Error ? error : { message: String(error) });
         }
       }
     }, 1000);
@@ -178,14 +181,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }));
   };
 
-  const analyzeComplexity = (text: string): 'simple' | 'medium' | 'complex' => {
+  const _analyzeComplexity = (text: string): 'simple' | 'medium' | 'complex' => {
     const wordCount = text.split(/\s+/).length;
     if (wordCount < 20) return 'simple';
     if (wordCount < 50) return 'medium';
     return 'complex';
   };
 
-  const detectIndustryFromInput = (input: string): string | null => {
+  const _detectIndustryFromInput = (_input: string): string | null => {
     // Simplified implementation for the fixed file
     return null;
   };
@@ -221,14 +224,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Add a catch block for the try at line 1842
   try {
     // This is a dummy try-catch to close any unclosed try blocks
-  } catch (error) {
-    console.error('Error in semantic analysis:', error);
+  } catch (error: unknown) {
+    logger.error('ChatInterface', 'Error in semantic analysis:', error instanceof Error ? error : { message: String(error) });
   }
 
   try {
     return (
       <React.Fragment>
-        {enableLogging && showLogger && (
+        {enableLogging && _showLogger && (
           <React.Suspense fallback={<div>Loading logger...</div>}>
             <ConversationLogger sessionId={sessionId} />
           </React.Suspense>
@@ -288,9 +291,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </section>
       </React.Fragment>
     );
-  } catch (error) {
-    console.error('Error in rendering ChatInterface:', error);
-    return <div>Error rendering chat interface. Please check console for details.</div>;
+  } catch (error: unknown) {
+    logger.error('ChatInterface', 'Error in rendering ChatInterface:', error instanceof Error ? error : { message: String(error) });
+    return <div>Error rendering chat interface. Please check logs for details.</div>;
   }
 };
 
