@@ -2,6 +2,18 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as templates from './prompt-templates';
+import {
+  RequirementAnalysis,
+  ClarificationQuestions,
+  ClarificationProgress,
+  ExpectationModel,
+  CodeGenerationResult,
+  ValidationResult,
+  TestCasesResult,
+  SemanticInsights,
+  Requirement,
+  Clarification,
+} from './llm-response.interfaces';
 
 export interface OpenAIChatCompletionResponse {
   id: string;
@@ -409,7 +421,7 @@ export class LlmRouterService {
     }
   }
 
-  async analyzeRequirement(requirementText: string): Promise<any> {
+  async analyzeRequirement(requirementText: string): Promise<RequirementAnalysis> {
     const prompt = templates.REQUIREMENT_ANALYSIS_PROMPT.replace(
       '{requirementText}',
       requirementText,
@@ -431,7 +443,7 @@ export class LlmRouterService {
   async generateClarificationQuestions(
     requirementText: string,
     existingClarifications: string,
-  ): Promise<any> {
+  ): Promise<ClarificationQuestions> {
     const prompt = templates.GENERATE_CLARIFICATION_QUESTIONS_PROMPT.replace(
       '{requirementText}',
       requirementText,
@@ -452,7 +464,7 @@ export class LlmRouterService {
   async analyzeClarificationProgress(
     requirementText: string,
     clarificationHistory: string,
-  ): Promise<any> {
+  ): Promise<ClarificationProgress> {
     const prompt = templates.ANALYZE_CLARIFICATION_PROGRESS_PROMPT.replace(
       '{requirementText}',
       requirementText,
@@ -470,7 +482,10 @@ export class LlmRouterService {
     }
   }
 
-  async generateExpectationModel(requirement: any, clarifications: any[]): Promise<any> {
+  async generateExpectationModel(
+    requirement: Requirement,
+    clarifications: Clarification[],
+  ): Promise<ExpectationModel> {
     const clarificationInfo = clarifications
       .map((c) => `问题: ${c.questionId}, 答案: ${c.answer}`)
       .join('\n');
@@ -498,7 +513,7 @@ export class LlmRouterService {
     language: string,
     framework: string,
     codeStyle: string,
-  ): Promise<any> {
+  ): Promise<CodeGenerationResult> {
     const prompt = templates.GENERATE_CODE_PROMPT.replace('{expectationModel}', expectationModel)
       .replace('{language}', language)
       .replace('{framework}', framework)
@@ -517,7 +532,10 @@ export class LlmRouterService {
     }
   }
 
-  async optimizeCode(originalCode: string, expectationModel: string): Promise<any> {
+  async optimizeCode(
+    originalCode: string,
+    expectationModel: string,
+  ): Promise<CodeGenerationResult> {
     const prompt = templates.OPTIMIZE_CODE_PROMPT.replace('{originalCode}', originalCode).replace(
       '{expectationModel}',
       expectationModel,
@@ -548,7 +566,10 @@ export class LlmRouterService {
     });
   }
 
-  async validateCode(expectationModel: string, codeImplementation: string): Promise<any> {
+  async validateCode(
+    expectationModel: string,
+    codeImplementation: string,
+  ): Promise<ValidationResult> {
     const prompt = templates.VALIDATE_CODE_PROMPT.replace(
       '{expectationModel}',
       expectationModel,
@@ -567,7 +588,10 @@ export class LlmRouterService {
     }
   }
 
-  async generateTestCases(expectationModel: string, codeImplementation: string): Promise<any> {
+  async generateTestCases(
+    expectationModel: string,
+    codeImplementation: string,
+  ): Promise<TestCasesResult> {
     const prompt = templates.GENERATE_TEST_CASES_PROMPT.replace(
       '{expectationModel}',
       expectationModel,
@@ -590,7 +614,7 @@ export class LlmRouterService {
     validationResults: string,
     expectationModel: string,
     codeImplementation: string,
-  ): Promise<any> {
+  ): Promise<SemanticInsights> {
     const prompt = templates.ANALYZE_VALIDATION_RESULTS_PROMPT.replace(
       '{validationResults}',
       validationResults,
@@ -615,7 +639,7 @@ export class LlmRouterService {
     sourceModule: string,
     targetModule: string,
     sourceData: string,
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const prompt = templates.TRANSLATE_BETWEEN_MODULES_PROMPT.replace(
       /{sourceModule}/g,
       sourceModule,
@@ -640,7 +664,7 @@ export class LlmRouterService {
     module: string,
     originalData: string,
     contextQuery: string,
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const prompt = templates.ENRICH_WITH_CONTEXT_PROMPT.replace('{module}', module)
       .replace('{originalData}', originalData)
       .replace('{contextQuery}', contextQuery);
@@ -663,7 +687,7 @@ export class LlmRouterService {
     dataA: string,
     moduleB: string,
     dataB: string,
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const prompt = templates.RESOLVE_SEMANTIC_CONFLICTS_PROMPT.replace('{moduleA}', moduleA)
       .replace('{dataA}', dataA)
       .replace('{moduleB}', moduleB)
@@ -682,7 +706,7 @@ export class LlmRouterService {
     }
   }
 
-  async extractSemanticInsights(data: string, query: string): Promise<any> {
+  async extractSemanticInsights(data: string, query: string): Promise<SemanticInsights> {
     const prompt = templates.EXTRACT_SEMANTIC_INSIGHTS_PROMPT.replace('{data}', data).replace(
       '{query}',
       query,
@@ -706,10 +730,10 @@ export class LlmRouterService {
    * 这个方法使用语义分析结果来增强代码生成过程
    */
   async generateCodeWithSemanticInput(
-    expectation: any,
-    semanticAnalysis: any,
-    options?: any,
-  ): Promise<any> {
+    expectation: ExpectationModel,
+    semanticAnalysis: SemanticInsights,
+    options?: Record<string, unknown>,
+  ): Promise<CodeGenerationResult> {
     this.logger.log('Generating code with semantic input');
 
     const prompt = templates.GENERATE_CODE_WITH_SEMANTIC_INPUT_PROMPT
@@ -721,18 +745,18 @@ export class LlmRouterService {
           .replace('{options}', JSON.stringify(options || {}, null, 2))
       : `
         基于以下期望模型和语义分析结果，生成相应的代码实现：
-        
+
         期望模型：${JSON.stringify(expectation, null, 2)}
-        
+
         语义分析结果：${JSON.stringify(semanticAnalysis, null, 2)}
-        
+
         生成选项：${JSON.stringify(options || {}, null, 2)}
-        
+
         请生成以下文件的代码：
         1. 主要功能实现文件
         2. 接口定义文件
         3. 测试文件
-        
+
         返回JSON格式，包含files数组，每个文件包含path、content和language字段。
       `;
 
@@ -753,7 +777,10 @@ export class LlmRouterService {
    * 分析多轮对话的需求澄清过程
    * 提供对话流程的深入分析，包括有效性评分、关键信息提取和改进建议
    */
-  async analyzeMultiRoundDialogue(requirementText: string, dialogueHistory: string): Promise<any> {
+  async analyzeMultiRoundDialogue(
+    requirementText: string,
+    dialogueHistory: string,
+  ): Promise<ClarificationProgress> {
     this.logger.log('Analyzing multi-round dialogue process');
 
     const prompt = templates.MULTI_ROUND_DIALOGUE_ANALYSIS_PROMPT.replace(
@@ -778,7 +805,9 @@ export class LlmRouterService {
    * 生成期望模型总结
    * 基于期望模型生成简洁的总结，确保用户理解系统将要实现什么
    */
-  async generateExpectationSummary(expectationModel: any): Promise<any> {
+  async generateExpectationSummary(
+    expectationModel: ExpectationModel,
+  ): Promise<Record<string, unknown>> {
     this.logger.log('Generating expectation model summary');
 
     const prompt = templates.EXPECTATION_SUMMARY_PROMPT.replace(

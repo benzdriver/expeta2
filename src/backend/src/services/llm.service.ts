@@ -2,6 +2,17 @@ import { Injectable, Logger } from '@nestjs/common';
 import { LlmRouterService } from './llm-router.service';
 
 /**
+ * Interface for LLM request options
+ */
+interface LlmRequestOptions {
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  systemPrompt?: string;
+  provider?: 'anthropic' | 'openai';
+}
+
+/**
  * LLM Service - A wrapper around LlmRouterService to maintain backward compatibility
  * This service provides a simplified interface to the LlmRouterService
  */
@@ -17,7 +28,7 @@ export class LlmService {
    * @param options Optional parameters for the LLM request
    * @returns The generated content
    */
-  async generateContent(prompt: string, options: any = {}): Promise<string> {
+  async generateContent(prompt: string, options: LlmRequestOptions = {}): Promise<string> {
     this.logger.debug('Generating content using LlmRouterService');
     return this.llmRouterService.generateContent(prompt, options);
   }
