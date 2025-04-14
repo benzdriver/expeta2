@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LlmResolutionStrategy } from './llm-resolution.strategy';
-import { LlmService } from '../../../../../services/llm.service';
+import { LlmRouterService } from '../../../../../services/llm-router.service';
 import { SemanticDescriptor } from '../../../interfaces/semantic-descriptor.interface';
 import { describe, beforeEach, it, expect, jest } from '@jest/globals';
 
 describe('LlmResolutionStrategy', () => {
   let strategy: LlmResolutionStrategy;
-  let llmService: LlmService;
+  let llmService: LlmRouterService;
 
   const mockLlmService = {
     generateContent: jest.fn().mockReturnValue(Promise.resolve('{"result": "llm generated result"}')),
@@ -17,14 +17,14 @@ describe('LlmResolutionStrategy', () => {
       providers: [
         LlmResolutionStrategy,
         {
-          provide: LlmService,
+          provide: LlmRouterService,
           useValue: mockLlmService,
         },
       ],
     }).compile();
 
     strategy = module.get<LlmResolutionStrategy>(LlmResolutionStrategy);
-    llmService = module.get<LlmService>(LlmService);
+    llmService = module.get<LlmRouterService>(LlmRouterService);
   });
 
   it('should be defined', () => {

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SemanticDescriptor } from '../../../interfaces/semantic-descriptor.interface';
 import { ResolutionStrategy } from '../interfaces/resolution-strategy.interface';
 import { ResolutionResult } from '../interfaces/resolution-result.interface';
-import { LlmService } from '../../../../../services/llm.service';
+import { LlmRouterService } from '../../../../../services/llm-router.service';
 
 /**
  * LLM-based resolution strategy
@@ -15,7 +15,7 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
   readonly name = 'llm_resolution';
   readonly priority = 1; // Lowest priority
 
-  constructor(private readonly llmService: LlmService) {}
+  constructor(private readonly llmService: LlmRouterService) {}
 
   /**
    * Check if this strategy can handle the given resolution request

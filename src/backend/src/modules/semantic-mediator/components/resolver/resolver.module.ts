@@ -6,12 +6,12 @@ import { LlmResolutionStrategy } from './strategies/llm-resolution.strategy';
 import { MonitoringSystemService } from '../monitoring-system/monitoring-system.service';
 import { IntelligentCacheService } from '../intelligent-cache/intelligent-cache.service';
 import { MemoryModule } from '../../../memory/memory.module';
-import { LlmModule } from '../../../../services/llm.module';
+import { LlmRouterModule } from '../../../../services/llm-router.module';
 
 @Module({
   imports: [
     MemoryModule,
-    LlmModule,
+    LlmRouterModule,
   ],
   providers: [
     ResolverService,

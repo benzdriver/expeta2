@@ -166,7 +166,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         sender: 'system',
         content: `感谢您的输入。基于我们的对话，我对您的需求理解如下：\n\n${newUnderstanding}\n\n这个理解是否准确？如果有任何需要修正或补充的地方，请告诉我。`,
         timestamp: new Date(),
-        type: 'understanding_summary'
+        type: 'summary'
       };
       
       setMessages(prev => [...prev, systemResponse]);
@@ -188,7 +188,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       // Update conversation stage if needed
       if (currentStage === 'initial') {
-        setCurrentStage('clarifying');
+        setCurrentStage('clarification');
       }
     }, 1500);
   };
@@ -265,7 +265,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const renderMessageContent = (message: Message): JSX.Element => {
-    if (message.type === 'understanding_summary') {
+    if (message.type === 'summary') {
       return (
         <div className="understanding-summary">
           {message.content.split('\n\n').map((section, sectionIndex) => {
@@ -296,7 +296,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         </div>
       );
-    } else if (message.type === 'summary') {
+    } else if (message.type === 'regular' && message.content.includes('##')) {
       return (
         <div className="summary-content">
           {message.content.split('\n').map((line, index) => {
@@ -421,9 +421,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <span className="status-label">当前阶段:</span>
             <span className="status-value">{
               currentStage === 'initial' ? '初始理解' :
-              currentStage === 'clarifying' ? '需求澄清' :
-              currentStage === 'refining' ? '细节完善' :
-              currentStage === 'finalizing' ? '最终确认' : '未知'
+              currentStage === 'clarification' ? '需求澄清' :
+              currentStage === 'refinement' ? '细节完善' :
+              currentStage === 'confirmation' ? '最终确认' : '未知'
             }</span>
           </div>
           <div className="status-item">
