@@ -1450,6 +1450,7 @@ export class SemanticMediatorService {
 
     return Array.from(areas);
   }
+<<<<<<< HEAD
 
   /**
    * 注册数据源
@@ -1874,6 +1875,109 @@ export class SemanticMediatorService {
       });
 
       throw new Error(`Failed to analyze feedback patterns: ${error.message}`);
+    }
+  }
+
+  /**
+   * 将数据转换为指定的模式
+   * @param data 源数据
+   * @param targetSchema 目标模式
+   * @returns 转换后的数据
+   */
+  async translateToSchema(data: any, targetSchema: any): Promise<any> {
+    this.logger.log('Translating data to target schema');
+    
+    try {
+      const sourceData = JSON.stringify(data, null, 2);
+      const schemaData = JSON.stringify(targetSchema, null, 2);
+      
+      const translationPrompt = `
+        将以下数据转换为目标模式：
+        
+        源数据：
+        ${sourceData}
+        
+        目标模式：
+        ${schemaData}
+        
+        请确保转换后的数据符合目标模式的结构和语义要求。
+        返回转换后的JSON数据。
+      `;
+      
+      const translatedText = await this.llmService.generateContent(translationPrompt, {
+        systemPrompt: '你是一个专业的数据转换专家，擅长将数据从一种模式转换为另一种模式，同时保持语义一致性。',
+      });
+      
+      const transformedData = JSON.parse(translatedText);
+      
+      await this.trackSemanticTransformation(
+        'generic',
+        'schema_based',
+        data,
+        transformedData,
+        {
+          trackDifferences: true,
+          analyzeTransformation: true,
+          saveToMemory: true
+        }
+      );
+      
+      this.logger.debug('Data successfully translated to target schema');
+      return transformedData;
+    } catch (error) {
+      this.logger.error(`Error translating data to schema: ${error.message}`, error.stack);
+      throw new Error(`Failed to translate data to schema: ${error.message}`);
+    }
+  }
+
+  /**
+   * 注册语义数据源
+   * @param sourceId 数据源ID
+   * @param sourceName 数据源名称
+   * @param sourceType 数据源类型
+   * @param semanticDescription 语义描述
+   * @param schema 数据模式（可选）
+   */
+  async registerSemanticDataSource(
+    sourceId: string,
+    sourceName: string,
+    sourceType: string,
+    semanticDescription: string,
+    schema?: any
+  ): Promise<void> {
+    this.logger.log(`Registering semantic data source: ${sourceName} (${sourceId})`);
+    
+    try {
+      const dataSourceRecord = {
+        id: sourceId,
+        name: sourceName,
+        type: sourceType,
+        semanticDescription,
+        schema,
+        registrationTime: new Date(),
+        status: 'active'
+      };
+      
+      await this.memoryService.storeMemory({
+        type: MemoryType.SYSTEM,
+        content: dataSourceRecord,
+        metadata: {
+          title: `Semantic Data Source: ${sourceName}`,
+          sourceId,
+          sourceType,
+          registrationTime: new Date()
+        },
+        tags: ['semantic_data_source', sourceType, sourceId],
+        semanticMetadata: {
+          description: `Semantic data source: ${sourceName}. ${semanticDescription}`,
+          relevanceScore: 1.0
+        }
+      });
+      
+      this.logger.debug(`Semantic data source registered successfully: ${sourceId}`);
+    } catch (error) {
+      this.logger.error(`Error registering semantic data source: ${error.message}`, error.stack);
+      throw new Error(`Failed to register semantic data source: ${error.message}`);
     }
   }
 }
