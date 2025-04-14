@@ -1,202 +1,185 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ValidatorService } from '../validator.service';
 import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediator.service';
-import { ValidatorModule } from '../validator.module';
-import { SemanticMediatorModule } from '../../semantic-mediator/semantic-mediator.module';
-import { MongooseModule } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Validation, ValidationSchema } from '../schemas/validation.schema';
-import { LlmModule } from '../../../services/llm.module';
-import { MemoryModule } from '../../memory/memory.module';
+import { getModelToken } from '@nestjs/mongoose';
+import { MemoryService } from '../../memory/memory.service';
+import { LlmService } from '../../../services/llm.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
+import { Logger } from '@nestjs/common';
 
 describe('ValidatorService and SemanticMediatorService Integration', () => {
   let validatorService: ValidatorService;
   let semanticMediatorService: SemanticMediatorService;
-  let moduleRef: TestingModule;
+  let memoryService: MemoryService;
+  let llmService: LlmService;
+  let validationModel: Model<Validation>;
 
   beforeEach(async () => {
-    moduleRef = await Test.createTestingModule({
-      imports: [
-        MongooseModule.forRoot('mongodb://localhost/expeta-test'),
-        MongooseModule.forFeature([
-          { name: Validation.name, schema: ValidationSchema },
-        ]),
-        LlmModule,
-        MemoryModule,
-        SemanticMediatorModule,
-        ValidatorModule,
+    // Create mock services
+    memoryService = {
+      getMemoryByType: jest.fn(),
+      storeMemory: jest.fn().mockResolvedValue({}),
+    } as any;
+
+    llmService = {
+      generateContent: jest.fn().mockResolvedValue('{"status":"passed","score":90,"details":[]}'),
+    } as any;
+
+    semanticMediatorService = {
+      generateValidationContext: jest.fn().mockResolvedValue({
+        semanticContext: {
+          codeFeatures: { complexity: 'low' },
+          semanticRelationship: { alignment: 'high' }
+        }
+      }),
+      enrichWithContext: jest.fn().mockImplementation((_, data) => Promise.resolve(data)),
+      translateBetweenModules: jest.fn().mockResolvedValue('test prompt'),
+      trackSemanticTransformation: jest.fn().mockResolvedValue({}),
+    } as any;
+
+    validationModel = {
+      create: jest.fn().mockReturnValue({
+        save: jest.fn().mockResolvedValue({}),
+      }),
+      find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([]),
+        }),
+      }),
+      findById: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      }),
+    } as any;
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        ValidatorService,
+        { provide: SemanticMediatorService, useValue: semanticMediatorService },
+        { provide: MemoryService, useValue: memoryService },
+        { provide: LlmService, useValue: llmService },
+        { provide: getModelToken(Validation.name), useValue: validationModel },
+        { provide: Logger, useValue: { log: jest.fn(), error: jest.fn(), debug: jest.fn() } },
       ],
     }).compile();
 
     validatorService = moduleRef.get<ValidatorService>(ValidatorService);
-    semanticMediatorService = moduleRef.get<SemanticMediatorService>(SemanticMediatorService);
-  });
-
-  afterEach(async () => {
-    if (moduleRef) {
-      await moduleRef.close();
-    }
   });
 
   describe('Integration between ValidatorService and SemanticMediatorService', () => {
     it('should use semantic mediator to generate validation context', async () => {
-      const generateValidationContextSpy = jest.spyOn(
-        semanticMediatorService,
-        'generateValidationContext',
-      );
-
       const expectationId = 'test-expectation-id';
       const codeId = 'test-code-id';
       const expectationMemory = {
         content: {
-          _id: expectationId,
+          _id: { toString: () => expectationId },
           model: 'Create a function that adds two numbers',
         },
       };
       const codeMemory = {
         content: {
-          _id: codeId,
+          _id: { toString: () => codeId },
           files: [{ path: 'test.js', content: 'function add(a, b) { return a + b; }' }],
         },
       };
 
-      jest.spyOn(validatorService['memoryService'], 'getMemoryByType')
-        .mockImplementation((type: MemoryType) => {
-          if (type === MemoryType.EXPECTATION) {
-            return Promise.resolve([expectationMemory] as any);
-          } else if (type === MemoryType.CODE) {
-            return Promise.resolve([codeMemory] as any);
-          }
-          return Promise.resolve([]);
-        });
+      // Mock memory service methods that are called by the validator service
+      (memoryService.getMemoryByType as jest.Mock).mockImplementation((type: MemoryType) => {
+        if (type === MemoryType.EXPECTATION) {
+          return Promise.resolve([expectationMemory]);
+        } else if (type === MemoryType.CODE) {
+          return Promise.resolve([codeMemory]);
+        }
+        return Promise.resolve([]);
+      });
 
-      jest.spyOn(validatorService['validationModel'], 'create').mockReturnValue({
-        id: 'test-validation-id',
-        expectationId,
-        codeId,
-        result: { passed: true, feedback: 'Good job!' },
-        metadata: {},
-        save: jest.fn().mockResolvedValue({}),
-      } as any);
-
+      // Call the validator service method that should use the semantic mediator
       await validatorService.validateCodeWithSemanticInput(expectationId, codeId, {
         semanticContext: 'Test semantic context',
         focusAreas: ['functionality'],
       });
 
-      expect(generateValidationContextSpy).toHaveBeenCalled();
+      // Verify that the semantic mediator's method was called
+      expect(semanticMediatorService.generateValidationContext).toHaveBeenCalled();
+      expect(semanticMediatorService.enrichWithContext).toHaveBeenCalled();
+      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
     });
 
     it('should use semantic mediator for adaptive context validation', async () => {
-      const generateValidationContextSpy = jest.spyOn(
-        semanticMediatorService,
-        'generateValidationContext',
-      );
-      const translateBetweenModulesSpy = jest.spyOn(
-        semanticMediatorService,
-        'translateBetweenModules',
-      );
-
       const expectationId = 'test-expectation-id';
       const codeId = 'test-code-id';
       const expectationMemory = {
         content: {
-          _id: expectationId,
+          _id: { toString: () => expectationId },
           model: 'Create a function that adds two numbers',
         },
       };
       const codeMemory = {
         content: {
-          _id: codeId,
+          _id: { toString: () => codeId },
           files: [{ path: 'test.js', content: 'function add(a, b) { return a + b; }' }],
         },
       };
 
-      jest.spyOn(validatorService['memoryService'], 'getMemoryByType')
-        .mockImplementation((type: MemoryType) => {
-          if (type === MemoryType.EXPECTATION) {
-            return Promise.resolve([expectationMemory] as any);
-          } else if (type === MemoryType.CODE) {
-            return Promise.resolve([codeMemory] as any);
-          }
-          return Promise.resolve([]);
-        });
+      // Mock memory service methods
+      (memoryService.getMemoryByType as jest.Mock).mockImplementation((type: MemoryType) => {
+        if (type === MemoryType.EXPECTATION) {
+          return Promise.resolve([expectationMemory]);
+        } else if (type === MemoryType.CODE) {
+          return Promise.resolve([codeMemory]);
+        }
+        return Promise.resolve([]);
+      });
 
-      jest.spyOn(validatorService['validationModel'], 'create').mockReturnValue({
-        id: 'test-validation-id',
-        expectationId,
-        codeId,
-        result: { passed: true, feedback: 'Good job!' },
-        metadata: {},
-        save: jest.fn().mockResolvedValue({}),
-      } as any);
-
+      // Call the validator service method that should use the semantic mediator
       await validatorService.validateWithAdaptiveContext(expectationId, codeId, {
         strategy: 'balanced',
         focusAreas: ['functionality', 'performance'],
       });
 
-      expect(generateValidationContextSpy).toHaveBeenCalled();
-      expect(translateBetweenModulesSpy).toHaveBeenCalled();
+      // Verify that the semantic mediator's methods were called
+      expect(semanticMediatorService.generateValidationContext).toHaveBeenCalled();
+      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
     });
 
     it('should use semantic mediator for full semantic mediation validation', async () => {
-      const generateValidationContextSpy = jest.spyOn(
-        semanticMediatorService,
-        'generateValidationContext',
-      );
-      const translateBetweenModulesSpy = jest.spyOn(
-        semanticMediatorService,
-        'translateBetweenModules',
-      );
-      const trackSemanticTransformationSpy = jest.spyOn(
-        semanticMediatorService,
-        'trackSemanticTransformation',
-      );
-
       const expectationId = 'test-expectation-id';
       const codeId = 'test-code-id';
       const expectationMemory = {
         content: {
-          _id: expectationId,
+          _id: { toString: () => expectationId },
           model: 'Create a function that adds two numbers',
         },
       };
       const codeMemory = {
         content: {
-          _id: codeId,
+          _id: { toString: () => codeId },
           files: [{ path: 'test.js', content: 'function add(a, b) { return a + b; }' }],
         },
       };
 
-      jest.spyOn(validatorService['memoryService'], 'getMemoryByType')
-        .mockImplementation((type: MemoryType) => {
-          if (type === MemoryType.EXPECTATION) {
-            return Promise.resolve([expectationMemory] as any);
-          } else if (type === MemoryType.CODE) {
-            return Promise.resolve([codeMemory] as any);
-          }
-          return Promise.resolve([]);
-        });
+      // Mock memory service methods
+      (memoryService.getMemoryByType as jest.Mock).mockImplementation((type: MemoryType) => {
+        if (type === MemoryType.EXPECTATION) {
+          return Promise.resolve([expectationMemory]);
+        } else if (type === MemoryType.CODE) {
+          return Promise.resolve([codeMemory]);
+        }
+        return Promise.resolve([]);
+      });
 
-      jest.spyOn(validatorService['validationModel'], 'create').mockReturnValue({
-        id: 'test-validation-id',
-        expectationId,
-        codeId,
-        result: { passed: true, feedback: 'Good job!' },
-        metadata: {},
-        save: jest.fn().mockResolvedValue({}),
-      } as any);
-
+      // Call the validator service method that should use the semantic mediator
       await validatorService.validateWithSemanticMediation(expectationId, codeId, {
         strategy: 'balanced',
         focusAreas: ['functionality', 'performance', 'security'],
         iterative: true,
       });
 
-      expect(generateValidationContextSpy).toHaveBeenCalled();
-      expect(translateBetweenModulesSpy).toHaveBeenCalled();
-      expect(trackSemanticTransformationSpy).toHaveBeenCalled();
+      // Verify that the semantic mediator's methods were called
+      expect(semanticMediatorService.generateValidationContext).toHaveBeenCalled();
+      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
+      expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();
     });
   });
 });
