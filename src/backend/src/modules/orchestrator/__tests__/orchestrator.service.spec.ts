@@ -8,6 +8,8 @@ import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediat
 import { MemoryType } from '../../memory/schemas/memory.schema';
 import { WorkflowType } from '../dto/workflow.dto';
 
+jest.mock('../../validator/schemas/validation.schema');
+
 describe('OrchestratorService', () => {
   let service: OrchestratorService;
   let clarifierService: ClarifierService;
@@ -214,7 +216,7 @@ describe('OrchestratorService', () => {
       const requirementId = 'non-existent-id';
 
       await expect(service.processRequirement(requirementId)).rejects.toThrow(
-        'Requirement not found'
+        'Requirement not found',
       );
     });
   });
@@ -309,18 +311,17 @@ describe('OrchestratorService', () => {
       const workflowId = WorkflowType.ITERATIVE_REFINEMENT;
       const params = { expectationId: 'exp-456', codeId: 'code-789', maxIterations: 2 };
 
-      // Mock validatorService.validateCode to return a score below threshold first, then above
-      jest.spyOn(validatorService, 'validateCode')
-        .mockResolvedValueOnce({
-          _id: 'val-123',
-          codeId: 'code-789',
-          expectationId: 'exp-456',
-          score: 0.7,
-          status: 'partial',
-          details: [{ 
-            expectationId: 'exp-456-sub', 
-            status: 'failed', 
-            score: 0.7, 
+      const mockPartialValidation = {
+        _id: 'val-123',
+        codeId: 'code-789',
+        expectationId: 'exp-456',
+        score: 0.7,
+        status: 'partial',
+        details: [
+          {
+            expectationId: 'exp-456-sub',
+            status: 'failed',
+            score: 0.7,
             message: 'Test issue',
             semanticInsights: 'Needs improvement'
           }],
@@ -372,11 +373,11 @@ describe('OrchestratorService', () => {
 
     it('should execute an adaptive validation workflow', async () => {
       const workflowId = WorkflowType.ADAPTIVE_VALIDATION;
-      const params = { 
-        expectationId: 'exp-456', 
-        codeId: 'code-789', 
+      const params = {
+        expectationId: 'exp-456',
+        codeId: 'code-789',
         previousValidationId: 'val-123',
-        adaptationStrategy: 'balanced'
+        adaptationStrategy: 'balanced',
       };
 
       const result = await service.executeWorkflow(workflowId, params);
@@ -400,7 +401,7 @@ describe('OrchestratorService', () => {
       const params = {};
 
       await expect(service.executeWorkflow(workflowId, params)).rejects.toThrow(
-        `Unknown workflow: ${workflowId}`
+        `Unknown workflow: ${workflowId}`,
       );
     });
   });
@@ -414,10 +415,23 @@ describe('OrchestratorService', () => {
             moduleId: 'clarifier',
             operation: 'generateExpectations',
             inputMapping: { requirementId: 'req-123' },
-            outputMapping: { expectationId: 'output.expectationId' }
-          }
-        ]
+            outputMapping: { expectationId: 'output.expectationId' },
+          },
+        ],
       };
+      
+      jest.spyOn(memoryService, 'storeMemory').mockResolvedValueOnce({
+        _id: 'workflow-123',
+        type: MemoryType.SYSTEM,
+        content: {
+          id: 'custom-workflow-123',
+          name: 'Custom Workflow',
+          steps: customWorkflowDto.steps,
+          createdAt: new Date(),
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
 
       const result = await service.createCustomWorkflow(customWorkflowDto);
 
@@ -440,17 +454,57 @@ describe('OrchestratorService', () => {
   describe('getWorkflowStatus', () => {
     it('should return the status of a workflow execution', async () => {
       const executionId = 'exec-123';
+      
+      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
+        if (type === MemoryType.SYSTEM) {
+          return Promise.resolve([
+            {
+              content: {
+                executionId,
+                status: 'completed',
+                startTime: new Date(),
+                endTime: new Date(),
+                results: { test: 'data' },
+              },
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
 
       const result = await service.getWorkflowStatus(executionId);
 
       expect(result).toBeDefined();
-      expect(result.status).toBeDefined();
+      expect(result.status).toBe('completed');
     });
   });
 
   describe('cancelWorkflow', () => {
     it('should cancel a workflow execution', async () => {
       const executionId = 'exec-123';
+      
+      jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
+        if (type === MemoryType.SYSTEM) {
+          return Promise.resolve([
+            {
+              content: {
+                executionId,
+                status: 'running',
+                startTime: new Date(),
+                results: { test: 'data' },
+                save: jest.fn().mockResolvedValue({
+                  executionId,
+                  status: 'cancelled',
+                  startTime: new Date(),
+                  endTime: new Date(),
+                  results: { test: 'data' },
+                }),
+              },
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
 
       const result = await service.cancelWorkflow(executionId);
 

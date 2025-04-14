@@ -44,3 +44,8 @@ coverage/
 *.tmp
 *.temp
 
+# Lockfiles
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+

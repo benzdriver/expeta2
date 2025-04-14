@@ -3,7 +3,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { ClarifierService } from '../clarifier.service';
 import { Requirement } from '../schemas/requirement.schema';
 import { Expectation } from '../schemas/expectation.schema';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { SemanticMediatorModule } from '../../semantic-mediator/semantic-mediator.module';
 import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediator.service';
@@ -27,17 +27,23 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
       }),
     };
     
-    mockExpectationModel = {
-      find: jest.fn().mockReturnThis(),
-      findById: jest.fn().mockReturnThis(),
-      findByIdAndUpdate: jest.fn().mockReturnThis(),
-      exec: jest.fn().mockResolvedValue([]),
-      save: jest.fn().mockImplementation(function () {
+    mockExpectationModel = function() {
+      this.find = jest.fn().mockReturnThis();
+      this.findById = jest.fn().mockReturnThis();
+      this.findByIdAndUpdate = jest.fn().mockReturnThis();
+      this.exec = jest.fn().mockResolvedValue([]);
+      this.save = jest.fn().mockImplementation(function () {
         return Promise.resolve(this);
-      }),
+      });
+      return this;
     };
     
-    const mockLlmService = {
+    mockExpectationModel.find = jest.fn().mockReturnThis();
+    mockExpectationModel.findById = jest.fn().mockReturnThis();
+    mockExpectationModel.findByIdAndUpdate = jest.fn().mockReturnThis();
+    mockExpectationModel.exec = jest.fn().mockResolvedValue([]);
+    
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockResolvedValue('{"result": "test"}'),
     };
     
@@ -48,12 +54,19 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
       storeMemory: jest.fn().mockResolvedValue(null),
       getRelatedMemories: jest.fn().mockResolvedValue([]),
       getMemoryByType: jest.fn().mockResolvedValue([]),
+      storeExpectation: jest.fn().mockResolvedValue({
+        _id: 'stored-expectation-id',
+        requirementId: '12345',
+        model: {
+          description: 'Landing page with product features',
+          priority: 'high',
+          features: ['Product showcase', 'Modern design'],
+          mainGoal: 'Showcase product features',
+        },
+      }),
     };
     
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        SemanticMediatorModule,
-      ],
       providers: [
         ClarifierService,
         {
@@ -65,12 +78,44 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
           useValue: mockExpectationModel,
         },
         {
-          provide: LlmService,
-          useValue: mockLlmService,
+          provide: LlmRouterService,
+          useValue: mockLlmRouterService,
         },
         {
           provide: MemoryService,
           useValue: mockMemoryService,
+        },
+        {
+          provide: SemanticMediatorService,
+          useValue: {
+            extractSemanticInsights: jest.fn().mockResolvedValue({
+              insights: ['Insight 1', 'Insight 2'],
+            }),
+            enrichWithContext: jest.fn().mockResolvedValue({
+              enriched: true,
+              context: 'test context',
+            }),
+            translateBetweenModules: jest.fn().mockResolvedValue({
+              translated: true,
+            }),
+            resolveSemanticConflicts: jest.fn().mockResolvedValue({
+              resolved: true,
+              conflicts: [],
+            }),
+            trackSemanticTransformation: jest.fn().mockResolvedValue({
+              transformationId: 'test-transformation-id',
+              transformedData: {
+                mainGoal: 'Showcase product features',
+                coreFunctions: ['Function 1', 'Function 2'],
+                nonFunctionalFeatures: ['Feature 1', 'Feature 2'],
+                constraints: ['Constraint 1'],
+                userImportance: 'Key user value proposition',
+                semanticCoherence: { score: 85, analysis: 'Good coherence' },
+                completenessScore: 90,
+                summary: 'Comprehensive summary of the expectation model'
+              }
+            }),
+          },
         },
       ],
     }).compile();
@@ -162,6 +207,16 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
             question: 'What is the main purpose?',
             answer: 'To showcase product features',
           }],
+          save: jest.fn().mockResolvedValue({
+            _id: requirementId,
+            text: 'Create a landing page',
+            status: 'expectations_generated',
+            clarificationHistory: [{
+              questionId: 'q1',
+              question: 'What is the main purpose?',
+              answer: 'To showcase product features',
+            }],
+          }),
         }),
       });
       
@@ -231,6 +286,7 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
             description: 'Landing page with product features',
             priority: 'high',
             features: ['Product showcase', 'Modern design'],
+            mainGoal: 'Showcase product features',
           },
           save: jest.fn().mockImplementation(function() {
             return Promise.resolve(this);

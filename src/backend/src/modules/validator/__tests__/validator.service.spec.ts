@@ -3,7 +3,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ValidatorService } from '../validator.service';
 import { Validation } from '../schemas/validation.schema';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
 import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediator.service';
@@ -11,7 +11,7 @@ import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediat
 describe('ValidatorService', () => {
   let service: ValidatorService;
   let validationModel: Model<Validation>;
-  let llmService: LlmService;
+  let llmRouterService: LlmRouterService;
   let memoryService: MemoryService;
   let semanticMediatorService: SemanticMediatorService;
 
@@ -118,93 +118,103 @@ describe('ValidatorService', () => {
     
     const mockValidationModel = MockValidationModel;
 
-    const mockLlmService = {
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockImplementation((prompt) => {
         if (prompt.includes('评估代码是否满足期望要求')) {
-          return Promise.resolve(JSON.stringify({
-            status: 'passed',
-            score: 85,
-            details: [
-              {
-                expectationId: 'exp-1',
-                status: 'passed',
-                score: 90,
-                message: 'Test message',
-              },
-            ],
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              status: 'passed',
+              score: 85,
+              details: [
+                {
+                  expectationId: 'exp-1',
+                  status: 'passed',
+                  score: 90,
+                  message: 'Test message',
+                },
+              ],
+            }),
+          );
         } else if (prompt.includes('语义解析结果')) {
-          return Promise.resolve(JSON.stringify({
-            status: 'passed',
-            score: 88,
-            details: [
-              {
-                expectationId: 'exp-1',
-                status: 'passed',
-                score: 92,
-                message: 'Test message with semantic insights',
-                semanticInsights: 'Additional semantic insights',
-              },
-            ],
-            semanticAnalysis: 'Overall semantic analysis',
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              status: 'passed',
+              score: 88,
+              details: [
+                {
+                  expectationId: 'exp-1',
+                  status: 'passed',
+                  score: 92,
+                  message: 'Test message with semantic insights',
+                  semanticInsights: 'Additional semantic insights',
+                },
+              ],
+              semanticAnalysis: 'Overall semantic analysis',
+            }),
+          );
         } else if (prompt.includes('进行迭代验证')) {
-          return Promise.resolve(JSON.stringify({
-            status: 'passed',
-            score: 90,
-            details: [
-              {
-                expectationId: 'exp-1',
-                status: 'passed',
-                score: 95,
-                message: 'Improved test message',
-                improvement: 'Significant improvement',
-                remainingIssues: 'Minor issues',
-              },
-            ],
-            iterationAnalysis: 'Iteration analysis',
-            improvementSuggestions: 'Improvement suggestions',
-          }));
+          return Promise.resolve(
+            JSON.stringify({
+              status: 'passed',
+              score: 90,
+              details: [
+                {
+                  expectationId: 'exp-1',
+                  status: 'passed',
+                  score: 95,
+                  message: 'Improved test message',
+                  improvement: 'Significant improvement',
+                  remainingIssues: 'Minor issues',
+                },
+              ],
+              iterationAnalysis: 'Iteration analysis',
+              improvementSuggestions: 'Improvement suggestions',
+            }),
+          );
         } else if (prompt.includes('生成详细的反馈')) {
-          return Promise.resolve(JSON.stringify({
-            summary: 'Validation summary',
-            strengths: ['Strength 1', 'Strength 2'],
-            weaknesses: ['Weakness 1', 'Weakness 2'],
-            prioritizedIssues: [
-              {
-                issue: 'Issue 1',
-                severity: 'high',
-                impact: 'High impact',
-                suggestion: 'Suggestion 1',
+          return Promise.resolve(
+            JSON.stringify({
+              summary: 'Validation summary',
+              strengths: ['Strength 1', 'Strength 2'],
+              weaknesses: ['Weakness 1', 'Weakness 2'],
+              prioritizedIssues: [
+                {
+                  issue: 'Issue 1',
+                  severity: 'high',
+                  impact: 'High impact',
+                  suggestion: 'Suggestion 1',
+                },
+              ],
+              codeOptimizationSuggestions: {
+                functionality: ['Functionality suggestion 1'],
+                performance: ['Performance suggestion 1'],
+                maintainability: ['Maintainability suggestion 1'],
+                security: ['Security suggestion 1'],
               },
-            ],
-            codeOptimizationSuggestions: {
-              functionality: ['Functionality suggestion 1'],
-              performance: ['Performance suggestion 1'],
-              maintainability: ['Maintainability suggestion 1'],
-              security: ['Security suggestion 1'],
-            },
-            overallRecommendation: 'Overall recommendation',
-          }));
+              overallRecommendation: 'Overall recommendation',
+            }),
+          );
         } else if (prompt.includes('执行自适应语义验证')) {
-          return Promise.resolve(JSON.stringify({
-            status: 'passed',
-            score: 92,
-            details: [
-              {
-                expectationId: 'exp-1',
-                status: 'passed',
-                score: 94,
-                message: 'Adaptive validation message',
-                adaptiveInsights: 'Adaptive insights',
+          return Promise.resolve(
+            JSON.stringify({
+              status: 'passed',
+              score: 92,
+              details: [
+                {
+                  expectationId: 'exp-1',
+                  status: 'passed',
+                  score: 94,
+                  message: 'Adaptive validation message',
+                  adaptiveInsights: 'Adaptive insights',
+                },
+              ],
+              adaptiveAnalysis: 'Adaptive analysis',
+              contextualEvaluation: {
+                contextRelevance: 'High',
+                adaptationQuality: 'Excellent',
               },
-            ],
-            adaptiveAnalysis: 'Adaptive analysis',
-            contextualEvaluation: {
-              contextRelevance: 'High',
-              adaptationQuality: 'Excellent',
-            },
-          }));
+            }),
+          );
         } else {
           return Promise.resolve('{}');
         }
@@ -335,8 +345,8 @@ describe('ValidatorService', () => {
           useValue: mockValidationModel,
         },
         {
-          provide: LlmService,
-          useValue: mockLlmService,
+          provide: LlmRouterService,
+          useValue: mockLlmRouterService,
         },
         {
           provide: MemoryService,
@@ -351,7 +361,7 @@ describe('ValidatorService', () => {
 
     service = module.get<ValidatorService>(ValidatorService);
     validationModel = module.get<Model<Validation>>(getModelToken(Validation.name));
-    llmService = module.get<LlmService>(LlmService);
+    llmRouterService = module.get<LlmRouterService>(LlmRouterService);
     memoryService = module.get<MemoryService>(MemoryService);
     semanticMediatorService = module.get<SemanticMediatorService>(SemanticMediatorService);
   });
@@ -373,8 +383,8 @@ describe('ValidatorService', () => {
       expect(result.status).toBe('passed');
       expect(result.score).toBe(85);
       expect(result.details).toHaveLength(1);
-      expect(llmService.generateContent).toHaveBeenCalledWith(
-        expect.stringContaining('基于以下期望模型和生成的代码，评估代码是否满足期望要求')
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
+        expect.stringContaining('基于以下期望模型和生成的代码，评估代码是否满足期望要求'),
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
@@ -394,7 +404,7 @@ describe('ValidatorService', () => {
       const codeId = 'non-existent-id';
 
       await expect(service.validateCode(expectationId, codeId)).rejects.toThrow(
-        'Expectation or Code not found'
+        'Expectation or Code not found',
       );
     });
   });
@@ -446,7 +456,7 @@ describe('ValidatorService', () => {
       const result = await service.validateCodeWithSemanticInput(
         expectationId,
         codeId,
-        semanticInput
+        semanticInput,
       );
 
       expect(result).toBeDefined();
@@ -454,8 +464,11 @@ describe('ValidatorService', () => {
       expect(result.codeId).toBe(codeId);
       expect(result.status).toBe('passed');
       expect(result.score).toBe(85);
-      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '基于以下期望模型、生成的代码和语义上下文，执行语义验证',
+        ),
+      );
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -469,7 +482,7 @@ describe('ValidatorService', () => {
       const semanticInput = { key: 'value' };
 
       await expect(
-        service.validateCodeWithSemanticInput(expectationId, codeId, semanticInput)
+        service.validateCodeWithSemanticInput(expectationId, codeId, semanticInput),
       ).rejects.toThrow('Expectation or Code not found');
     });
   });
@@ -485,7 +498,7 @@ describe('ValidatorService', () => {
         expectationId,
         codeId,
         previousValidationId,
-        iterationFocus
+        iterationFocus,
       );
 
       expect(result).toBeDefined();
@@ -493,7 +506,9 @@ describe('ValidatorService', () => {
       expect(result.codeId).toBe(codeId);
       expect(result.status).toBe('passed');
       expect(result.score).toBe(90);
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
+        expect.stringContaining('基于以下期望模型、生成的代码和前一轮验证结果，进行迭代验证'),
+      );
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -510,7 +525,7 @@ describe('ValidatorService', () => {
       const previousValidationId = 'non-existent-id';
 
       await expect(
-        service.validateCodeIteratively(expectationId, codeId, previousValidationId)
+        service.validateCodeIteratively(expectationId, codeId, previousValidationId),
       ).rejects.toThrow('Expectation, Code or Previous Validation not found');
     });
 
@@ -518,7 +533,7 @@ describe('ValidatorService', () => {
       const expectationId = 'test-expectation-id';
       const codeId = 'test-code-id';
       const previousValidationId = 'test-validation-id';
-      
+
       jest.spyOn(validationModel, 'findById').mockReturnValueOnce({
         exec: jest.fn().mockResolvedValueOnce({
           _id: 'test-validation-id',
@@ -540,14 +555,14 @@ describe('ValidatorService', () => {
       const result = await service.validateCodeIteratively(
         expectationId,
         codeId,
-        previousValidationId
+        previousValidationId,
       );
 
       expect(result).toBeDefined();
       expect(result._id).toBe('test-validation-id');
       expect(result.status).toBe('passed');
       expect(result.score).toBe(100);
-      expect(llmService.generateContent).not.toHaveBeenCalled();
+      expect(llmRouterService.generateContent).not.toHaveBeenCalled();
     });
   });
 
@@ -564,8 +579,8 @@ describe('ValidatorService', () => {
       expect(result.prioritizedIssues).toHaveLength(1);
       expect(result.codeOptimizationSuggestions).toBeDefined();
       expect(result.overallRecommendation).toBe('Overall recommendation');
-      expect(llmService.generateContent).toHaveBeenCalledWith(
-        expect.stringContaining('基于以下验证结果，生成详细的反馈，用于指导代码优化')
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
+        expect.stringContaining('基于以下验证结果，生成详细的反馈，用于指导代码优化'),
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
@@ -578,7 +593,7 @@ describe('ValidatorService', () => {
       const validationId = 'non-existent-id';
 
       await expect(service.generateValidationFeedback(validationId)).rejects.toThrow(
-        'Validation not found'
+        'Validation not found',
       );
     });
 
@@ -590,7 +605,7 @@ describe('ValidatorService', () => {
       const validationId = 'test-validation-id';
 
       await expect(service.generateValidationFeedback(validationId)).rejects.toThrow(
-        'Related expectation or code not found'
+        'Related expectation or code not found',
       );
     });
   });
@@ -655,7 +670,7 @@ describe('ValidatorService', () => {
       const result = await service.validateWithAdaptiveContext(
         expectationId,
         codeId,
-        validationContext
+        validationContext,
       );
 
       expect(result).toBeDefined();
@@ -663,8 +678,10 @@ describe('ValidatorService', () => {
       expect(result.codeId).toBe(codeId);
       expect(result.status).toBe('passed');
       expect(result.score).toBe(85);
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
+        expect.stringContaining('基于以下期望模型、生成的代码和前一轮验证结果，进行迭代验证'),
+      );
       expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
-      expect(llmService.generateContent).toHaveBeenCalled();
       expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
@@ -681,7 +698,7 @@ describe('ValidatorService', () => {
       };
 
       await expect(
-        service.validateWithAdaptiveContext(expectationId, codeId, validationContext)
+        service.validateWithAdaptiveContext(expectationId, codeId, validationContext),
       ).rejects.toThrow('Expectation or Code not found');
     });
   });
@@ -738,7 +755,7 @@ describe('ValidatorService', () => {
           iterative: false
         })
       );
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
@@ -794,7 +811,7 @@ describe('ValidatorService', () => {
       );
       expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
       expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
   });

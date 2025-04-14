@@ -3,7 +3,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { GeneratorService } from '../generator.service';
 import { Code } from '../schemas/code.schema';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
 import { GenerateCodeWithSemanticInputDto } from '../dto';
@@ -12,7 +12,7 @@ import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediat
 describe('GeneratorService', () => {
   let service: GeneratorService;
   let codeModel: Model<Code>;
-  let llmService: LlmService;
+  let llmRouterService: LlmRouterService;
   let memoryService: MemoryService;
   let semanticMediatorService: SemanticMediatorService;
 
@@ -112,7 +112,7 @@ describe('GeneratorService', () => {
       }),
     });
 
-    const mockLlmService = {
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('生成相应的代码实现')) {
           return Promise.resolve(
@@ -310,8 +310,8 @@ describe('GeneratorService', () => {
           useValue: mockCodeModel,
         },
         {
-          provide: LlmService,
-          useValue: mockLlmService,
+          provide: LlmRouterService,
+          useValue: mockLlmRouterService,
         },
         {
           provide: MemoryService,
@@ -326,7 +326,7 @@ describe('GeneratorService', () => {
 
     service = module.get<GeneratorService>(GeneratorService);
     codeModel = module.get<Model<Code>>(getModelToken(Code.name));
-    llmService = module.get<LlmService>(LlmService);
+    llmRouterService = module.get<LlmRouterService>(LlmRouterService);
     memoryService = module.get<MemoryService>(MemoryService);
     semanticMediatorService = module.get<SemanticMediatorService>(SemanticMediatorService);
   });
@@ -345,7 +345,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe(expectationId);
       expect(result.files).toHaveLength(1);
       expect(result.files[0].path).toBe('test.js');
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型，生成相应的代码实现'),
       );
       expect(memoryService.storeMemory).toHaveBeenCalled();
@@ -445,7 +445,7 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked prompt template');
 
-      const mockSave = jest.fn().mockResolvedValueOnce({
+      const mockResult = {
         _id: 'test-code-id',
         expectationId: expectationId,
         files: [{ path: 'enhanced.js', content: 'console.log("enhanced")' }],
@@ -459,11 +459,9 @@ describe('GeneratorService', () => {
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
-
-      jest.spyOn(codeModel.prototype, 'constructor').mockImplementationOnce(() => ({
-        save: mockSave
-      }));
+      };
+      
+      jest.spyOn(service as any, 'createCode').mockResolvedValueOnce(mockResult);
 
       const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
 
@@ -494,7 +492,7 @@ describe('GeneratorService', () => {
         }),
       );
 
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -519,7 +517,7 @@ describe('GeneratorService', () => {
       const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
 
       expect(result).toBeDefined();
-      expect(llmService.generateContent).toHaveBeenCalledWith(
+      expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('基于以下期望模型和语义分析结果，生成相应的代码实现'),
       );
 
@@ -565,7 +563,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe(expectationId);
       expect(result.metadata.status).toBe('structure_generated');
       expect(result.metadata.techStack).toEqual(techStack);
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -596,7 +594,7 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked architecture prompt');
 
-      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
+      const mockResult = {
         _id: 'test-code-id',
         expectationId: expectationId,
         files: [{ path: 'architecture.js', content: 'console.log("architecture")' }],
@@ -609,7 +607,9 @@ describe('GeneratorService', () => {
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      };
+      
+      jest.spyOn(service as any, 'createCode').mockResolvedValueOnce(mockResult);
 
       const result = await service.generateCodeWithArchitecture(
         expectationId,
@@ -621,7 +621,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe(expectationId);
       expect(result.metadata.status).toBe('architecture_generated');
       expect(result.metadata.architecturePattern).toBe('MVC');
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -653,7 +653,7 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked test suite prompt');
 
-      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
+      const mockResult = {
         _id: 'test-code-id',
         expectationId: 'test-expectation-id',
         files: [{ path: 'test.test.js', content: 'test("should work", () => {})' }],
@@ -668,7 +668,9 @@ describe('GeneratorService', () => {
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      };
+      
+      jest.spyOn(service as any, 'createCode').mockResolvedValueOnce(mockResult);
 
       const result = await service.generateTestSuite(codeId, testRequirements);
 
@@ -676,7 +678,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe('test-expectation-id');
       expect(result.metadata.status).toBe('tests_added');
       expect(result.metadata.originalCodeId).toBe(codeId);
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -705,7 +707,7 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked refactoring prompt');
 
-      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
+      const mockSave = jest.fn().mockResolvedValueOnce({
         _id: 'test-code-id',
         expectationId: 'test-expectation-id',
         files: [{ path: 'refactored.js', content: 'console.log("refactored")' }],
@@ -728,7 +730,7 @@ describe('GeneratorService', () => {
       expect(result.expectationId).toBe('test-expectation-id');
       expect(result.metadata.status).toBe('refactored');
       expect(result.metadata.originalCodeId).toBe(codeId);
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 
@@ -757,7 +759,7 @@ describe('GeneratorService', () => {
         .spyOn(service as any, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked optimization prompt');
 
-      jest.spyOn(codeModel.prototype, 'save').mockResolvedValueOnce({
+      const mockSave = jest.fn().mockResolvedValueOnce({
         _id: 'test-code-id',
         expectationId: 'test-expectation-id',
         files: [{ path: 'optimized.js', content: 'console.log("optimized")' }],
@@ -808,7 +810,7 @@ describe('GeneratorService', () => {
         }),
       );
 
-      expect(llmService.generateContent).toHaveBeenCalled();
+      expect(llmRouterService.generateContent).toHaveBeenCalled();
       expect(memoryService.storeMemory).toHaveBeenCalled();
     });
 

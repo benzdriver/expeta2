@@ -1,16 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SemanticMediatorService } from '../semantic-mediator.service';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
 
 describe('SemanticMediatorService Basic Tests', () => {
   let service: SemanticMediatorService;
-  let llmService: LlmService;
+  let llmRouterService: LlmRouterService;
   let memoryService: MemoryService;
 
   beforeEach(async () => {
-    const llmServiceMock = {
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('translate')) {
           return Promise.resolve(JSON.stringify({ translated: true, data: 'translated data' }));
@@ -63,13 +63,13 @@ describe('SemanticMediatorService Basic Tests', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SemanticMediatorService,
-        { provide: LlmService, useValue: llmServiceMock },
+        { provide: LlmRouterService, useValue: mockLlmRouterService },
         { provide: MemoryService, useValue: memoryServiceMock },
       ],
     }).compile();
 
     service = module.get<SemanticMediatorService>(SemanticMediatorService);
-    llmService = module.get<LlmService>(LlmService);
+    llmRouterService = module.get<LlmRouterService>(LlmRouterService);
     memoryService = module.get<MemoryService>(MemoryService);
   });
 

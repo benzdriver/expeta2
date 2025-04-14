@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SemanticMediatorService } from '../semantic-mediator.service';
-import { LlmService } from '../../../services/llm.service';
+import { LlmRouterService } from '../../../services/llm-router.service';
 import { MemoryService } from '../../memory/memory.service';
 import { MemoryType } from '../../memory/schemas/memory.schema';
 import { SemanticRegistryService } from '../components/semantic-registry/semantic-registry.service';
@@ -9,18 +9,14 @@ import { IntelligentCacheService } from '../components/intelligent-cache/intelli
 import { MonitoringSystemService } from '../components/monitoring-system/monitoring-system.service';
 import { HumanInTheLoopService } from '../components/human-in-the-loop/human-in-the-loop.service';
 
+
 describe('SemanticMediatorService Basic Tests', () => {
   let service: SemanticMediatorService;
-  let llmService: LlmService;
+  let llmRouterService: LlmRouterService;
   let memoryService: MemoryService;
-  let semanticRegistry: SemanticRegistryService;
-  let transformationEngine: TransformationEngineService;
-  let intelligentCache: IntelligentCacheService;
-  let monitoringSystem: MonitoringSystemService;
-  let humanInTheLoop: HumanInTheLoopService;
 
   beforeEach(async () => {
-    const llmServiceMock = {
+    const mockLlmRouterService = {
       translateBetweenModules: jest
         .fn()
         .mockResolvedValue({ translated: true, data: 'translated data' }),
@@ -87,110 +83,64 @@ describe('SemanticMediatorService Basic Tests', () => {
       }),
     };
 
-    const semanticRegistryMock = {
-      registerDataSource: jest.fn().mockResolvedValue('source-id-123'),
-      updateDataSource: jest.fn().mockResolvedValue(true),
-      removeDataSource: jest.fn().mockResolvedValue(true),
-      getDataSource: jest.fn().mockResolvedValue({ id: 'source-id-123', entity: 'TestEntity' }),
-      findPotentialSources: jest.fn().mockResolvedValue(['source-id-123', 'source-id-456']),
-      getAllDataSources: jest.fn().mockResolvedValue([
-        { id: 'source-id-123', entity: 'TestEntity1' },
-        { id: 'source-id-456', entity: 'TestEntity2' },
-      ]),
-      calculateSemanticSimilarity: jest.fn().mockResolvedValue(0.85),
-    };
-
-    const transformationEngineMock = {
-      generateTransformationPath: jest.fn().mockResolvedValue({
-        id: 'path-123',
-        steps: [{ operation: 'transform', params: {} }],
-      }),
-      executeTransformation: jest
-        .fn()
-        .mockResolvedValue({ transformed: true, data: 'transformed data' }),
-      validateTransformation: jest.fn().mockResolvedValue({ valid: true }),
-      optimizeTransformationPath: jest.fn().mockResolvedValue({
-        id: 'path-123-optimized',
-        steps: [{ operation: 'transform', params: {} }],
-      }),
-      getAvailableTransformationStrategies: jest.fn().mockResolvedValue(['strategy1', 'strategy2']),
-      registerTransformationStrategy: jest.fn().mockResolvedValue(true),
-    };
-
-    const intelligentCacheMock = {
-      storeTransformationPath: jest.fn().mockResolvedValue('cache-entry-123'),
-      retrieveTransformationPath: jest.fn().mockResolvedValue(null),
-      updateUsageStatistics: jest.fn().mockResolvedValue(true),
-      getMostUsedPaths: jest.fn().mockResolvedValue([{ id: 'path-123', usageCount: 10 }]),
-      getRecentlyUsedPaths: jest
-        .fn()
-        .mockResolvedValue([{ id: 'path-123', timestamp: new Date() }]),
-      clearCache: jest.fn().mockResolvedValue(5),
-      analyzeUsagePatterns: jest.fn().mockResolvedValue({
-        frequentPatterns: ['pattern1', 'pattern2'],
-        recommendations: ['recommendation1'],
-      }),
-    };
-
-    const monitoringSystemMock = {
-      logTransformationEvent: jest.fn().mockResolvedValue('event-123'),
-      logError: jest.fn().mockResolvedValue('error-123'),
-      recordPerformanceMetrics: jest.fn().mockResolvedValue(true),
-      getTransformationHistory: jest
-        .fn()
-        .mockResolvedValue([{ id: 'event-123', type: 'transformation' }]),
-      getErrorHistory: jest.fn().mockResolvedValue([{ id: 'error-123', message: 'Test error' }]),
-      getPerformanceReport: jest.fn().mockResolvedValue({
-        averageTransformationTime: 150,
-        successRate: 0.95,
-      }),
-      createDebugSession: jest.fn().mockResolvedValue('debug-session-123'),
-      endDebugSession: jest.fn().mockResolvedValue(true),
-      logDebugData: jest.fn().mockResolvedValue(true),
-      getDebugSessionData: jest.fn().mockResolvedValue({
-        id: 'debug-session-123',
-        events: [{ timestamp: new Date(), data: {} }],
-      }),
-    };
-
-    const humanInTheLoopMock = {
-      requestHumanReview: jest.fn().mockResolvedValue('review-123'),
-      submitHumanFeedback: jest.fn().mockResolvedValue(true),
-      getReviewStatus: jest.fn().mockResolvedValue({ status: 'pending' }),
-      getPendingReviews: jest.fn().mockResolvedValue([{ id: 'review-123', data: {} }]),
-      cancelReview: jest.fn().mockResolvedValue(true),
-      registerReviewCallback: jest.fn().mockResolvedValue('callback-123'),
-      removeReviewCallback: jest.fn().mockResolvedValue(true),
-      getFeedbackHistory: jest
-        .fn()
-        .mockResolvedValue([{ id: 'feedback-123', content: 'Good job!' }]),
-      analyzeFeedbackPatterns: jest.fn().mockResolvedValue({
-        commonFeedback: ['feedback1', 'feedback2'],
-        trends: ['trend1'],
-      }),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SemanticMediatorService,
-        { provide: LlmService, useValue: llmServiceMock },
+        { provide: LlmRouterService, useValue: mockLlmRouterService },
         { provide: MemoryService, useValue: memoryServiceMock },
-        { provide: SemanticRegistryService, useValue: semanticRegistryMock },
-        { provide: TransformationEngineService, useValue: transformationEngineMock },
-        { provide: IntelligentCacheService, useValue: intelligentCacheMock },
-        { provide: MonitoringSystemService, useValue: monitoringSystemMock },
-        { provide: HumanInTheLoopService, useValue: humanInTheLoopMock },
+        { provide: SemanticRegistryService, useValue: {} },
+        { 
+          provide: TransformationEngineService, 
+          useValue: { 
+            executeTransformation: jest.fn().mockResolvedValue({
+              result: 'transformed data',
+              metadata: { quality: 0.9 }
+            })
+          } 
+        },
+        { 
+          provide: IntelligentCacheService, 
+          useValue: { 
+            retrieveTransformationPath: jest.fn().mockResolvedValue({
+              path: ['moduleA', 'moduleB'],
+              transformations: [{ from: 'moduleA', to: 'moduleB', quality: 0.9 }]
+            }),
+            storeTransformationPath: jest.fn().mockResolvedValue(true),
+            getCachedTransformation: jest.fn().mockResolvedValue(null),
+            storeCachedTransformation: jest.fn().mockResolvedValue(true),
+            updateUsageStatistics: jest.fn().mockResolvedValue(true)
+          } 
+        },
+        { 
+          provide: MonitoringSystemService, 
+          useValue: { 
+            logError: jest.fn().mockResolvedValue({}),
+            trackOperation: jest.fn().mockResolvedValue({}),
+            recordMetric: jest.fn().mockResolvedValue({}),
+            logTransformationEvent: jest.fn().mockResolvedValue({}),
+            createDebugSession: jest.fn().mockResolvedValue({ sessionId: 'debug-123' }),
+            logDebugData: jest.fn().mockResolvedValue({})
+          } 
+        },
+        { 
+          provide: HumanInTheLoopService, 
+          useValue: {
+            requestHumanFeedback: jest.fn().mockResolvedValue({
+              feedback: 'Test human feedback',
+              approved: true
+            }),
+            recordHumanDecision: jest.fn().mockResolvedValue(true),
+            getHumanFeedbackHistory: jest.fn().mockResolvedValue([
+              { timestamp: new Date(), feedback: 'Previous feedback', approved: true }
+            ])
+          } 
+        },
       ],
     }).compile();
 
     service = module.get<SemanticMediatorService>(SemanticMediatorService);
-    llmService = module.get<LlmService>(LlmService);
+    llmRouterService = module.get<LlmRouterService>(LlmRouterService);
     memoryService = module.get<MemoryService>(MemoryService);
-    semanticRegistry = module.get<SemanticRegistryService>(SemanticRegistryService);
-    transformationEngine = module.get<TransformationEngineService>(TransformationEngineService);
-    intelligentCache = module.get<IntelligentCacheService>(IntelligentCacheService);
-    monitoringSystem = module.get<MonitoringSystemService>(MonitoringSystemService);
-    humanInTheLoop = module.get<HumanInTheLoopService>(HumanInTheLoopService);
   });
 
   it('should be defined', () => {
