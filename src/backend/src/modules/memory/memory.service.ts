@@ -6,6 +6,7 @@ import { SemanticCacheService } from './services/semantic-cache.service';
 import { 
   SemanticQueryOptions, 
   ValidationResult, 
+  ValidationMessage,
   TransformationFeedback,
   SemanticConstraint,
   SemanticDataSource
@@ -702,8 +703,10 @@ export class MemoryService {
       });
       
       await this.updateMemory(
+        MemoryType.SEMANTIC_TRANSFORMATION,
         transformation._id,
         {
+          content: transformation.content,
           metadata: {
             ...transformation.metadata,
             hasFeedback: true,
