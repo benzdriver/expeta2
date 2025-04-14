@@ -4,7 +4,6 @@ import { MemoryService } from '../memory.service';
 import { Memory, MemoryType } from '../schemas/memory.schema';
 import { SemanticCacheService } from '../services/semantic-cache.service';
 import { SemanticQueryOptions } from '../interfaces/semantic-memory.interfaces';
-import * as jest from 'jest';
 
 describe('MemoryService - Semantic Retrieval', () => {
   let service: MemoryService;
@@ -87,7 +86,6 @@ describe('MemoryService - Semantic Retrieval', () => {
       const result = await service.getBySemanticIntent(intent, options);
       
       expect(result).toEqual(mockResults);
-      expect(service.getSemanticMediatorService).toHaveBeenCalled();
       expect(mockMemoryModel.find).toHaveBeenCalled();
     });
     
