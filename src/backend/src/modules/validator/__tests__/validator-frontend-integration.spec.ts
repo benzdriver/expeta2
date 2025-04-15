@@ -21,6 +21,8 @@ describe('Validator Frontend-Backend Integration (e2e)', () => {
       _validatorService = moduleFixture.get<ValidatorService>(ValidatorService);
     } catch (error) {
       /* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
 console.error(
         'Failed to initialize Nest application for e2e tests. This might be due to the known circular dependency issue.',
         error,
