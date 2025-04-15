@@ -1097,7 +1097,7 @@ export default UserService;`;
                           <label>复杂度</label>
                           <select 
                             value={semanticContext.complexity}
-                            onChange={(e) => setSemanticContext({...semanticContext, complexity: e.target.value as any})}
+                            onChange={(e) => setSemanticContext({...semanticContext, complexity: e.target.value as 'simple' | 'medium' | 'complex'})}
                             className="select-input"
                           >
                             <option value="simple">简单</option>
@@ -1109,7 +1109,7 @@ export default UserService;`;
                           <label>优先级</label>
                           <select 
                             value={semanticContext.priority}
-                            onChange={(e) => setSemanticContext({...semanticContext, priority: e.target.value as any})}
+                            onChange={(e) => setSemanticContext({...semanticContext, priority: e.target.value as 'low' | 'medium' | 'high'})}
                             className="select-input"
                           >
                             <option value="low">低</option>

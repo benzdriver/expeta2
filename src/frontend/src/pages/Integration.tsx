@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import OrchestratorPanel from '../components/SemanticIntegration/OrchestratorPanel';
-import SemanticMediatorPanel from '../components/SemanticIntegration/SemanticMediatorPanel';
+import SemanticMediatorPanel, { SemanticMediatorData } from '../components/SemanticIntegration/SemanticMediatorPanel';
 import WorkflowVisualizer from '../components/SemanticIntegration/WorkflowVisualizer';
 import ModuleConnectionGraph from '../components/SemanticIntegration/ModuleConnectionGraph';
 import '../components/SemanticIntegration/SemanticIntegration.css';
 
 const Integration: React.FC = () => {
   const [selectedRequirementId, _setSelectedRequirementId] = useState<string>('');
-  const [initialData, _setInitialData] = useState<any>(null);
+  const [initialData, _setInitialData] = useState<SemanticMediatorData | undefined>(undefined);
   const [activeWorkflowId, setActiveWorkflowId] = useState<string>('');
   const [showSemanticFlow, setShowSemanticFlow] = useState<boolean>(true);
   

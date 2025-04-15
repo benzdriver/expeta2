@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useExpeta } from '../../contexts/ExpetaContext';
 
-interface SemanticMediatorData {
+export interface SemanticMediatorData {
   [key: string]: unknown;
 }
 
