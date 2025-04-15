@@ -2,9 +2,13 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, devin/1744230816-expeta2-implementation ]
+    branches:
+      - main
+      - 'devin/**'
   pull_request:
-    branches: [ main, devin/1744230816-expeta2-implementation ]
+    branches:
+      - main
+      - 'devin/**'
 
 jobs:
   backend-tests:
