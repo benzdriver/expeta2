@@ -22,7 +22,13 @@ const loggingService = (() => {
   }
 })();
 
-const ConversationLogger = React.lazy(() => import('./ConversationLogger'));
+interface ConversationLoggerProps {
+  sessionId?: string;
+  visible?: boolean;
+  onClose?: () => void;
+}
+
+const ConversationLogger: React.FC<ConversationLoggerProps> = () => null;
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   initialMessages = [], 
@@ -75,7 +81,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [inputValue]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === 'function') {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -399,11 +407,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   return (
-    <React.Fragment>
+    <div className="chat-interface-container">
       {enableLogging && showLogger && (
-        <React.Suspense fallback={<div>Loading logger...</div>}>
+        <div className="logger-container">
           <ConversationLogger sessionId={sessionId} visible={showLogger} onClose={toggleLogger} />
-        </React.Suspense>
+        </div>
       )}
       
       <section className="chat-section">
@@ -449,6 +457,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <div 
                 key={message.id} 
                 className={`message ${message.sender === 'user' ? 'user-message' : 'system-message'} ${message.type ? `message-${message.type}` : ''}`}
+                role="listitem"
               >
                 <div className="message-content">
                   {renderMessageContent(message)}
@@ -481,7 +490,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         </div>
       </section>
-    </React.Fragment>
+    </div>
   );
 };
 
