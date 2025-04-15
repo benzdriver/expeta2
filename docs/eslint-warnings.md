@@ -69,10 +69,19 @@ useEffect(() => {
   fetchData(userId);
 }, []);
 
-// 修改后
+// 修改后 - 添加缺少的依赖
 useEffect(() => {
   fetchData(userId);
 }, [userId, fetchData]);
+
+// 或者使用 useCallback 稳定函数引用
+const fetchDataCallback = useCallback(() => {
+  // 函数实现
+}, [依赖项]);
+
+useEffect(() => {
+  fetchDataCallback();
+}, [fetchDataCallback]);
 ```
 
 ## 控制台语句相关警告
@@ -153,6 +162,34 @@ private constructor() { /* 单例模式 */ }
 
 **解决方案**:
 - 移除不必要的花括号
+
+## TypeScript 版本兼容性问题
+
+### @typescript-eslint/parser 版本兼容性
+
+**描述**: TypeScript 版本与 @typescript-eslint/parser 不兼容。
+
+**解决方案**:
+- 降级 TypeScript 版本到兼容范围内（>=4.3.5 <5.4.0）
+- 在 package.json 中更新 TypeScript 版本为 `~5.3.3`
+- 运行 `npm install` 更新依赖
+
+**示例**:
+```json
+// 修改前
+{
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
+
+// 修改后
+{
+  "devDependencies": {
+    "typescript": "~5.3.3"
+  }
+}
+```
 
 ## 引号相关警告
 

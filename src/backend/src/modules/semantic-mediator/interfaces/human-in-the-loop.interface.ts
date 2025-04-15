@@ -26,7 +26,7 @@ export interface IHumanInTheLoop {
    * @param reviewId 审核请求ID
    * @returns 审核状态
    */
-  getReviewStatus(reviewId: string): Promise<any>;
+  getReviewStatus(reviewId: string): Promise<Record<string, unknown>>;
 
   /**
    * 获取待处理的审核请求
@@ -34,7 +34,7 @@ export interface IHumanInTheLoop {
    * @param limit 结果数量限制
    * @returns 审核请求数组
    */
-  getPendingReviews(filters?: unknown, limit?: number): Promise<any[]>;
+  getPendingReviews(filters?: unknown, limit?: number): Promise<Record<string, unknown>[]>;
 
   /**
    * 取消审核请求
@@ -64,11 +64,11 @@ export interface IHumanInTheLoop {
    * @param limit 结果数量限制
    * @returns 反馈历史记录
    */
-  getFeedbackHistory(filters?: unknown, limit?: number): Promise<any[]>;
+  getFeedbackHistory(filters?: unknown, limit?: number): Promise<Record<string, unknown>[]>;
 
   /**
    * 分析反馈模式
    * @returns 反馈模式分析结果
    */
-  analyzeFeedbackPatterns(): Promise<any>;
+  analyzeFeedbackPatterns(): Promise<Record<string, unknown>>;
 }

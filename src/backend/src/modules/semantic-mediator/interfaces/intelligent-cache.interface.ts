@@ -29,7 +29,7 @@ export interface IIntelligentCache {
     sourceDescriptor: unknown,
     targetDescriptor: unknown,
     similarityThreshold?: number,
-  ): Promise<any>;
+  ): Promise<Record<string, unknown>>;
 
   /**
    * 更新转换路径的使用统计
@@ -44,14 +44,14 @@ export interface IIntelligentCache {
    * @param limit 结果数量限制
    * @returns 转换路径数组
    */
-  getMostUsedPaths(limit?: number): Promise<any[]>;
+  getMostUsedPaths(limit?: number): Promise<Record<string, unknown>[]>;
 
   /**
    * 获取最近使用的转换路径
    * @param limit 结果数量限制
    * @returns 转换路径数组
    */
-  getRecentlyUsedPaths(limit?: number): Promise<any[]>;
+  getRecentlyUsedPaths(limit?: number): Promise<Record<string, unknown>[]>;
 
   /**
    * 清除缓存
@@ -64,5 +64,5 @@ export interface IIntelligentCache {
    * 分析使用模式
    * @returns 使用模式分析结果
    */
-  analyzeUsagePatterns(): Promise<any>;
+  analyzeUsagePatterns(): Promise<Record<string, unknown>>;
 }

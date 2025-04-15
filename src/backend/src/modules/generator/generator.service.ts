@@ -86,7 +86,7 @@ export class GeneratorService {
     return code;
   }
 
-  async getCodeFiles(id: string): Promise<any> {
+  async getCodeFiles(id: string): Promise<Record<string, unknown>> {
     const _code = 
 
     if (!code) {
@@ -622,7 +622,7 @@ export class GeneratorService {
    * 验证代码语义
    * 使用语义中介器验证代码是否符合语义期望
    */
-  async validateCodeSemantics(codeId: string): Promise<any> {
+  async validateCodeSemantics(codeId: string): Promise<Record<string, unknown>> {
     const _logger = 
     logger.log(`Validating code semantics for code ID: ${codeId}`);
 
