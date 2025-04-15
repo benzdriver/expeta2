@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-interface CodeGenerationOption {
+interface _CodeGenerationOption {
   id: string;
   label: string;
   description: string;
 }
 
-interface Framework {
+interface _Framework {
   id: string;
   label: string;
   description: string;
   compatibleWith?: string[]; // 兼容的语言
 }
 
-interface Architecture {
+interface _Architecture {
   id: string;
   label: string;
   description: string;
@@ -87,8 +87,8 @@ const CodeGeneration: React.FC = () => {
     complexity: 'medium',
     priority: 'medium'
   });
-  const [showTemplateFeatures, setShowTemplateFeatures] = useState<boolean>(false);
-  const [selectedTemplateDetails, setSelectedTemplateDetails] = useState<CodeTemplate | null>(null);
+  const [_showTemplateFeatures, setShowTemplateFeatures] = useState<boolean>(false);
+  const [_selectedTemplateDetails, setSelectedTemplateDetails] = useState<CodeTemplate | null>(null);
   const codeRef = useRef<HTMLPreElement>(null);
   
   const expectations: ExpectationDetail[] = [
@@ -550,9 +550,9 @@ const CodeGeneration: React.FC = () => {
     
     const getTemplateCode = (
       baseCode: string, 
-      template: string = 'standard', 
-      quality: number = 80,
-      includeComments: boolean = true
+      template = 'standard', 
+      quality = 80,
+      includeComments = true
     ): string => {
       if (!includeComments) {
         baseCode = baseCode.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -844,6 +844,7 @@ export default UserService;`;
           setTimeout(() => setIsCopied(false), 2000);
         })
         .catch(err => {
+          /* eslint-disable-next-line no-console */
           console.error('Failed to copy code: ', err);
         });
     }
@@ -1308,7 +1309,7 @@ export default UserService;`;
               ) : (
                 <div className="empty-state">
                   <span className="material-symbols-rounded">code</span>
-                  <p>选择期望和选项，然后点击"生成代码"按钮</p>
+                  <p>选择期望和选项，然后点击&quot;生成代码&quot;按钮</p>
                 </div>
               )}
             </div>

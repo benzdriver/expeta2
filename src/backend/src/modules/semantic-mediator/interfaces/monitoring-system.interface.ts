@@ -8,7 +8,7 @@ export interface IMonitoringSystem {
    * @param event 事件对象
    * @returns 事件ID
    */
-  logTransformationEvent(event: any): Promise<string>;
+  logTransformationEvent(event: unknown): Promise<string>;
 
   /**
    * 记录错误
@@ -16,14 +16,14 @@ export interface IMonitoringSystem {
    * @param context 上下文信息
    * @returns 错误ID
    */
-  logError(error: Error, context?: any): Promise<string>;
+  logError(error: Error, context?: unknown): Promise<string>;
 
   /**
    * 记录性能指标
    * @param metrics 性能指标对象
    * @returns 是否成功
    */
-  recordPerformanceMetrics(metrics: any): Promise<boolean>;
+  recordPerformanceMetrics(metrics: unknown): Promise<boolean>;
 
   /**
    * 获取转换历史
@@ -31,7 +31,7 @@ export interface IMonitoringSystem {
    * @param limit 结果数量限制
    * @returns 转换历史记录
    */
-  getTransformationHistory(filters?: any, limit?: number): Promise<any[]>;
+  getTransformationHistory(filters?: unknown, limit?: number): Promise<any[]>;
 
   /**
    * 获取错误历史
@@ -39,7 +39,7 @@ export interface IMonitoringSystem {
    * @param limit 结果数量限制
    * @returns 错误历史记录
    */
-  getErrorHistory(filters?: any, limit?: number): Promise<any[]>;
+  getErrorHistory(filters?: unknown, limit?: number): Promise<any[]>;
 
   /**
    * 获取性能报告
@@ -53,7 +53,7 @@ export interface IMonitoringSystem {
    * @param context 上下文信息
    * @returns 会话ID
    */
-  createDebugSession(context?: any): Promise<string>;
+  createDebugSession(context?: unknown): Promise<string>;
 
   /**
    * 结束调试会话
@@ -68,7 +68,7 @@ export interface IMonitoringSystem {
    * @param data 调试数据
    * @returns 是否成功
    */
-  logDebugData(sessionId: string, data: any): Promise<boolean>;
+  logDebugData(sessionId: string, data: unknown): Promise<boolean>;
 
   /**
    * 获取调试会话数据

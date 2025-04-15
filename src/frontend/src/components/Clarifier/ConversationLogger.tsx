@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import loggingService, { LogEntry, LogLevel, SessionLog } from '../../services/logging.service';
 import './ConversationLogger.css';
 
@@ -21,26 +21,7 @@ const ConversationLogger: React.FC<ConversationLoggerProps> = ({
   const [filterModule, setFilterModule] = useState<string>('');
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
 
-  useEffect(() => {
-    if (visible && autoRefresh) {
-      const interval = setInterval(() => {
-        refreshLogs();
-      }, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [visible, autoRefresh]);
-
-  useEffect(() => {
-    if (visible) {
-      refreshLogs();
-    }
-  }, [visible, activeTab, activeSessionId, filterLevel, filterModule]);
-
-  useEffect(() => {
-    setActiveSessionId(sessionId);
-  }, [sessionId]);
-
-  const refreshLogs = () => {
+  const refreshLogs = useCallback(() => {
     if (activeTab === 'general') {
       const allLogs = loggingService.getLogs();
       const filteredLogs = allLogs.filter(log => {
@@ -65,7 +46,26 @@ const ConversationLogger: React.FC<ConversationLoggerProps> = ({
         }
       }
     }
-  };
+  }, [activeTab, activeSessionId, filterLevel, filterModule]);
+  
+  useEffect(() => {
+    if (visible && autoRefresh) {
+      const interval = setInterval(() => {
+        refreshLogs();
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [visible, autoRefresh, refreshLogs]);
+
+  useEffect(() => {
+    if (visible) {
+      refreshLogs();
+    }
+  }, [visible, activeTab, activeSessionId, filterLevel, filterModule, refreshLogs]);
+
+  useEffect(() => {
+    setActiveSessionId(sessionId);
+  }, [sessionId]);
 
   const handleTabChange = (tab: 'general' | 'session') => {
     setActiveTab(tab);

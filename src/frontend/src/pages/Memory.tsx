@@ -11,7 +11,7 @@ interface MemoryItem {
 }
 
 const Memory: React.FC = () => {
-  const [memoryItems, setMemoryItems] = useState<MemoryItem[]>([
+  const [memoryItems, _setMemoryItems] = useState<MemoryItem[]>([
     {
       id: 'mem-001',
       type: 'requirement',

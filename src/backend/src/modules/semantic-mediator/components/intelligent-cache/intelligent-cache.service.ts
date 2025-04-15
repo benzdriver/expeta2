@@ -27,14 +27,14 @@ export class IntelligentCacheService implements IIntelligentCache {
    * @returns 缓存条目ID
    */
   async storeTransformationPath(
-    sourceDescriptor: any,
-    targetDescriptor: any,
-    transformationPath: any,
-    metadata?: any,
+    sourceDescriptor: unknown,
+    targetDescriptor: unknown,
+    transformationPath: unknown,
+    metadata?: unknown,
   ): Promise<string> {
     this.logger.debug('Storing transformation path');
 
-    const cacheId = `${this.cachePrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const _cacheId = 
 
     await this.memoryService.storeMemory({
       type: this.cachePrefix,
@@ -62,37 +62,37 @@ export class IntelligentCacheService implements IIntelligentCache {
    * @returns 转换路径
    */
   async retrieveTransformationPath(
-    sourceDescriptor: any,
-    targetDescriptor: any,
+    sourceDescriptor: unknown,
+    targetDescriptor: unknown,
     similarityThreshold: number = 0.85,
   ): Promise<any> {
     this.logger.debug('Retrieving transformation path');
 
-    const allCacheEntries = await this.memoryService.getMemoryByType(this.cachePrefix);
+    const _allCacheEntries = 
 
     if (!allCacheEntries || allCacheEntries.length === 0) {
       this.logger.debug('No cache entries found');
       return null;
     }
 
-    let bestMatch = null;
-    let highestSimilarity = 0;
+    let _bestMatch = 
+    let _highestSimilarity = 
 
     for (const entry of allCacheEntries) {
-      const cachedSourceDescriptor = entry.content.sourceDescriptor;
-      const cachedTargetDescriptor = entry.content.targetDescriptor;
+      const _cachedSourceDescriptor = 
+      const _cachedTargetDescriptor = 
 
-      const sourceSimilarity = await this.calculateDescriptorSimilarity(
+      const _sourceSimilarity = 
         sourceDescriptor,
         cachedSourceDescriptor,
       );
 
-      const targetSimilarity = await this.calculateDescriptorSimilarity(
+      const _targetSimilarity = 
         targetDescriptor,
         cachedTargetDescriptor,
       );
 
-      const combinedSimilarity = (sourceSimilarity + targetSimilarity) / 2;
+      const _combinedSimilarity = 
 
       if (combinedSimilarity > highestSimilarity && combinedSimilarity >= similarityThreshold) {
         highestSimilarity = combinedSimilarity;
@@ -116,24 +116,24 @@ export class IntelligentCacheService implements IIntelligentCache {
    * @param metadata 元数据
    * @returns 是否成功
    */
-  async updateUsageStatistics(pathId: string, metadata?: any): Promise<boolean> {
+  async updateUsageStatistics(pathId: string, metadata?: unknown): Promise<boolean> {
     this.logger.debug(`Updating usage statistics for path ID: ${pathId}`);
 
-    const allCacheEntries = await this.memoryService.getMemoryByType(this.cachePrefix);
+    const _allCacheEntries = 
 
     if (!allCacheEntries || allCacheEntries.length === 0) {
       this.logger.debug('No cache entries found');
       return false;
     }
 
-    const targetEntry = allCacheEntries.find((entry) => entry.content.id === pathId);
+    const _targetEntry = 
 
     if (!targetEntry) {
       this.logger.debug(`Cache entry with ID ${pathId} not found`);
       return false;
     }
 
-    const updatedContent = {
+    const _updatedContent = 
       ...targetEntry.content,
       usageCount: (targetEntry.content.usageCount || 0) + 1,
       lastUsed: new Date().toISOString(),
@@ -163,14 +163,14 @@ export class IntelligentCacheService implements IIntelligentCache {
   async getMostUsedPaths(limit: number = 10): Promise<any[]> {
     this.logger.debug(`Getting most used paths (limit: ${limit})`);
 
-    const allCacheEntries = await this.memoryService.getMemoryByType(this.cachePrefix);
+    const _allCacheEntries = 
 
     if (!allCacheEntries || allCacheEntries.length === 0) {
       this.logger.debug('No cache entries found');
       return [];
     }
 
-    const sortedEntries = allCacheEntries
+    const _sortedEntries = 
       .map((entry) => entry.content)
       .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
       .slice(0, limit);
@@ -187,18 +187,18 @@ export class IntelligentCacheService implements IIntelligentCache {
   async getRecentlyUsedPaths(limit: number = 10): Promise<any[]> {
     this.logger.debug(`Getting recently used paths (limit: ${limit})`);
 
-    const allCacheEntries = await this.memoryService.getMemoryByType(this.cachePrefix);
+    const _allCacheEntries = 
 
     if (!allCacheEntries || allCacheEntries.length === 0) {
       this.logger.debug('No cache entries found');
       return [];
     }
 
-    const sortedEntries = allCacheEntries
+    const _sortedEntries = 
       .map((entry) => entry.content)
       .sort((a, b) => {
-        const dateA = new Date(a.lastUsed || a.createdAt);
-        const dateB = new Date(b.lastUsed || b.createdAt);
+        const _dateA = 
+        const _dateB = 
         return dateB.getTime() - dateA.getTime();
       })
       .slice(0, limit);
@@ -215,20 +215,20 @@ export class IntelligentCacheService implements IIntelligentCache {
   async clearCache(olderThan?: Date): Promise<number> {
     this.logger.debug('Clearing cache');
 
-    const allCacheEntries = await this.memoryService.getMemoryByType(this.cachePrefix);
+    const _allCacheEntries = 
 
     if (!allCacheEntries || allCacheEntries.length === 0) {
       this.logger.debug('No cache entries found');
       return 0;
     }
 
-    let clearedCount = 0;
+    let _clearedCount = 
 
     if (olderThan) {
-      const olderThanTime = olderThan.getTime();
+      const _olderThanTime = 
 
       for (const entry of allCacheEntries) {
-        const lastUsedDate = new Date(entry.content.lastUsed || entry.content.createdAt);
+        const _lastUsedDate = 
 
         if (lastUsedDate.getTime() < olderThanTime) {
           await this.memoryService.storeMemory({
@@ -271,7 +271,7 @@ export class IntelligentCacheService implements IIntelligentCache {
   async analyzeUsagePatterns(): Promise<any> {
     this.logger.debug('Analyzing usage patterns');
 
-    const allCacheEntries = await this.memoryService.getMemoryByType(this.cachePrefix);
+    const _allCacheEntries = 
 
     if (!allCacheEntries || allCacheEntries.length === 0) {
       this.logger.debug('No cache entries found');
@@ -281,7 +281,7 @@ export class IntelligentCacheService implements IIntelligentCache {
       };
     }
 
-    const usageData = allCacheEntries.map((entry) => ({
+    const _usageData = 
       id: entry.content.id,
       sourceType: entry.content.sourceDescriptor.entity,
       targetType: entry.content.targetDescriptor.entity,
@@ -291,7 +291,7 @@ export class IntelligentCacheService implements IIntelligentCache {
       metadata: entry.content.metadata || {},
     }));
 
-    const analysisPrompt = `
+    const _analysisPrompt = 
 分析以下转换路径的使用模式：
 
 ${JSON.stringify(usageData, null, 2)}
@@ -306,12 +306,12 @@ ${JSON.stringify(usageData, null, 2)}
 `;
 
     try {
-      const analysisResult = await this.llmRouterService.generateContent(analysisPrompt, {
+      const _analysisResult = 
         temperature: 0.3,
         maxTokens: 2000,
       });
 
-      const parsedResult = JSON.parse(analysisResult);
+      const _parsedResult = 
       this.logger.debug('Usage pattern analysis completed');
       return parsedResult;
     } catch (error) {
@@ -330,8 +330,8 @@ ${JSON.stringify(usageData, null, 2)}
    * @param descriptorB 描述符B
    * @returns 相似度分数
    */
-  private async calculateDescriptorSimilarity(descriptorA: any, descriptorB: any): Promise<number> {
-    const prompt = `
+  private async calculateDescriptorSimilarity(descriptorA: unknown, descriptorB: unknown): Promise<number> {
+    const _prompt = 
 计算以下两个描述符之间的相似度：
 
 描述符A：
@@ -345,12 +345,12 @@ ${JSON.stringify(descriptorB, null, 2)}
 `;
 
     try {
-      const response = await this.llmRouterService.generateContent(prompt, {
+      const _response = 
         temperature: 0.1,
         maxTokens: 10,
       });
 
-      const similarityScore = parseFloat(response.trim());
+      const _similarityScore = 
       return isNaN(similarityScore) ? 0 : Math.max(0, Math.min(1, similarityScore));
     } catch (error) {
       this.logger.error(`Error calculating descriptor similarity: ${error.message}`);

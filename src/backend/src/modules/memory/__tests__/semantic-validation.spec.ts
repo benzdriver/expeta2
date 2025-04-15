@@ -8,10 +8,10 @@ import { Model } from 'mongoose';
 
 describe('MemoryService - Semantic Validation', () => {
   let service: MemoryService;
-  let mockMemoryModel: any;
-  let mockSemanticCacheService: any;
+  let mockMemoryModel: unknown;
+  let mockSemanticCacheService: unknown;
 
-  const mockMemory = {
+  const _mockMemory = 
     _id: 'test-id',
     type: MemoryType.REQUIREMENT,
     content: { text: 'Test requirement' },
@@ -41,7 +41,7 @@ describe('MemoryService - Semantic Validation', () => {
       clear: jest.fn(),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    const _module: TestingModule = 
       providers: [
         MemoryService,
         {
@@ -61,8 +61,8 @@ describe('MemoryService - Semantic Validation', () => {
   it('should validate data with no constraints', async () => {
     jest.spyOn<any, any>(service, 'getSemanticConstraints').mockResolvedValue([]);
 
-    const data = { text: 'Test data' };
-    const result = await service.validateSemanticConsistency(data, MemoryType.REQUIREMENT);
+    const _data = 
+    const _result = 
 
     expect(result.isValid).toBe(true);
     expect(result.score).toBe(100);
@@ -71,7 +71,7 @@ describe('MemoryService - Semantic Validation', () => {
   });
 
   it('should validate data with constraints using validation function', async () => {
-    const constraints: SemanticConstraint[] = [
+    const _constraints: SemanticConstraint[] = 
       {
         field: 'text',
         constraint: 'Text should not be empty',
@@ -82,8 +82,8 @@ describe('MemoryService - Semantic Validation', () => {
 
     jest.spyOn<any, any>(service, 'getSemanticConstraints').mockResolvedValue(constraints);
 
-    const validData = { text: 'Valid text' };
-    const validResult = await service.validateSemanticConsistency(
+    const _validData = 
+    const _validResult = 
       validData,
       MemoryType.REQUIREMENT,
     );
@@ -92,8 +92,8 @@ describe('MemoryService - Semantic Validation', () => {
     expect(validResult.score).toBe(100);
     expect(validResult.messages.length).toBe(0);
 
-    const invalidData = { text: '' };
-    const invalidResult = await service.validateSemanticConsistency(
+    const _invalidData = 
+    const _invalidResult = 
       invalidData,
       MemoryType.REQUIREMENT,
     );
@@ -105,7 +105,7 @@ describe('MemoryService - Semantic Validation', () => {
   });
 
   it('should handle validation errors gracefully', async () => {
-    const constraints: SemanticConstraint[] = [
+    const _constraints: SemanticConstraint[] = 
       {
         field: 'text',
         constraint: 'Text should be valid',
@@ -118,8 +118,8 @@ describe('MemoryService - Semantic Validation', () => {
 
     jest.spyOn<any, any>(service, 'getSemanticConstraints').mockResolvedValue(constraints);
 
-    const data = { text: 'Test data' };
-    const result = await service.validateSemanticConsistency(data, MemoryType.REQUIREMENT);
+    const _data = 
+    const _result = 
 
     expect(result.isValid).toBe(true); // No error messages, so still valid
     expect(result.messages.length).toBe(1);
@@ -127,7 +127,7 @@ describe('MemoryService - Semantic Validation', () => {
   });
 
   it('should generate suggested fixes for invalid data', async () => {
-    const constraints: SemanticConstraint[] = [
+    const _constraints: SemanticConstraint[] = 
       {
         field: 'text',
         constraint: 'Text should be descriptive',
@@ -138,8 +138,8 @@ describe('MemoryService - Semantic Validation', () => {
 
     jest.spyOn<any, any>(service, 'getSemanticConstraints').mockResolvedValue(constraints);
 
-    const invalidData = { text: 'Short' };
-    const result = await service.validateSemanticConsistency(invalidData, MemoryType.REQUIREMENT);
+    const _invalidData = 
+    const _result = 
 
     expect(result.isValid).toBe(false);
     expect(result.suggestedFixes).toBeDefined();

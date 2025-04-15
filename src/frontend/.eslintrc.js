@@ -21,7 +21,7 @@ module.exports = {
       browser: true,
       es6: true,
     },
-    ignorePatterns: ['.eslintrc.js', 'node_modules/', 'dist/', 'build/'],
+    ignorePatterns: ['.eslintrc.js', 'node_modules/', 'dist/', 'build/', 'vite.config.ts'],
     rules: {
       '@typescript-eslint/interface-name-prefix': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',

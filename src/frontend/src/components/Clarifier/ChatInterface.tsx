@@ -5,18 +5,19 @@ import type { Expectation, ConversationStage, ConversationContext, ChatInterface
 
 const loggingService = (() => {
   try {
-    return require('../../services/logging.service').default;
+    return require('../../services/logging.service').default; /* eslint-disable-line @typescript-eslint/no-var-requires */
   } catch (e) {
+    /* eslint-disable-next-line no-console */
     console.error('Failed to load logging service:', e);
     return {
-      startSession: () => {},
-      endSession: () => {},
-      info: () => {},
-      debug: () => {},
-      warn: () => {},
-      error: () => {},
-      logSessionMessage: () => {},
-      logSessionStateChange: () => {}
+      startSession: () => { /* Empty implementation for fallback */ },
+      endSession: () => { /* Empty implementation for fallback */ },
+      info: () => { /* Empty implementation for fallback */ },
+      debug: () => { /* Empty implementation for fallback */ },
+      warn: () => { /* Empty implementation for fallback */ },
+      error: () => { /* Empty implementation for fallback */ },
+      logSessionMessage: () => { /* Empty implementation for fallback */ },
+      logSessionStateChange: () => { /* Empty implementation for fallback */ }
     };
   }
 })();
@@ -26,7 +27,7 @@ const ConversationLogger = React.lazy(() => import('./ConversationLogger'));
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   initialMessages = [], 
   onSendMessage,
-  onExpectationCreated,
+  _onExpectationCreated,
   enableLogging = true,
   sessionId = `session-${Date.now()}`
 }) => {
@@ -42,7 +43,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [currentStage, setCurrentStage] = useState<ConversationStage>('initial');
-  const [currentExpectation, setCurrentExpectation] = useState<Partial<Expectation>>({
+  const [currentExpectation, _setCurrentExpectation] = useState<Partial<Expectation>>({
     id: `exp-${Date.now()}`,
     criteria: [],
     semanticTags: [],
@@ -50,15 +51,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     subExpectations: []
   });
   const [clarificationRound, setClarificationRound] = useState(0);
-  const [semanticAnalysisComplete, setSemanticAnalysisComplete] = useState(false);
+  const [semanticAnalysisComplete, _setSemanticAnalysisComplete] = useState(false);
   const [conversationContext, setConversationContext] = useState<ConversationContext>({
     detectedKeywords: [],
     userPreferences: {},
     followUpQuestions: []
   });
   const [showLogger, setShowLogger] = useState(false);
-  const [requirementUnderstanding, setRequirementUnderstanding] = useState<string>('');
-  const [showUnderstandingSummary, setShowUnderstandingSummary] = useState<boolean>(false);
+  const [_requirementUnderstanding, setRequirementUnderstanding] = useState<string>('');
+  const [_showUnderstandingSummary, setShowUnderstandingSummary] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
@@ -115,6 +116,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           clarificationRound
         });
       } catch (error) {
+        /* eslint-disable-next-line no-console */
         console.error('Failed to log user message:', error);
       }
     }
@@ -143,6 +145,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           timestamp: new Date().toISOString()
         });
       } catch (error) {
+        /* eslint-disable-next-line no-console */
         console.error('Failed to log user input processing:', error);
       }
     }
@@ -182,6 +185,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             understandingLength: newUnderstanding.length
           });
         } catch (error) {
+          /* eslint-disable-next-line no-console */
           console.error('Failed to log system response:', error);
         }
       }
@@ -213,6 +217,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           timestamp: new Date().toISOString()
         });
       } catch (error) {
+        /* eslint-disable-next-line no-console */
         console.error('Failed to log conversation context update:', error);
       }
     }
@@ -328,6 +333,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           timestamp: new Date().toISOString()
         });
       } catch (error) {
+        /* eslint-disable-next-line no-console */
         console.error('Failed to log understanding confirmation:', error);
       }
     }
@@ -360,6 +366,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           try {
             loggingService.logSessionMessage(sessionId, nextStageMessage);
           } catch (error) {
+            /* eslint-disable-next-line no-console */
             console.error('Failed to log next stage message:', error);
           }
         }
@@ -380,6 +387,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         try {
           loggingService.logSessionMessage(sessionId, correctionPromptMessage);
         } catch (error) {
+          /* eslint-disable-next-line no-console */
           console.error('Failed to log correction prompt message:', error);
         }
       }

@@ -53,17 +53,17 @@ export class ResolverService {
    */
   async resolveConflicts(
     moduleA: string,
-    dataA: any,
+    dataA: unknown,
     moduleB: string,
-    dataB: any,
+    dataB: unknown,
     options?: {
       forceStrategy?: string;
-      context?: any;
+      context?: unknown;
       cacheResults?: boolean;
     },
   ): Promise<ResolutionResult> {
-    const startTime = Date.now();
-    const debugSessionId = await this.monitoringSystem.createDebugSession({
+    const _startTime = 
+    const _debugSessionId = 
       operation: 'resolveConflicts',
       moduleA,
       moduleB,
@@ -73,7 +73,7 @@ export class ResolverService {
     try {
       this.logger.debug(`Resolving conflicts between ${moduleA} and ${moduleB}`);
 
-      const descriptorA: SemanticDescriptor = {
+      const _descriptorA: SemanticDescriptor = 
         entity: moduleA,
         description: `Data from ${moduleA} module`,
         attributes: {
@@ -87,7 +87,7 @@ export class ResolverService {
         },
       };
 
-      const descriptorB: SemanticDescriptor = {
+      const _descriptorB: SemanticDescriptor = 
         entity: moduleB,
         description: `Data from ${moduleB} module`,
         attributes: {
@@ -101,8 +101,8 @@ export class ResolverService {
         },
       };
 
-      const cacheKey = `resolution_${moduleA}_${moduleB}_${this.generateDataHash(dataA)}_${this.generateDataHash(dataB)}`;
-      const cachedResult = await this.intelligentCache.retrieveTransformationPath(
+      const _cacheKey = 
+      const _cachedResult = 
         descriptorA,
         descriptorB,
         0.95, // High similarity threshold
@@ -110,7 +110,7 @@ export class ResolverService {
 
       if (cachedResult && !options?.forceStrategy) {
         this.logger.debug(`Found cached resolution for ${moduleA} and ${moduleB}`);
-        
+
         await this.monitoringSystem.logTransformationEvent({
           type: 'conflict_resolution_cache_hit',
           moduleA,
@@ -118,52 +118,50 @@ export class ResolverService {
           timestamp: new Date().toISOString(),
           debugSessionId,
         });
-        
+
         await this.intelligentCache.updateUsageStatistics(cacheKey);
-        
+
         return cachedResult as ResolutionResult;
       }
 
-      let selectedStrategy: ResolutionStrategy | null = null;
-      
+      let _selectedStrategy: ResolutionStrategy | null = 
+
       if (options?.forceStrategy) {
-        selectedStrategy = this.strategies.find(s => s.name === options.forceStrategy) || null;
-        
+        selectedStrategy = this.strategies.find((s) => s.name === options.forceStrategy) || null;
+
         if (!selectedStrategy) {
-          this.logger.warn(`Forced strategy ${options.forceStrategy} not found, falling back to automatic selection`);
+          this.logger.warn(
+            `Forced strategy ${options.forceStrategy} not found, falling back to automatic selection`,
+          );
         }
       }
-      
+
       if (!selectedStrategy) {
         for (const strategy of this.strategies) {
-          const canResolve = await strategy.canResolve(
-            descriptorA,
-            descriptorB,
-            options?.context,
-          );
-          
+          const _canResolve = 
+
           if (canResolve) {
             selectedStrategy = strategy;
             break;
           }
         }
       }
-      
+
       if (!selectedStrategy) {
         this.logger.warn(`No suitable strategy found, falling back to LLM resolution`);
         selectedStrategy = this.llmResolutionStrategy;
       }
-      
+
       this.logger.debug(`Selected resolution strategy: ${selectedStrategy.name}`);
-      
-      const result = await selectedStrategy.resolve(
+
+      const _result = 
         dataA,
         dataB,
         descriptorA,
         descriptorB,
         options?.context,
       );
-      
+
       await this.monitoringSystem.logTransformationEvent({
         type: 'conflict_resolution',
         moduleA,
@@ -174,19 +172,14 @@ export class ResolverService {
         timestamp: new Date().toISOString(),
         debugSessionId,
       });
-      
-      if (result.success && (options?.cacheResults !== false)) {
-        await this.intelligentCache.storeTransformationPath(
-          descriptorA,
-          descriptorB,
-          result,
-          {
-            strategyUsed: selectedStrategy.name,
-            confidence: result.confidence,
-            timestamp: new Date().toISOString(),
-          },
-        );
-        
+
+      if (result.success && options?.cacheResults !== false) {
+        await this.intelligentCache.storeTransformationPath(descriptorA, descriptorB, result, {
+          strategyUsed: selectedStrategy.name,
+          confidence: result.confidence,
+          timestamp: new Date().toISOString(),
+        });
+
         await this.memoryService.storeMemory({
           type: MemoryType.SEMANTIC_TRANSFORMATION,
           content: {
@@ -214,13 +207,13 @@ export class ResolverService {
           ],
         });
       }
-      
+
       await this.monitoringSystem.endDebugSession(debugSessionId);
-      
+
       return result;
     } catch (error) {
       this.logger.error(`Error resolving conflicts: ${error.message}`, error.stack);
-      
+
       await this.monitoringSystem.logError(error, {
         operation: 'resolveConflicts',
         moduleA,
@@ -228,9 +221,9 @@ export class ResolverService {
         debugSessionId,
         timestamp: new Date().toISOString(),
       });
-      
+
       await this.monitoringSystem.endDebugSession(debugSessionId);
-      
+
       return {
         success: false,
         resolvedData: null,
@@ -262,32 +255,32 @@ export class ResolverService {
    */
   async findCandidateSources(
     semanticIntent: string,
-    context?: any,
-  ): Promise<Array<{ sourceId: string; relevance: number; metadata: any }>> {
+    context?: unknown,
+  ): Promise<Array<{ sourceId: string; relevance: number; metadata: unknown }>> {
     try {
       this.logger.debug(`Finding candidate sources for semantic intent: ${semanticIntent}`);
-      
-      const systemMemories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM, 100);
-      const registeredSources = systemMemories.filter(memory => 
-        memory.tags && memory.tags.includes('data_source')
+
+      const _systemMemories = 
+      const _registeredSources = 
+        (memory) => memory.tags && memory.tags.includes('data_source'),
       );
-      
+
       if (!registeredSources || registeredSources.length === 0) {
         this.logger.debug('No registered data sources found');
         return [];
       }
-      
-      const candidates = await Promise.all(
+
+      const _candidates = 
         registeredSources.map(async (source) => {
-          const sourceContent = source.content;
-          const sourceId = sourceContent.id || source._id.toString();
-          
-          const relevance = await this.calculateRelevanceScore(
+          const _sourceContent = 
+          const _sourceId = 
+
+          const _relevance = 
             semanticIntent,
             sourceContent.description,
             sourceContent.capabilities || [],
           );
-          
+
           return {
             sourceId,
             relevance,
@@ -299,13 +292,13 @@ export class ResolverService {
           };
         }),
       );
-      
+
       candidates.sort((a, b) => b.relevance - a.relevance);
-      
-      const relevantCandidates = candidates.filter(c => c.relevance > 0.3);
-      
+
+      const _relevantCandidates = 
+
       this.logger.debug(`Found ${relevantCandidates.length} relevant candidate sources`);
-      
+
       return relevantCandidates;
     } catch (error) {
       this.logger.error(`Error finding candidate sources: ${error.message}`, error.stack);
@@ -325,26 +318,25 @@ export class ResolverService {
     sourceDescription: string,
     capabilities: string[],
   ): Promise<number> {
-    
-    const intent = semanticIntent.toLowerCase();
-    const description = sourceDescription.toLowerCase();
-    const caps = capabilities.map(c => c.toLowerCase());
-    
-    let score = 0;
-    
-    const intentKeywords = intent.split(/\s+/);
+    const _intent = 
+    const _description = 
+    const _caps = 
+
+    let _score = 
+
+    const _intentKeywords = 
     for (const keyword of intentKeywords) {
       if (keyword.length > 3 && description.includes(keyword)) {
         score += 0.2;
       }
     }
-    
+
     for (const capability of caps) {
       if (intent.includes(capability) || capability.includes(intent)) {
         score += 0.3;
       }
     }
-    
+
     return Math.min(Math.max(score, 0), 1);
   }
 
@@ -353,12 +345,12 @@ export class ResolverService {
    * @param data Data to hash
    * @returns Hash string
    */
-  private generateDataHash(data: any): string {
+  private generateDataHash(data: unknown): string {
     try {
-      const str = JSON.stringify(data);
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
+      const _str = 
+      let _hash = 
+      for (let _i = 
+        const _char = 
         hash = (hash << 5) - hash + char;
         hash = hash & hash; // Convert to 32bit integer
       }

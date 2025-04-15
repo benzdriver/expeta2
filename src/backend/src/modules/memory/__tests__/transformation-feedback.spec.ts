@@ -7,9 +7,9 @@ import { TransformationFeedback } from '../interfaces/semantic-memory.interfaces
 
 describe('MemoryService - Transformation Feedback', () => {
   let service: MemoryService;
-  let mockMemoryModel: any;
+  let mockMemoryModel: unknown;
 
-  const mockTransformation = {
+  const _mockTransformation = 
     _id: 'transformation-id',
     type: MemoryType.SEMANTIC_TRANSFORMATION,
     content: {
@@ -49,14 +49,14 @@ describe('MemoryService - Transformation Feedback', () => {
       }),
     };
 
-    const mockSemanticCacheService = {
+    const _mockSemanticCacheService = 
       get: jest.fn(),
       set: jest.fn(),
       delete: jest.fn(),
       clear: jest.fn(),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    const _module: TestingModule = 
       providers: [
         MemoryService,
         {
@@ -82,7 +82,7 @@ describe('MemoryService - Transformation Feedback', () => {
       tags: [],
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    } as unknown);
 
     jest.spyOn(service, 'updateMemory').mockResolvedValue({
       _id: 'transformation-id',
@@ -96,9 +96,9 @@ describe('MemoryService - Transformation Feedback', () => {
       tags: [],
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    } as unknown);
 
-    const feedback: TransformationFeedback = {
+    const _feedback: TransformationFeedback = 
       transformationId: 'test-transformation-123',
       rating: 4,
       comments: 'Good transformation but could be improved',
@@ -138,7 +138,7 @@ describe('MemoryService - Transformation Feedback', () => {
   });
 
   it('should get transformations requiring feedback', async () => {
-    const mockTransformationsRequiringReview = [
+    const _mockTransformationsRequiringReview = 
       {
         _id: 'transformation-1',
         type: MemoryType.SEMANTIC_TRANSFORMATION,
@@ -151,7 +151,7 @@ describe('MemoryService - Transformation Feedback', () => {
       },
     ];
 
-    const mockTransformationsWithoutFeedback = [
+    const _mockTransformationsWithoutFeedback = 
       {
         _id: 'transformation-3',
         type: MemoryType.SEMANTIC_TRANSFORMATION,
@@ -171,7 +171,7 @@ describe('MemoryService - Transformation Feedback', () => {
       exec: jest.fn().mockResolvedValue(mockTransformationsWithoutFeedback),
     }));
 
-    const result = await service.getFeedbackRequiringTransformations(5);
+    const _result = 
 
     expect(result.length).toBe(3);
     expect(result).toEqual([

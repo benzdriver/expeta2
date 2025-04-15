@@ -1,6 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useExpeta } from '../../contexts/ExpetaContext';
 import './OrchestratorPanel.css';
+
+interface Requirement {
+  id: string;
+  text: string;
+  status?: string;
+  title?: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface WorkflowParams {
+  requirementId?: string;
+  expectationId?: string;
+  codeId?: string;
+  includeSemanticAnalysis?: boolean;
+  optimizationLevel?: string;
+  analysisDepth?: string;
+  trackTransformations?: boolean;
+  validationStrategy?: string;
+  [key: string]: unknown;
+}
+
+interface Question {
+  text: string;
+  type?: string;
+  priority?: number;
+}
+
+interface ProcessStatus {
+  status: string;
+  message?: string;
+  nextStep?: string;
+  suggestedQuestions?: Question[];
+  [key: string]: unknown;
+}
 
 interface OrchestratorPanelProps {
   requirementId?: string;
@@ -17,49 +52,43 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
     error 
   } = useExpeta();
   
-  const [processStatus, setProcessStatus] = useState<any>(null);
+  const [processStatus, setProcessStatus] = useState<ProcessStatus | null>(null);
   const [selectedWorkflow, setSelectedWorkflow] = useState<string>('full_process');
-  const [workflowParams, setWorkflowParams] = useState<any>({});
-  const [availableRequirements, setAvailableRequirements] = useState<any[]>([]);
+  const [workflowParams, setWorkflowParams] = useState<WorkflowParams>({});
+  const [availableRequirements, setAvailableRequirements] = useState<Requirement[]>([]);
   const [selectedRequirementId, setSelectedRequirementId] = useState<string>(requirementId || '');
   const [showRequirementSelector, setShowRequirementSelector] = useState<boolean>(false);
   
-  useEffect(() => {
-    if (requirementId) {
-      setSelectedRequirementId(requirementId);
-      handleProcessRequirement();
-    }
-    
-    fetchRequirements();
-  }, [requirementId]);
   
   useEffect(() => {
     if (selectedRequirementId) {
-      setWorkflowParams((prev: any) => ({ ...prev, requirementId: selectedRequirementId }));
+      setWorkflowParams((prev: Record<string, unknown>) => ({ ...prev, requirementId: selectedRequirementId }));
     }
   }, [selectedRequirementId]);
   
-  const fetchRequirements = async () => {
+  const fetchRequirements = useCallback(async () => {
     try {
       const reqs = await getRequirements();
       setAvailableRequirements(reqs || requirements || []);
     } catch (err) {
+      /* eslint-disable-next-line no-console */
       console.error('Failed to fetch requirements', err);
     }
-  };
+  }, [getRequirements, requirements]);
   
-  const handleProcessRequirement = async () => {
+  const handleProcessRequirement = useCallback(async () => {
     if (!selectedRequirementId) return;
     
     try {
       const status = await processRequirement(selectedRequirementId);
       setProcessStatus(status);
       
-      setWorkflowParams((prev: any) => ({ ...prev, requirementId: selectedRequirementId }));
+      setWorkflowParams((prev: Record<string, unknown>) => ({ ...prev, requirementId: selectedRequirementId }));
     } catch (err) {
+      /* eslint-disable-next-line no-console */
       console.error('Failed to process requirement', err);
     }
-  };
+  }, [selectedRequirementId, processRequirement]);
   
   const handleExecuteWorkflow = async () => {
     if (!selectedWorkflow) return;
@@ -72,10 +101,20 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
         onWorkflowExecuted(result.executionId);
       }
     } catch (err) {
+      /* eslint-disable-next-line no-console */
       console.error('Failed to execute workflow', err);
     }
   };
   
+  useEffect(() => {
+    if (requirementId) {
+      setSelectedRequirementId(requirementId);
+      handleProcessRequirement();
+    }
+    
+    fetchRequirements();
+  }, [requirementId, fetchRequirements, handleProcessRequirement]);
+
   const renderWorkflowOptions = () => {
     const workflows = [
       { id: 'full_process', label: '完整流程', description: '从需求到代码生成和验证的完整流程' },
@@ -140,7 +179,7 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
                 onClick={() => {
                   setSelectedRequirementId(req.id);
                   setShowRequirementSelector(false);
-                  setWorkflowParams((prev: any) => ({ ...prev, requirementId: req.id }));
+                  setWorkflowParams((prev: Record<string, unknown>) => ({ ...prev, requirementId: req.id }));
                 }}
               >
                 <div className="requirement-item-header">
@@ -329,7 +368,7 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
           <div className="suggested-questions">
             <h4>建议的澄清问题</h4>
             <ul>
-              {processStatus.suggestedQuestions.map((q: any, index: number) => (
+              {processStatus.suggestedQuestions.map((q: Question, index: number) => (
                 <li key={index}>{q.text}</li>
               ))}
             </ul>

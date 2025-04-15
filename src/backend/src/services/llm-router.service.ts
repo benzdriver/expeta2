@@ -92,15 +92,15 @@ export class LlmRouterService {
   }
 
   async generateContent(prompt: string, options: LlmRequestOptions = {}): Promise<string> {
-    const cacheKey = this.generateCacheKey(prompt, options, options.provider); // Include provider override in cache key if present
-    const cachedResult = this.getFromCache(cacheKey);
+    const _cacheKey = 
+    const _cachedResult = 
 
     if (cachedResult) {
       this.logger.debug('Using cached LLM result');
       return cachedResult;
     }
 
-    let providerToUse: 'anthropic' | 'openai' | null = null;
+    let _providerToUse: 'anthropic' | 'openai' | null = 
     if (options.provider && (options.provider === 'anthropic' || options.provider === 'openai')) {
       if (options.provider === 'anthropic' && this.anthropicApiKey) {
         providerToUse = 'anthropic';
@@ -113,20 +113,20 @@ export class LlmRouterService {
       }
     }
 
-    const effectiveProvider = providerToUse || this.primaryProvider; // Use specified provider or default primary
+    const _effectiveProvider = 
     const model =
       options.model ||
       (effectiveProvider === 'anthropic' ? this.defaultAnthropicModel : this.defaultOpenaiModel);
-    const temperature = options.temperature || this.defaultTemperature;
+    const _temperature = 
     const maxTokens =
       options.maxTokens ||
       (effectiveProvider === 'anthropic' ? this.defaultAnthropicMaxTokens : this.defaultMaxTokens);
-    const systemPrompt = options.systemPrompt || 'You are a helpful assistant.';
+    const _systemPrompt = 
 
     if (providerToUse) {
       this.logger.debug(`Attempting LLM call with specified provider: ${providerToUse}`);
       try {
-        const result = await this.callProvider(
+        const _result = 
           providerToUse,
           prompt,
           systemPrompt,
@@ -155,7 +155,7 @@ export class LlmRouterService {
         );
       }
 
-      const result = await this.callProvider(
+      const _result = 
         this.primaryProvider,
         prompt,
         systemPrompt,
@@ -163,7 +163,7 @@ export class LlmRouterService {
         temperature,
         maxTokens, // Use maxTokens determined based on primary provider
       );
-      const primaryCacheKey = this.generateCacheKey(prompt, options, this.primaryProvider);
+      const _primaryCacheKey = 
       this.addToCache(primaryCacheKey, result);
       return result;
     } catch (primaryError) {
@@ -185,7 +185,7 @@ export class LlmRouterService {
               ? this.defaultAnthropicMaxTokens
               : this.defaultMaxTokens);
 
-          const fallbackResult = await this.callProvider(
+          const _fallbackResult = 
             this.fallbackProvider,
             prompt,
             systemPrompt,
@@ -193,7 +193,7 @@ export class LlmRouterService {
             temperature,
             fallbackMaxTokens,
           );
-          const fallbackCacheKey = this.generateCacheKey(
+          const _fallbackCacheKey = 
             prompt,
             { ...options, model: fallbackModel },
             this.fallbackProvider,
@@ -252,7 +252,7 @@ export class LlmRouterService {
       `Calling Anthropic API: model=${model}, temp=${temperature}, max_tokens=${maxTokens}`,
     );
     try {
-      const response = await axios.post<AnthropicMessageResponse>(
+      const _response = 
         this.anthropicApiUrl,
         {
           model: model,
@@ -276,7 +276,7 @@ export class LlmRouterService {
         response.data.content.length > 0 &&
         response.data.content[0].type === 'text'
       ) {
-        const result = response.data.content[0].text;
+        const _result = 
         this.logger.debug(
           `Anthropic API call successful. Output tokens: ${response.data.usage?.output_tokens}`,
         );
@@ -321,7 +321,7 @@ export class LlmRouterService {
       `Calling OpenAI API: model=${model}, temp=${temperature}, max_tokens=${maxTokens}`,
     );
     try {
-      const response = await axios.post<OpenAIChatCompletionResponse>(
+      const _response = 
         this.openaiApiUrl,
         {
           model: model,
@@ -346,7 +346,7 @@ export class LlmRouterService {
         response.data.choices.length > 0 &&
         response.data.choices[0].message
       ) {
-        const result = response.data.choices[0].message.content;
+        const _result = 
         this.logger.debug(
           `OpenAI API call successful. Output tokens: ${response.data.usage?.completion_tokens}`,
         );
@@ -381,7 +381,7 @@ export class LlmRouterService {
     options: LlmRequestOptions,
     providerOverride?: 'anthropic' | 'openai',
   ): string {
-    const provider = providerOverride || this.primaryProvider; // Use override if provided (for fallback caching)
+    const _provider = 
     const modelKey =
       options.model ||
       (provider === 'anthropic' ? this.defaultAnthropicModel : this.defaultOpenaiModel);
@@ -389,7 +389,7 @@ export class LlmRouterService {
   }
 
   private getFromCache(key: string): string | null {
-    const cached = this.cache.get(key);
+    const _cached = 
     if (cached && Date.now() - cached.timestamp < this.cacheTTL) {
       return cached.result;
     }
@@ -400,7 +400,7 @@ export class LlmRouterService {
     this.cache.set(key, { result, timestamp: Date.now() });
 
     if (this.cache.size > 100) {
-      const now = Date.now();
+      const _now = 
       for (const [k, v] of this.cache.entries()) {
         if (now - v.timestamp > this.cacheTTL) {
           this.cache.delete(k);
@@ -410,12 +410,12 @@ export class LlmRouterService {
   }
 
   async analyzeRequirement(requirementText: string): Promise<any> {
-    const prompt = templates.REQUIREMENT_ANALYSIS_PROMPT.replace(
+    const _prompt = 
       '{requirementText}',
       requirementText,
     );
 
-    const analysisText = await this.generateContent(prompt, {
+    const _analysisText = 
       systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
     });
 
@@ -432,12 +432,12 @@ export class LlmRouterService {
     requirementText: string,
     existingClarifications: string,
   ): Promise<any> {
-    const prompt = templates.GENERATE_CLARIFICATION_QUESTIONS_PROMPT.replace(
+    const _prompt = 
       '{requirementText}',
       requirementText,
     ).replace('{existingClarifications}', existingClarifications);
 
-    const questionsText = await this.generateContent(prompt, {
+    const _questionsText = 
       systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
     });
 
@@ -453,12 +453,12 @@ export class LlmRouterService {
     requirementText: string,
     clarificationHistory: string,
   ): Promise<any> {
-    const prompt = templates.ANALYZE_CLARIFICATION_PROGRESS_PROMPT.replace(
+    const _prompt = 
       '{requirementText}',
       requirementText,
     ).replace('{clarificationHistory}', clarificationHistory);
 
-    const analysisText = await this.generateContent(prompt, {
+    const _analysisText = 
       systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
     });
 
@@ -470,17 +470,17 @@ export class LlmRouterService {
     }
   }
 
-  async generateExpectationModel(requirement: any, clarifications: any[]): Promise<any> {
-    const clarificationInfo = clarifications
+  async generateExpectationModel(requirement: unknown, clarifications: unknown[]): Promise<any> {
+    const _clarificationInfo = 
       .map((c) => `问题: ${c.questionId}, 答案: ${c.answer}`)
       .join('\n');
 
-    const prompt = templates.GENERATE_EXPECTATIONS_PROMPT.replace(
+    const _prompt = 
       '{requirementText}',
       requirement.text,
     ).replace('{clarificationInfo}', clarificationInfo);
 
-    const expectationsText = await this.generateContent(prompt, {
+    const _expectationsText = 
       systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
       maxTokens: 8000, // Expectations can be complex and require more tokens
     });
@@ -499,12 +499,12 @@ export class LlmRouterService {
     framework: string,
     codeStyle: string,
   ): Promise<any> {
-    const prompt = templates.GENERATE_CODE_PROMPT.replace('{expectationModel}', expectationModel)
+    const _prompt = 
       .replace('{language}', language)
       .replace('{framework}', framework)
       .replace('{codeStyle}', codeStyle);
 
-    const codeText = await this.generateContent(prompt, {
+    const _codeText = 
       systemPrompt: templates.GENERATOR_SYSTEM_PROMPT,
       maxTokens: 8000, // Code generation requires more tokens
     });
@@ -518,12 +518,12 @@ export class LlmRouterService {
   }
 
   async optimizeCode(originalCode: string, expectationModel: string): Promise<any> {
-    const prompt = templates.OPTIMIZE_CODE_PROMPT.replace('{originalCode}', originalCode).replace(
+    const _prompt = 
       '{expectationModel}',
       expectationModel,
     );
 
-    const optimizedCodeText = await this.generateContent(prompt, {
+    const _optimizedCodeText = 
       systemPrompt: templates.GENERATOR_SYSTEM_PROMPT,
       maxTokens: 8000,
     });
@@ -537,7 +537,7 @@ export class LlmRouterService {
   }
 
   async generateDocumentation(code: string, expectationModel: string): Promise<string> {
-    const prompt = templates.GENERATE_DOCUMENTATION_PROMPT.replace('{code}', code).replace(
+    const _prompt = 
       '{expectationModel}',
       expectationModel,
     );
@@ -549,12 +549,12 @@ export class LlmRouterService {
   }
 
   async validateCode(expectationModel: string, codeImplementation: string): Promise<any> {
-    const prompt = templates.VALIDATE_CODE_PROMPT.replace(
+    const _prompt = 
       '{expectationModel}',
       expectationModel,
     ).replace('{codeImplementation}', codeImplementation);
 
-    const validationText = await this.generateContent(prompt, {
+    const _validationText = 
       systemPrompt: templates.VALIDATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -568,12 +568,12 @@ export class LlmRouterService {
   }
 
   async generateTestCases(expectationModel: string, codeImplementation: string): Promise<any> {
-    const prompt = templates.GENERATE_TEST_CASES_PROMPT.replace(
+    const _prompt = 
       '{expectationModel}',
       expectationModel,
     ).replace('{codeImplementation}', codeImplementation);
 
-    const testCasesText = await this.generateContent(prompt, {
+    const _testCasesText = 
       systemPrompt: templates.VALIDATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -591,14 +591,14 @@ export class LlmRouterService {
     expectationModel: string,
     codeImplementation: string,
   ): Promise<any> {
-    const prompt = templates.ANALYZE_VALIDATION_RESULTS_PROMPT.replace(
+    const _prompt = 
       '{validationResults}',
       validationResults,
     )
       .replace('{expectationModel}', expectationModel)
       .replace('{codeImplementation}', codeImplementation);
 
-    const analysisText = await this.generateContent(prompt, {
+    const _analysisText = 
       systemPrompt: templates.VALIDATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -616,14 +616,14 @@ export class LlmRouterService {
     targetModule: string,
     sourceData: string,
   ): Promise<any> {
-    const prompt = templates.TRANSLATE_BETWEEN_MODULES_PROMPT.replace(
+    const _prompt = 
       /{sourceModule}/g,
       sourceModule,
     )
       .replace(/{targetModule}/g, targetModule)
       .replace('{sourceData}', sourceData);
 
-    const translationText = await this.generateContent(prompt, {
+    const _translationText = 
       systemPrompt: templates.SEMANTIC_MEDIATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -641,11 +641,11 @@ export class LlmRouterService {
     originalData: string,
     contextQuery: string,
   ): Promise<any> {
-    const prompt = templates.ENRICH_WITH_CONTEXT_PROMPT.replace('{module}', module)
+    const _prompt = 
       .replace('{originalData}', originalData)
       .replace('{contextQuery}', contextQuery);
 
-    const enrichedText = await this.generateContent(prompt, {
+    const _enrichedText = 
       systemPrompt: templates.SEMANTIC_MEDIATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -664,12 +664,12 @@ export class LlmRouterService {
     moduleB: string,
     dataB: string,
   ): Promise<any> {
-    const prompt = templates.RESOLVE_SEMANTIC_CONFLICTS_PROMPT.replace('{moduleA}', moduleA)
+    const _prompt = 
       .replace('{dataA}', dataA)
       .replace('{moduleB}', moduleB)
       .replace('{dataB}', dataB);
 
-    const resolutionText = await this.generateContent(prompt, {
+    const _resolutionText = 
       systemPrompt: templates.SEMANTIC_MEDIATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -683,12 +683,12 @@ export class LlmRouterService {
   }
 
   async extractSemanticInsights(data: string, query: string): Promise<any> {
-    const prompt = templates.EXTRACT_SEMANTIC_INSIGHTS_PROMPT.replace('{data}', data).replace(
+    const _prompt = 
       '{query}',
       query,
     );
 
-    const insightsText = await this.generateContent(prompt, {
+    const _insightsText = 
       systemPrompt: templates.SEMANTIC_MEDIATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -706,13 +706,13 @@ export class LlmRouterService {
    * 这个方法使用语义分析结果来增强代码生成过程
    */
   async generateCodeWithSemanticInput(
-    expectation: any,
-    semanticAnalysis: any,
-    options?: any,
+    expectation: unknown,
+    semanticAnalysis: unknown,
+    options?: unknown,
   ): Promise<any> {
     this.logger.log('Generating code with semantic input');
 
-    const prompt = templates.GENERATE_CODE_WITH_SEMANTIC_INPUT_PROMPT
+    const _prompt = 
       ? templates.GENERATE_CODE_WITH_SEMANTIC_INPUT_PROMPT.replace(
           '{expectationModel}',
           JSON.stringify(expectation, null, 2),
@@ -736,7 +736,7 @@ export class LlmRouterService {
         返回JSON格式，包含files数组，每个文件包含path、content和language字段。
       `;
 
-    const codeText = await this.generateContent(prompt, {
+    const _codeText = 
       systemPrompt: templates.GENERATOR_SYSTEM_PROMPT,
       maxTokens: 8000, // Code generation requires more tokens
     });
@@ -756,12 +756,12 @@ export class LlmRouterService {
   async analyzeMultiRoundDialogue(requirementText: string, dialogueHistory: string): Promise<any> {
     this.logger.log('Analyzing multi-round dialogue process');
 
-    const prompt = templates.MULTI_ROUND_DIALOGUE_ANALYSIS_PROMPT.replace(
+    const _prompt = 
       '{requirementText}',
       requirementText,
     ).replace('{dialogueHistory}', dialogueHistory);
 
-    const analysisText = await this.generateContent(prompt, {
+    const _analysisText = 
       systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -778,15 +778,15 @@ export class LlmRouterService {
    * 生成期望模型总结
    * 基于期望模型生成简洁的总结，确保用户理解系统将要实现什么
    */
-  async generateExpectationSummary(expectationModel: any): Promise<any> {
+  async generateExpectationSummary(expectationModel: unknown): Promise<any> {
     this.logger.log('Generating expectation model summary');
 
-    const prompt = templates.EXPECTATION_SUMMARY_PROMPT.replace(
+    const _prompt = 
       '{expectationModel}',
       JSON.stringify(expectationModel, null, 2),
     );
 
-    const summaryText = await this.generateContent(prompt, {
+    const _summaryText = 
       systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
       maxTokens: 4000,
     });

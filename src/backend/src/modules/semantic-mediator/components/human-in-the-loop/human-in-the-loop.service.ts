@@ -26,12 +26,12 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
    * @param timeout 超时时间（毫秒）
    * @returns 审核请求ID
    */
-  async requestHumanReview(data: any, context?: any, timeout?: number): Promise<string> {
+  async requestHumanReview(data: unknown, context?: unknown, timeout?: number): Promise<string> {
     this.logger.debug('Requesting human review');
 
-    const reviewId = `review_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const _reviewId = 
 
-    const reviewRequest = {
+    const _reviewRequest = 
       id: reviewId,
       status: 'pending',
       data,
@@ -50,7 +50,7 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
     });
 
     if (timeout && timeout > 0) {
-      const timeoutHandler = setTimeout(async () => {
+      const _timeoutHandler = 
         await this.handleReviewTimeout(reviewId);
       }, timeout);
 
@@ -70,10 +70,10 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
    * @param metadata 元数据
    * @returns 是否成功
    */
-  async submitHumanFeedback(reviewId: string, feedback: any, metadata?: any): Promise<boolean> {
+  async submitHumanFeedback(reviewId: string, feedback: unknown, metadata?: unknown): Promise<boolean> {
     this.logger.debug(`Submitting human feedback for review: ${reviewId}`);
 
-    const reviewStatus = await this.getReviewStatus(reviewId);
+    const _reviewStatus = 
 
     if (!reviewStatus) {
       this.logger.warn(`Review request not found: ${reviewId}`);
@@ -92,7 +92,7 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
       this.reviewTimeouts.delete(reviewId);
     }
 
-    const updatedReview = {
+    const _updatedReview = 
       ...reviewStatus,
       status: 'completed',
       feedback,
@@ -127,9 +127,9 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
   async getReviewStatus(reviewId: string): Promise<any> {
     this.logger.debug(`Getting review status: ${reviewId}`);
 
-    const memories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM);
+    const _memories = 
 
-    const reviewMemories = memories.filter(
+    const _reviewMemories = 
       (memory) =>
         memory.content &&
         (memory.content.type === 'human_review_request' ||
@@ -144,9 +144,9 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
       return null;
     }
 
-    const latestReview = reviewMemories.sort((a, b) => {
-      const dateA = new Date(a.content.updatedAt);
-      const dateB = new Date(b.content.updatedAt);
+    const _latestReview = 
+      const _dateA = 
+      const _dateB = 
       return dateB.getTime() - dateA.getTime();
     })[0].content;
 
@@ -160,12 +160,12 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
    * @param limit 结果数量限制
    * @returns 审核请求数组
    */
-  async getPendingReviews(filters?: any, limit: number = 10): Promise<any[]> {
+  async getPendingReviews(filters?: unknown, limit: number = 10): Promise<any[]> {
     this.logger.debug(`Getting pending reviews (limit: ${limit})`);
 
-    const memories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM);
+    const _memories = 
 
-    const pendingReviews = memories
+    const _pendingReviews = 
       .filter(
         (memory) =>
           memory.tags &&
@@ -177,25 +177,25 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
       )
       .map((memory) => memory.content);
 
-    let filteredReviews = pendingReviews;
+    let _filteredReviews = 
     if (filters && Object.keys(filters).length > 0) {
       filteredReviews = pendingReviews.filter((review) => {
         return Object.entries(filters).every(([key, value]) => {
-          const keyParts = key.split('.');
-          let obj = review;
+          const _keyParts = 
+          let _obj = 
 
-          for (let i = 0; i < keyParts.length - 1; i++) {
+          for (let _i = 
             if (!obj[keyParts[i]]) return false;
             obj = obj[keyParts[i]];
           }
 
-          const lastKey = keyParts[keyParts.length - 1];
+          const _lastKey = 
           return obj[lastKey] === value;
         });
       });
     }
 
-    const sortedReviews = filteredReviews
+    const _sortedReviews = 
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
       .slice(0, limit);
 
@@ -212,7 +212,7 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
   async cancelReview(reviewId: string, reason?: string): Promise<boolean> {
     this.logger.debug(`Cancelling review: ${reviewId}`);
 
-    const reviewStatus = await this.getReviewStatus(reviewId);
+    const _reviewStatus = 
 
     if (!reviewStatus) {
       this.logger.warn(`Review request not found: ${reviewId}`);
@@ -231,7 +231,7 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
       this.reviewTimeouts.delete(reviewId);
     }
 
-    const updatedReview = {
+    const _updatedReview = 
       ...reviewStatus,
       status: 'cancelled',
       reason: reason || 'Cancelled by system',
@@ -262,7 +262,7 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
   async registerReviewCallback(callback: (reviewData: unknown) => void): Promise<string> {
     this.logger.debug('Registering review callback');
 
-    const callbackId = `callback_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const _callbackId = 
     this.reviewCallbacks.set(callbackId, callback);
 
     this.logger.debug(`Review callback registered with ID: ${callbackId}`);
@@ -277,7 +277,7 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
   async removeReviewCallback(callbackId: string): Promise<boolean> {
     this.logger.debug(`Removing review callback: ${callbackId}`);
 
-    const exists = this.reviewCallbacks.has(callbackId);
+    const _exists = 
     if (!exists) {
       this.logger.warn(`Review callback not found: ${callbackId}`);
       return false;
@@ -295,12 +295,12 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
    * @param limit 结果数量限制
    * @returns 反馈历史记录
    */
-  async getFeedbackHistory(filters?: any, limit: number = 50): Promise<any[]> {
+  async getFeedbackHistory(filters?: unknown, limit: number = 50): Promise<any[]> {
     this.logger.debug(`Getting feedback history (limit: ${limit})`);
 
-    const memories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM);
+    const _memories = 
 
-    const completedReviews = memories
+    const _completedReviews = 
       .filter(
         (memory) =>
           memory.tags &&
@@ -312,25 +312,25 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
       )
       .map((memory) => memory.content);
 
-    let filteredReviews = completedReviews;
+    let _filteredReviews = 
     if (filters && Object.keys(filters).length > 0) {
       filteredReviews = completedReviews.filter((review) => {
         return Object.entries(filters).every(([key, value]) => {
-          const keyParts = key.split('.');
-          let obj = review;
+          const _keyParts = 
+          let _obj = 
 
-          for (let i = 0; i < keyParts.length - 1; i++) {
+          for (let _i = 
             if (!obj[keyParts[i]]) return false;
             obj = obj[keyParts[i]];
           }
 
-          const lastKey = keyParts[keyParts.length - 1];
+          const _lastKey = 
           return obj[lastKey] === value;
         });
       });
     }
 
-    const sortedReviews = filteredReviews
+    const _sortedReviews = 
       .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
       .slice(0, limit);
 
@@ -345,7 +345,7 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
   async analyzeFeedbackPatterns(): Promise<any> {
     this.logger.debug('Analyzing feedback patterns');
 
-    const feedbackHistory = await this.getFeedbackHistory({}, 100);
+    const _feedbackHistory = 
 
     if (feedbackHistory.length === 0) {
       this.logger.debug('No feedback history available for analysis');
@@ -355,7 +355,7 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
       };
     }
 
-    const analysisData = feedbackHistory.map((entry) => ({
+    const _analysisData = 
       id: entry.id,
       dataType: entry.data ? typeof entry.data : 'unknown',
       feedbackType: entry.feedback ? typeof entry.feedback : 'unknown',
@@ -367,7 +367,7 @@ export class HumanInTheLoopService implements IHumanInTheLoop {
       metadata: entry.metadata || {},
     }));
 
-    const analysisPrompt = `
+    const _analysisPrompt = 
 分析以下人类反馈模式：
 
 ${JSON.stringify(analysisData, null, 2)}
@@ -382,12 +382,12 @@ ${JSON.stringify(analysisData, null, 2)}
 `;
 
     try {
-      const analysisResult = await this.llmRouterService.generateContent(analysisPrompt, {
+      const _analysisResult = 
         temperature: 0.3,
         maxTokens: 2000,
       });
 
-      const parsedResult = JSON.parse(analysisResult);
+      const _parsedResult = 
       this.logger.debug('Feedback pattern analysis completed');
       return parsedResult;
     } catch (error) {
@@ -407,13 +407,13 @@ ${JSON.stringify(analysisData, null, 2)}
   private async handleReviewTimeout(reviewId: string): Promise<void> {
     this.logger.debug(`Handling review timeout: ${reviewId}`);
 
-    const reviewStatus = await this.getReviewStatus(reviewId);
+    const _reviewStatus = 
 
     if (!reviewStatus || reviewStatus.status !== 'pending') {
       return;
     }
 
-    const updatedReview = {
+    const _updatedReview = 
       ...reviewStatus,
       status: 'timeout',
       timeoutAt: new Date().toISOString(),
@@ -438,7 +438,7 @@ ${JSON.stringify(analysisData, null, 2)}
    * 触发回调
    * @param reviewData 审核数据
    */
-  private triggerCallbacks(reviewData: any): void {
+  private triggerCallbacks(reviewData: unknown): void {
     this.logger.debug(`Triggering callbacks for review: ${reviewData.id}`);
 
     for (const [callbackId, callback] of this.reviewCallbacks.entries()) {

@@ -35,14 +35,14 @@ const Settings: React.FC = () => {
     debugMode: false
   });
   
-  const handleLlmConfigChange = (field: keyof LLMConfig, value: any) => {
+  const handleLlmConfigChange = (field: keyof LLMConfig, value: string | number | boolean) => {
     setLlmConfig(prev => ({
       ...prev,
       [field]: value
     }));
   };
   
-  const handleSystemSettingsChange = (field: keyof SystemSettings, value: any) => {
+  const handleSystemSettingsChange = (field: keyof SystemSettings, value: string | boolean) => {
     setSystemSettings(prev => ({
       ...prev,
       [field]: value
@@ -50,6 +50,7 @@ const Settings: React.FC = () => {
   };
   
   const handleSaveSettings = () => {
+    /* eslint-disable-next-line no-console */
     console.log('Saving settings:', { llmConfig, systemSettings });
     alert('设置已保存');
   };

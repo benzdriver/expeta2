@@ -12,10 +12,10 @@ export interface IIntelligentCache {
    * @returns 缓存条目ID
    */
   storeTransformationPath(
-    sourceDescriptor: any,
-    targetDescriptor: any,
-    transformationPath: any,
-    metadata?: any,
+    sourceDescriptor: unknown,
+    targetDescriptor: unknown,
+    transformationPath: unknown,
+    metadata?: unknown,
   ): Promise<string>;
 
   /**
@@ -26,10 +26,10 @@ export interface IIntelligentCache {
    * @returns 转换路径
    */
   retrieveTransformationPath(
-    sourceDescriptor: any,
-    targetDescriptor: any,
+    sourceDescriptor: unknown,
+    targetDescriptor: unknown,
     similarityThreshold?: number,
-  ): Promise<any>;
+  ): Promise<Record<string, unknown>>;
 
   /**
    * 更新转换路径的使用统计
@@ -37,21 +37,21 @@ export interface IIntelligentCache {
    * @param metadata 元数据
    * @returns 是否成功
    */
-  updateUsageStatistics(pathId: string, metadata?: any): Promise<boolean>;
+  updateUsageStatistics(pathId: string, metadata?: unknown): Promise<boolean>;
 
   /**
    * 获取最常用的转换路径
    * @param limit 结果数量限制
    * @returns 转换路径数组
    */
-  getMostUsedPaths(limit?: number): Promise<any[]>;
+  getMostUsedPaths(limit?: number): Promise<Record<string, unknown>[]>;
 
   /**
    * 获取最近使用的转换路径
    * @param limit 结果数量限制
    * @returns 转换路径数组
    */
-  getRecentlyUsedPaths(limit?: number): Promise<any[]>;
+  getRecentlyUsedPaths(limit?: number): Promise<Record<string, unknown>[]>;
 
   /**
    * 清除缓存
@@ -64,5 +64,5 @@ export interface IIntelligentCache {
    * 分析使用模式
    * @returns 使用模式分析结果
    */
-  analyzeUsagePatterns(): Promise<any>;
+  analyzeUsagePatterns(): Promise<Record<string, unknown>>;
 }

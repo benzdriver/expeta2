@@ -15,7 +15,7 @@ export interface ITransformationEngine {
   generateTransformationPath(
     sourceDescriptor: SemanticDescriptor,
     targetDescriptor: SemanticDescriptor,
-    context?: any,
+    context?: unknown,
   ): Promise<any>;
 
   /**
@@ -25,7 +25,11 @@ export interface ITransformationEngine {
    * @param context 上下文信息
    * @returns 转换后的数据
    */
-  executeTransformation(data: any, transformationPath: any, context?: any): Promise<any>;
+  executeTransformation(
+    data: unknown,
+    transformationPath: unknown,
+    context?: unknown,
+  ): Promise<any>;
 
   /**
    * 验证转换结果
@@ -35,12 +39,12 @@ export interface ITransformationEngine {
    * @returns 验证结果
    */
   validateTransformation(
-    result: any,
+    result: unknown,
     targetDescriptor: SemanticDescriptor,
-    context?: any,
+    context?: unknown,
   ): Promise<{
     valid: boolean;
-    issues?: any[];
+    issues?: unknown[];
   }>;
 
   /**
@@ -49,7 +53,7 @@ export interface ITransformationEngine {
    * @param metrics 性能指标
    * @returns 优化后的转换路径
    */
-  optimizeTransformationPath(transformationPath: any, metrics?: any): Promise<any>;
+  optimizeTransformationPath(transformationPath: unknown, metrics?: unknown): Promise<any>;
 
   /**
    * 获取可用的转换策略

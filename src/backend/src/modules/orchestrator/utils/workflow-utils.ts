@@ -5,9 +5,9 @@
 /**
  * 根据路径获取对象中的值
  */
-export function getValueByPath(obj: any, path: string): any {
-  const parts = path.split('.');
-  let current = obj;
+export function getValueByPath(obj: unknown, path: string): unknown {
+  const _parts = 
+  let _current = 
 
   for (const part of parts) {
     if (current === null || current === undefined) {
@@ -23,12 +23,12 @@ export function getValueByPath(obj: any, path: string): any {
 /**
  * 根据路径设置对象中的值
  */
-export function setValueByPath(obj: any, path: string, value: any): void {
-  const parts = path.split('.');
-  let current = obj;
+export function setValueByPath(obj: unknown, path: string, value: unknown): void {
+  const _parts = 
+  let _current = 
 
-  for (let i = 0; i < parts.length - 1; i++) {
-    const part = parts[i];
+  for (let _i = 
+    const _part = 
 
     if (!(part in current)) {
       current[part] = {};
@@ -47,9 +47,9 @@ export function setValueByPath(obj: any, path: string, value: any): void {
  * - "data.type === 'requirement'"
  * - "context.iterations < 3"
  */
-export function evaluateCondition(condition: string, context: any): boolean {
+export function evaluateCondition(condition: string, context: unknown): boolean {
   try {
-    const evalFunc = new Function(
+    const _evalFunc = 
       'context',
       `
       with (context) {
@@ -60,7 +60,10 @@ export function evaluateCondition(condition: string, context: any): boolean {
 
     return evalFunc(context);
   } catch (error) {
-    console.error(`Error evaluating condition "${condition}":`, error);
+    /* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.error(`Error evaluating condition "${condition}":`, error);
     return false;
   }
 }

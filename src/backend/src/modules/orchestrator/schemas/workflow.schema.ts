@@ -31,7 +31,7 @@ export interface WorkflowExecutionStep {
   status: WorkflowStepStatus;
   startTime?: Date;
   endTime?: Date;
-  result?: any;
+  result?: unknown;
   error?: string;
 }
 
@@ -58,7 +58,7 @@ export interface WorkflowExecution {
   status: WorkflowExecutionStatus;
   startTime: Date;
   endTime?: Date;
-  result?: any;
+  result?: unknown;
   error?: string;
   steps: WorkflowExecutionStep[];
 }

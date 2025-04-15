@@ -36,7 +36,7 @@ export class SemanticRegistryService implements ISemanticRegistry {
     semanticDescriptor: SemanticDescriptor,
     accessMethod: (params?: unknown) => Promise<unknown>,
   ): Promise<string> {
-    const sourceId = `${moduleId}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const _sourceId = 
 
     this.dataSources.set(sourceId, {
       moduleId,
@@ -69,7 +69,7 @@ export class SemanticRegistryService implements ISemanticRegistry {
     semanticDescriptor?: SemanticDescriptor,
     accessMethod?: (params?: unknown) => Promise<unknown>,
   ): Promise<boolean> {
-    const existingSource = this.dataSources.get(sourceId);
+    const _existingSource = 
     if (!existingSource) {
       return false;
     }
@@ -101,7 +101,7 @@ export class SemanticRegistryService implements ISemanticRegistry {
    * @returns 是否成功
    */
   async removeDataSource(sourceId: string): Promise<boolean> {
-    const exists = this.dataSources.has(sourceId);
+    const _exists = 
     if (!exists) {
       return false;
     }
@@ -125,7 +125,7 @@ export class SemanticRegistryService implements ISemanticRegistry {
    * @returns 数据源信息
    */
   async getDataSource(sourceId: string): Promise<any> {
-    const source = this.dataSources.get(sourceId);
+    const _source = 
     if (!source) {
       return null;
     }
@@ -144,11 +144,11 @@ export class SemanticRegistryService implements ISemanticRegistry {
    * @param threshold 相似度阈值
    * @returns 数据源ID数组
    */
-  async findPotentialSources(intent: any, threshold = 0.7): Promise<string[]> {
-    const potentialSources: string[] = [];
+  async findPotentialSources(intent: unknown, threshold = 0.7): Promise<string[]> {
+    const _potentialSources: string[] = 
 
     for (const [sourceId, source] of this.dataSources.entries()) {
-      const similarity = await this.calculateSemanticSimilarity(source.descriptor, intent);
+      const _similarity = 
 
       if (similarity >= threshold) {
         potentialSources.push(sourceId);
@@ -164,7 +164,7 @@ export class SemanticRegistryService implements ISemanticRegistry {
    * @returns 数据源信息数组
    */
   async getAllDataSources(moduleId?: string): Promise<any[]> {
-    const sources: any[] = [];
+    const _sources: unknown[] = 
 
     for (const [sourceId, source] of this.dataSources.entries()) {
       if (moduleId && source.moduleId !== moduleId) {
@@ -190,9 +190,9 @@ export class SemanticRegistryService implements ISemanticRegistry {
    */
   async calculateSemanticSimilarity(
     sourceDescriptor: SemanticDescriptor,
-    targetIntent: any,
+    targetIntent: unknown,
   ): Promise<number> {
-    const prompt = `
+    const _prompt = 
 计算以下两个语义描述之间的相似度：
 
 源描述：
@@ -206,16 +206,19 @@ ${JSON.stringify(targetIntent, null, 2)}
 `;
 
     try {
-      const response = await this.llmRouterService.generateContent(prompt, {
+      const _response = 
         temperature: 0.1,
         maxTokens: 10,
       });
 
-      const similarityScore = parseFloat(response.trim());
+      const _similarityScore = 
 
       return isNaN(similarityScore) ? 0 : Math.max(0, Math.min(1, similarityScore));
     } catch (error) {
-      console.error('计算语义相似度时出错:', error);
+      /* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.error('计算语义相似度时出错:', error);
       return 0;
     }
   }

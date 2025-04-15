@@ -7,9 +7,9 @@
  * 执行Clarifier模块操作
  */
 export async function executeClarifierOperation(
-  clarifierService: any,
+  clarifierService: unknown,
   operation: string,
-  params: any,
+  params: unknown,
 ): Promise<any> {
   switch (operation) {
     case 'getRequirementById':
@@ -52,9 +52,9 @@ export async function executeClarifierOperation(
  * 执行Generator模块操作
  */
 export async function executeGeneratorOperation(
-  generatorService: any,
+  generatorService: unknown,
   operation: string,
-  params: any,
+  params: unknown,
 ): Promise<any> {
   switch (operation) {
     case 'generateCode':
@@ -82,9 +82,9 @@ export async function executeGeneratorOperation(
  * 执行Validator模块操作
  */
 export async function executeValidatorOperation(
-  validatorService: any,
+  validatorService: unknown,
   operation: string,
-  params: any,
+  params: unknown,
 ): Promise<any> {
   switch (operation) {
     case 'validateCode':
@@ -115,9 +115,9 @@ export async function executeValidatorOperation(
  * 执行Memory模块操作
  */
 export async function executeMemoryOperation(
-  memoryService: any,
+  memoryService: unknown,
   operation: string,
-  params: any,
+  params: unknown,
 ): Promise<any> {
   switch (operation) {
     case 'storeMemory':
@@ -144,9 +144,9 @@ export async function executeMemoryOperation(
  * 执行SemanticMediator模块操作
  */
 export async function executeSemanticMediatorOperation(
-  semanticMediatorService: any,
+  semanticMediatorService: unknown,
   operation: string,
-  params: any,
+  params: unknown,
 ): Promise<any> {
   switch (operation) {
     case 'translateBetweenModules':

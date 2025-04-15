@@ -26,7 +26,7 @@ export interface ResolutionStrategy {
   canResolve(
     sourceDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
-    context?: any,
+    context?: unknown,
   ): Promise<boolean>;
 
   /**
@@ -39,10 +39,10 @@ export interface ResolutionStrategy {
    * @returns Resolution result
    */
   resolve(
-    sourceData: any,
-    targetData: any,
+    sourceData: unknown,
+    targetData: unknown,
     sourceDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
-    context?: any,
+    context?: unknown,
   ): Promise<ResolutionResult>;
 }

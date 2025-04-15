@@ -51,7 +51,7 @@ export interface ISemanticRegistry {
    * @param threshold 相似度阈值
    * @returns 数据源ID数组
    */
-  findPotentialSources(intent: any, threshold?: number): Promise<string[]>;
+  findPotentialSources(intent: unknown, threshold?: number): Promise<string[]>;
 
   /**
    * 获取所有数据源
@@ -68,6 +68,6 @@ export interface ISemanticRegistry {
    */
   calculateSemanticSimilarity(
     sourceDescriptor: SemanticDescriptor,
-    targetIntent: any,
+    targetIntent: unknown,
   ): Promise<number>;
 }

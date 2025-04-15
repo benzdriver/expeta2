@@ -20,13 +20,13 @@ export interface SemanticQueryOptions {
   /** 是否使用缓存 */
   useCache?: boolean;
   /** 上下文信息 */
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 /**
  * 缓存条目
  */
-export interface CacheEntry<T = any> {
+export interface CacheEntry<T = unknown> {
   /** 缓存的数据 */
   data: T;
   /** 缓存时间 */
@@ -94,11 +94,11 @@ export interface ValidationResult {
   /** 验证分数 (0-100) */
   score: number;
   /** 建议的修复 */
-  suggestedFixes?: Record<string, any>;
+  suggestedFixes?: Record<string, unknown>;
   /** 验证时间戳 */
   timestamp?: Date;
   /** 验证上下文 */
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   /** 验证者 */
   validator?: string;
 }
@@ -132,7 +132,7 @@ export interface SemanticConstraint {
   /** 约束描述 */
   constraint: string;
   /** 验证函数 */
-  validationFn?: (value: any) => boolean;
+  validationFn?: (value: unknown) => boolean;
   /** 错误消息 */
   errorMessage?: string;
   /** 约束严重性 */
@@ -147,8 +147,8 @@ export interface SemanticConstraint {
   description?: string;
   /** 约束示例 */
   examples?: {
-    valid: any[];
-    invalid: any[];
+    valid: unknown[];
+    invalid: unknown[];
   };
 }
 
@@ -205,7 +205,7 @@ export interface SemanticDataSource {
   /** 语义描述 */
   semanticDescription: string;
   /** 数据模式 */
-  schema?: Record<string, any>;
+  schema?: Record<string, unknown>;
   /** 查询函数 */
-  queryFn?: (query: string, options?: any) => Promise<any[]>;
+  queryFn?: (query: string, options?: unknown) => Promise<unknown[]>;
 }

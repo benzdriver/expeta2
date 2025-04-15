@@ -19,7 +19,7 @@ export class Expectation extends Document {
   title: string;
 
   @Prop({ type: Object, required: true })
-  model: any; // Using 'any' to avoid type conflicts with Document
+  model: unknown; // Using 'any' to avoid type conflicts with Document
 
   @Prop({ type: [String] })
   criteria?: string[];
@@ -28,7 +28,7 @@ export class Expectation extends Document {
   semanticTags?: string[];
 
   @Prop({ type: [Object] })
-  subExpectations?: any[];
+  subExpectations?: unknown[];
 
   @Prop({ type: Object })
   metadata?: Record<string, any>;
@@ -43,4 +43,4 @@ export class Expectation extends Document {
   createdBy?: string;
 }
 
-export const ExpectationSchema = SchemaFactory.createForClass(Expectation);
+export const _ExpectationSchema = 

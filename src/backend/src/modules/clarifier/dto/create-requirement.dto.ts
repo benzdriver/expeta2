@@ -5,5 +5,5 @@ export class CreateRequirementDto {
   domain?: string;
   priority?: string;
   createdBy?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }

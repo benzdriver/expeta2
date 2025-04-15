@@ -4,7 +4,11 @@ import { ValidatorService } from './validator.service';
 interface ValidateWithSemanticInputDto {
   expectationId: string;
   codeId: string;
-  semanticInput: any;
+  semanticInput: {
+    semanticContext?: string;
+    focusAreas?: string[];
+    [key: string]: unknown;
+  };
 }
 
 interface ValidateIterativelyDto {
@@ -22,7 +26,7 @@ interface ValidateWithAdaptiveContextDto {
     focusAreas?: string[];
     weights?: Record<string, number>;
     previousValidations?: string[];
-    semanticContext?: any;
+    semanticContext?: Record<string, unknown>;
   };
 }
 

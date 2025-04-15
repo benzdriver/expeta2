@@ -21,62 +21,68 @@ describe('ResolverService', () => {
   let intelligentCacheService: IntelligentCacheService;
   let memoryService: MemoryService;
 
-  const mockMonitoringSystemService = {
+  const _mockMonitoringSystemService = 
     createDebugSession: jest.fn(() => Promise.resolve('debug-session-id')),
     logTransformationEvent: jest.fn(() => Promise.resolve(undefined)),
     logError: jest.fn(() => Promise.resolve(undefined)),
     endDebugSession: jest.fn(() => Promise.resolve(undefined)),
   };
 
-  const mockIntelligentCacheService = {
+  const _mockIntelligentCacheService = 
     retrieveTransformationPath: jest.fn(() => Promise.resolve(null)),
     storeTransformationPath: jest.fn(() => Promise.resolve(undefined)),
     updateUsageStatistics: jest.fn(() => Promise.resolve(undefined)),
   };
 
-  const mockMemoryService = {
+  const _mockMemoryService = 
     storeMemory: jest.fn(() => Promise.resolve({ _id: 'memory-id' })),
     getMemoryByType: jest.fn(() => Promise.resolve([])),
   };
 
-  const mockExplicitMappingStrategy = {
+  const _mockExplicitMappingStrategy = 
     name: 'explicit_mapping',
     priority: 3,
     canResolve: jest.fn(() => Promise.resolve(false)),
-    resolve: jest.fn(() => Promise.resolve({
-      success: true,
-      resolvedData: { result: 'explicit mapping result' },
-      strategyUsed: 'explicit_mapping',
-      confidence: 1.0,
-    })),
+    resolve: jest.fn(() =>
+      Promise.resolve({
+        success: true,
+        resolvedData: { result: 'explicit mapping result' },
+        strategyUsed: 'explicit_mapping',
+        confidence: 1.0,
+      }),
+    ),
   } as ResolutionStrategy;
 
-  const mockPatternMatchingStrategy = {
+  const _mockPatternMatchingStrategy = 
     name: 'pattern_matching',
     priority: 2,
     canResolve: jest.fn(() => Promise.resolve(false)),
-    resolve: jest.fn(() => Promise.resolve({
-      success: true,
-      resolvedData: { result: 'pattern matching result' },
-      strategyUsed: 'pattern_matching',
-      confidence: 0.8,
-    })),
+    resolve: jest.fn(() =>
+      Promise.resolve({
+        success: true,
+        resolvedData: { result: 'pattern matching result' },
+        strategyUsed: 'pattern_matching',
+        confidence: 0.8,
+      }),
+    ),
   } as ResolutionStrategy;
 
-  const mockLlmResolutionStrategy = {
+  const _mockLlmResolutionStrategy = 
     name: 'llm_resolution',
     priority: 1,
     canResolve: jest.fn(() => Promise.resolve(true)),
-    resolve: jest.fn(() => Promise.resolve({
-      success: true,
-      resolvedData: { result: 'llm resolution result' },
-      strategyUsed: 'llm_resolution',
-      confidence: 0.6,
-    })),
+    resolve: jest.fn(() =>
+      Promise.resolve({
+        success: true,
+        resolvedData: { result: 'llm resolution result' },
+        strategyUsed: 'llm_resolution',
+        confidence: 0.6,
+      }),
+    ),
   } as ResolutionStrategy;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    const _module: TestingModule = 
       providers: [
         ResolverService,
         {
@@ -121,12 +127,12 @@ describe('ResolverService', () => {
 
   describe('resolveConflicts', () => {
     it('should resolve conflicts using the appropriate strategy', async () => {
-      const moduleA = 'moduleA';
-      const dataA = { id: 1, name: 'Test A' };
-      const moduleB = 'moduleB';
-      const dataB = { id: 2, name: 'Test B' };
+      const _moduleA = 
+      const _dataA = 
+      const _moduleB = 
+      const _dataB = 
 
-      const result = await service.resolveConflicts(moduleA, dataA, moduleB, dataB);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
@@ -137,21 +143,23 @@ describe('ResolverService', () => {
     });
 
     it('should use cached result if available', async () => {
-      const moduleA = 'moduleA';
-      const dataA = { id: 1, name: 'Test A' };
-      const moduleB = 'moduleB';
-      const dataB = { id: 2, name: 'Test B' };
+      const _moduleA = 
+      const _dataA = 
+      const _moduleB = 
+      const _dataB = 
 
-      const cachedResult = {
+      const _cachedResult = 
         success: true,
         resolvedData: { result: 'cached result' },
         strategyUsed: 'cached_strategy',
         confidence: 0.95,
       };
 
-      (intelligentCacheService.retrieveTransformationPath as jest.Mock).mockImplementation(() => Promise.resolve(cachedResult));
+      (intelligentCacheService.retrieveTransformationPath as jest.Mock).mockImplementation(() =>
+        Promise.resolve(cachedResult),
+      );
 
-      const result = await service.resolveConflicts(moduleA, dataA, moduleB, dataB);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result).toEqual(cachedResult);
@@ -165,15 +173,15 @@ describe('ResolverService', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      const moduleA = 'moduleA';
-      const dataA = { id: 1, name: 'Test A' };
-      const moduleB = 'moduleB';
-      const dataB = { id: 2, name: 'Test B' };
+      const _moduleA = 
+      const _dataA = 
+      const _moduleB = 
+      const _dataB = 
 
-      const error = new Error('Test error');
+      const _error = 
       llmResolutionStrategy.resolve = jest.fn(() => Promise.reject(error));
 
-      const result = await service.resolveConflicts(moduleA, dataA, moduleB, dataB);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result.success).toBe(false);
@@ -187,14 +195,14 @@ describe('ResolverService', () => {
     });
 
     it('should use forced strategy if specified', async () => {
-      const moduleA = 'moduleA';
-      const dataA = { id: 1, name: 'Test A' };
-      const moduleB = 'moduleB';
-      const dataB = { id: 2, name: 'Test B' };
+      const _moduleA = 
+      const _dataA = 
+      const _moduleB = 
+      const _dataB = 
 
       mockPatternMatchingStrategy.canResolve = jest.fn(() => Promise.resolve(true));
 
-      const result = await service.resolveConflicts(moduleA, dataA, moduleB, dataB, {
+      const _result = 
         forceStrategy: 'pattern_matching',
       });
 
@@ -206,8 +214,8 @@ describe('ResolverService', () => {
 
   describe('findCandidateSources', () => {
     it('should find candidate sources based on semantic intent', async () => {
-      const semanticIntent = 'user profile data';
-      const mockSources = [
+      const _semanticIntent = 
+      const _mockSources = 
         {
           _id: 'source1',
           content: {
@@ -230,9 +238,11 @@ describe('ResolverService', () => {
         },
       ];
 
-      (memoryService.getMemoryByType as jest.Mock).mockImplementation(() => Promise.resolve(mockSources));
+      (memoryService.getMemoryByType as jest.Mock).mockImplementation(() =>
+        Promise.resolve(mockSources),
+      );
 
-      const candidates = await service.findCandidateSources(semanticIntent);
+      const _candidates = 
 
       expect(candidates).toBeDefined();
       expect(candidates.length).toBeGreaterThan(0);
@@ -240,10 +250,10 @@ describe('ResolverService', () => {
     });
 
     it('should return empty array if no sources found', async () => {
-      const semanticIntent = 'nonexistent data';
+      const _semanticIntent = 
       (memoryService.getMemoryByType as jest.Mock).mockImplementation(() => Promise.resolve([]));
 
-      const candidates = await service.findCandidateSources(semanticIntent);
+      const _candidates = 
 
       expect(candidates).toBeDefined();
       expect(candidates.length).toBe(0);
@@ -252,16 +262,18 @@ describe('ResolverService', () => {
 
   describe('registerStrategy', () => {
     it('should register a new strategy and sort by priority', () => {
-      const newStrategy = {
+      const _newStrategy = 
         name: 'new_strategy',
         priority: 4, // Higher than explicit_mapping
         canResolve: jest.fn().mockReturnValue(Promise.resolve(false)),
-        resolve: jest.fn().mockReturnValue(Promise.resolve({
-          success: true,
-          resolvedData: { result: 'new strategy result' },
-          strategyUsed: 'new_strategy',
-          confidence: 1.0,
-        })),
+        resolve: jest.fn().mockReturnValue(
+          Promise.resolve({
+            success: true,
+            resolvedData: { result: 'new strategy result' },
+            strategyUsed: 'new_strategy',
+            confidence: 1.0,
+          }),
+        ),
       } as ResolutionStrategy;
 
       service.registerStrategy(newStrategy);

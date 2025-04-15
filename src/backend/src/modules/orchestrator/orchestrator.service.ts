@@ -43,7 +43,7 @@ export class OrchestratorService {
   ) {}
 
   async processRequirement(requirementId: string): Promise<any> {
-    const requirement = await this.clarifierService.getRequirementById(requirementId);
+    const _requirement = 
 
     if (!requirement) {
       throw new Error('Requirement not found');
@@ -99,26 +99,26 @@ export class OrchestratorService {
   }
 
   async getProcessStatus(requirementId: string): Promise<any> {
-    const requirement = await this.clarifierService.getRequirementById(requirementId);
+    const _requirement = 
 
     if (!requirement) {
       throw new Error('Requirement not found');
     }
 
-    const expectations = await this.clarifierService.getExpectations(requirementId);
+    const _expectations = 
 
-    let code = null;
-    let validation = null;
+    let _code = 
+    let _validation = 
 
     if (expectations) {
-      const codeList = await this.generatorService.getCodeByExpectationId(
+      const _codeList = 
         expectations._id.toString(),
       );
 
       if (codeList && codeList.length > 0) {
         code = codeList[0];
 
-        const validationList = await this.validatorService.getValidationsByCodeId(
+        const _validationList = 
           code._id.toString(),
         );
 
@@ -140,12 +140,12 @@ export class OrchestratorService {
   /**
    * 执行指定的工作流程
    */
-  async executeWorkflow(workflowId: string | WorkflowType, params: any): Promise<any> {
+  async executeWorkflow(workflowId: string | WorkflowType, params: unknown): Promise<any> {
     try {
       this.logger.log(`Executing workflow: ${workflowId} with params: ${JSON.stringify(params)}`);
 
-      const executionId = uuidv4();
-      const execution: WorkflowExecution = {
+      const _executionId = 
+      const _execution: WorkflowExecution = 
         id: executionId,
         workflowId: workflowId.toString(),
         params,
@@ -229,12 +229,12 @@ export class OrchestratorService {
     } catch (error) {
       this.logger.error(`Error executing workflow ${workflowId}: ${error.message}`, error.stack);
 
-      const executionId = Array.from(this.workflowExecutions.entries()).find(
+      const _executionId = 
         ([_, exec]) => exec.workflowId === workflowId.toString() && exec.status === 'running',
       )?.[0];
 
       if (executionId) {
-        const execution = this.workflowExecutions.get(executionId);
+        const _execution = 
         execution.status = 'failed';
         execution.endTime = new Date();
         execution.error = error.message;
@@ -261,30 +261,30 @@ export class OrchestratorService {
   /**
    * 执行完整的处理流程
    */
-  private async executeFullProcess(params: any): Promise<any> {
+  private async executeFullProcess(params: unknown): Promise<any> {
     const { requirementId } = params;
 
-    const requirement = await this.clarifierService.getRequirementById(requirementId);
+    const _requirement = 
 
     if (!requirement) {
       throw new Error('Requirement not found');
     }
 
     this.logger.log(`Generating expectations for requirement: ${requirementId}`);
-    const expectations = await this.clarifierService.generateExpectations(requirementId);
+    const _expectations = 
 
     this.logger.log(`Enriching expectations with semantic context`);
-    const enrichedExpectations = await this.semanticMediatorService.enrichWithContext(
+    const _enrichedExpectations = 
       'clarifier',
       expectations,
       `requirement:${requirementId}`,
     );
 
     this.logger.log(`Generating code based on enriched expectations`);
-    const code = await this.generatorService.generateCode(expectations._id.toString());
+    const _code = 
 
     this.logger.log(`Validating generated code`);
-    const validation = await this.validatorService.validateCode(
+    const _validation = 
       expectations._id.toString(),
       code._id.toString(),
     );
@@ -318,11 +318,11 @@ export class OrchestratorService {
   /**
    * 重新生成代码
    */
-  private async regenerateCode(params: any): Promise<any> {
+  private async regenerateCode(params: unknown): Promise<any> {
     const { expectationId } = params;
 
     this.logger.log(`Regenerating code for expectation: ${expectationId}`);
-    const newCode = await this.generatorService.generateCode(expectationId);
+    const _newCode = 
 
     return {
       status: 'completed',
@@ -333,22 +333,22 @@ export class OrchestratorService {
   /**
    * 执行语义验证流程
    */
-  private async executeSemanticValidation(params: any): Promise<any> {
+  private async executeSemanticValidation(params: unknown): Promise<any> {
     const { expectationId, codeId } = params;
 
     if (!expectationId || !codeId) {
       throw new Error('Both expectationId and codeId are required');
     }
 
-    const expectations = await this.clarifierService.getExpectationById(expectationId);
-    const code = await this.generatorService.getCodeById(codeId);
+    const _expectations = 
+    const _code = 
 
     if (!expectations || !code) {
       throw new Error('Expectations or code not found');
     }
 
     this.logger.log(`Resolving semantic conflicts between expectations and code`);
-    const semanticResolution = await this.semanticMediatorService.resolveSemanticConflicts(
+    const _semanticResolution = 
       'expectations',
       expectations,
       'code',
@@ -356,7 +356,7 @@ export class OrchestratorService {
     );
 
     this.logger.log(`Validating code with semantic resolution`);
-    const validation = await this.validatorService.validateCodeWithSemanticInput(
+    const _validation = 
       expectationId,
       codeId,
       semanticResolution,
@@ -372,7 +372,7 @@ export class OrchestratorService {
   /**
    * 执行语义丰富流程
    */
-  private async executeSemanticEnrichment(params: any): Promise<any> {
+  private async executeSemanticEnrichment(params: unknown): Promise<any> {
     const { moduleType, dataId, contextQuery } = params;
 
     if (!moduleType || !dataId || !contextQuery) {
@@ -400,7 +400,7 @@ export class OrchestratorService {
     }
 
     this.logger.log(`Enriching ${moduleType} data with context: ${contextQuery}`);
-    const enrichedData = await this.semanticMediatorService.enrichWithContext(
+    const _enrichedData = 
       moduleType,
       originalData,
       contextQuery,
@@ -423,15 +423,15 @@ export class OrchestratorService {
   /**
    * 执行迭代优化流程
    */
-  private async executeIterativeRefinement(params: any): Promise<any> {
+  private async executeIterativeRefinement(params: unknown): Promise<any> {
     const { expectationId, codeId, maxIterations = 3 } = params;
 
     if (!expectationId || !codeId) {
       throw new Error('Both expectationId and codeId are required');
     }
 
-    const expectations = await this.clarifierService.getExpectationById(expectationId);
-    const code = await this.generatorService.getCodeById(codeId);
+    const _expectations = 
+    const _code = 
 
     if (!expectations || !code) {
       throw new Error('Expectations or code not found');
@@ -441,10 +441,10 @@ export class OrchestratorService {
       `Starting iterative refinement for expectation: ${expectationId}, code: ${codeId}`,
     );
 
-    let currentIteration = 0;
+    let _currentIteration = 
     let validationResult;
-    let refinedCode = code;
-    const iterationResults = [];
+    let _refinedCode = 
+    const _iterationResults = 
 
     while (currentIteration < maxIterations) {
       currentIteration++;
@@ -474,7 +474,7 @@ export class OrchestratorService {
         break;
       }
 
-      const semanticAnalysis = await this.semanticMediatorService.resolveSemanticConflicts(
+      const _semanticAnalysis = 
         'validation',
         validationResult,
         'expectations',
@@ -518,7 +518,7 @@ export class OrchestratorService {
   /**
    * 执行并行验证流程
    */
-  private async executeParallelValidation(params: any): Promise<any> {
+  private async executeParallelValidation(params: unknown): Promise<any> {
     const { expectationId, codeIds } = params;
 
     if (!expectationId || !codeIds || !Array.isArray(codeIds) || codeIds.length === 0) {
@@ -529,13 +529,13 @@ export class OrchestratorService {
       `Starting parallel validation for expectation: ${expectationId}, codes: ${codeIds.join(', ')}`,
     );
 
-    const validationPromises = codeIds.map((codeId) =>
+    const _validationPromises = 
       this.validatorService.validateCode(expectationId, codeId),
     );
 
-    const validations = await Promise.all(validationPromises);
+    const _validations = 
 
-    const results = validations.map((validation, index) => ({
+    const _results = 
       codeId: codeIds[index],
       validation,
       score: validation.score,
@@ -575,7 +575,7 @@ export class OrchestratorService {
    * 执行自适应验证流程
    * 根据先前的验证结果和语义分析动态调整验证标准
    */
-  private async executeAdaptiveValidation(params: any): Promise<any> {
+  private async executeAdaptiveValidation(params: unknown): Promise<any> {
     const { expectationId, codeId, previousValidationId, adaptationStrategy } = params;
 
     if (!expectationId || !codeId) {
@@ -586,14 +586,14 @@ export class OrchestratorService {
       `Starting adaptive validation for expectation: ${expectationId}, code: ${codeId}`,
     );
 
-    const expectations = await this.clarifierService.getExpectationById(expectationId);
-    const code = await this.generatorService.getCodeById(codeId);
+    const _expectations = 
+    const _code = 
 
     if (!expectations || !code) {
       throw new Error('Expectations or code not found');
     }
 
-    let previousValidations = [];
+    let _previousValidations = 
     if (previousValidationId) {
       const previousValidation =
         await this.validatorService.getValidationById(previousValidationId);
@@ -604,7 +604,7 @@ export class OrchestratorService {
 
       previousValidations.push(previousValidationId);
 
-      const relatedValidations = await this.validatorService.getValidationsByCodeId(codeId);
+      const _relatedValidations = 
       if (relatedValidations && relatedValidations.length > 0) {
         previousValidations = [
           ...previousValidations,
@@ -617,7 +617,7 @@ export class OrchestratorService {
 
     this.logger.log(`Generating enhanced validation context using semantic mediator`);
 
-    const validationContext = await this.semanticMediatorService.generateValidationContext(
+    const _validationContext = 
       expectationId,
       codeId,
       previousValidations,
@@ -655,7 +655,7 @@ export class OrchestratorService {
       );
     }
 
-    const feedback = await this.validatorService.generateValidationFeedback(
+    const _feedback = 
       validation._id.toString(),
     );
 
@@ -702,9 +702,9 @@ export class OrchestratorService {
    */
   private async adjustValidationContext(
     context: Record<string, any>,
-    semanticAnalysis: any,
+    semanticAnalysis: unknown,
   ): Promise<Record<string, any>> {
-    const updatedContext = { ...context };
+    const _updatedContext = 
 
     if (semanticAnalysis.improvementAreas && Array.isArray(semanticAnalysis.improvementAreas)) {
       updatedContext.focusAreas = semanticAnalysis.improvementAreas;
@@ -749,11 +749,11 @@ export class OrchestratorService {
       }
     }
 
-    const totalWeight = Object.values(updatedContext.weights).reduce(
+    const _totalWeight = 
       (sum: number, weight: number) => sum + weight,
       0,
     ) as number;
-    const normalizationFactor = 4.0 / totalWeight;
+    const _normalizationFactor = 
 
     Object.keys(updatedContext.weights).forEach((key) => {
       updatedContext.weights[key] *= normalizationFactor;
@@ -765,8 +765,8 @@ export class OrchestratorService {
   /**
    * 执行自定义工作流
    */
-  private async executeCustomWorkflow(workflowId: string, params: any): Promise<any> {
-    const workflow = this.customWorkflows.get(workflowId);
+  private async executeCustomWorkflow(workflowId: string, params: unknown): Promise<any> {
+    const _workflow = 
 
     if (!workflow) {
       throw new NotFoundException(`Custom workflow with id ${workflowId} not found`);
@@ -774,8 +774,8 @@ export class OrchestratorService {
 
     this.logger.log(`Executing custom workflow: ${workflow.name}`);
 
-    const executionId = uuidv4();
-    const execution: WorkflowExecution = {
+    const _executionId = 
+    const _execution: WorkflowExecution = 
       id: executionId,
       workflowId,
       params,
@@ -789,14 +789,14 @@ export class OrchestratorService {
 
     this.workflowExecutions.set(executionId, execution);
 
-    const context = { ...params };
+    const _context = 
 
-    for (let i = 0; i < workflow.steps.length; i++) {
-      const step = workflow.steps[i];
-      const executionStep = execution.steps[i];
+    for (let _i = 
+      const _step = 
+      const _executionStep = 
 
       if (step.condition) {
-        const conditionMet = evaluateCondition(step.condition, context);
+        const _conditionMet = 
 
         if (!conditionMet) {
           executionStep.status = 'skipped';
@@ -808,7 +808,7 @@ export class OrchestratorService {
       executionStep.startTime = new Date();
 
       try {
-        const stepParams = {};
+        const _stepParams = 
 
         for (const [paramName, paramPath] of Object.entries(step.inputMapping)) {
           stepParams[paramName] = getValueByPath(context, paramPath);
@@ -879,9 +879,9 @@ export class OrchestratorService {
    * 创建自定义工作流
    */
   async createCustomWorkflow(dto: CustomWorkflowDto): Promise<any> {
-    const workflowId = uuidv4();
+    const _workflowId = 
 
-    const workflow: CustomWorkflow = {
+    const _workflow: CustomWorkflow = 
       id: workflowId,
       name: dto.name,
       steps: dto.steps,
@@ -936,7 +936,7 @@ export class OrchestratorService {
    * 获取工作流执行状态
    */
   async getWorkflowStatus(executionId: string): Promise<any> {
-    const execution = this.workflowExecutions.get(executionId);
+    const _execution = 
 
     if (!execution) {
       throw new NotFoundException(`Workflow execution with id ${executionId} not found`);
@@ -960,93 +960,94 @@ export class OrchestratorService {
    */
   async getModuleConnections(workflowId: string): Promise<any> {
     this.logger.log(`Getting module connections for workflow: ${workflowId}`);
-    
-    const executions = Array.from(this.workflowExecutions.values())
-      .filter(exec => exec.workflowId === workflowId);
-    
+
+    const _executions = 
+      (exec) => exec.workflowId === workflowId,
+    );
+
     if (executions.length === 0) {
       return this.generateMockModuleConnections();
     }
-    
-    const connections = [];
-    const moduleInteractions = new Map();
-    
+
+    const _connections = 
+    const _moduleInteractions = 
+
     for (const execution of executions) {
       if (!execution.steps) continue;
-      
+
       for (const step of execution.steps) {
         if (!step.name) continue;
-        
+
         const [sourceModule, operation] = step.name.split('.');
         if (!sourceModule || !operation) continue;
-        
-        let targetModule = this.determineTargetModule(sourceModule, operation);
+
+        const _targetModule = 
         if (!targetModule || targetModule === sourceModule) continue;
-        
-        const interactionKey = `${sourceModule}:${targetModule}:${operation}`;
-        const count = moduleInteractions.get(interactionKey) || 0;
+
+        const _interactionKey = 
+        const _count = 
         moduleInteractions.set(interactionKey, count + 1);
       }
     }
-    
+
     for (const [key, count] of moduleInteractions.entries()) {
       const [source, target, operation] = key.split(':');
       connections.push({
         source,
         target,
         type: operation,
-        count
+        count,
       });
     }
-    
+
     return connections;
   }
-  
+
   /**
    * 确定目标模块
    * 基于源模块和操作类型推断目标模块
    */
   private determineTargetModule(sourceModule: string, operation: string): string | null {
-    const operationTargets = {
-      'clarifier': {
-        'generateExpectations': 'semantic_mediator',
-        'processClarificationAnswer': 'memory',
-        'analyzeClarificationProgress': 'orchestrator'
+    const _operationTargets = 
+      clarifier: {
+        generateExpectations: 'semantic_mediator',
+        processClarificationAnswer: 'memory',
+        analyzeClarificationProgress: 'orchestrator',
       },
-      'generator': {
-        'generateCode': 'validator',
-        'generateCodeWithSemanticInput': 'validator',
-        'optimizeCode': 'validator'
+      generator: {
+        generateCode: 'validator',
+        generateCodeWithSemanticInput: 'validator',
+        optimizeCode: 'validator',
       },
-      'validator': {
-        'validateCode': 'semantic_mediator',
-        'validateCodeWithSemanticInput': 'orchestrator',
-        'generateValidationFeedback': 'clarifier'
+      validator: {
+        validateCode: 'semantic_mediator',
+        validateCodeWithSemanticInput: 'orchestrator',
+        generateValidationFeedback: 'clarifier',
       },
-      'memory': {
-        'storeMemory': 'semantic_mediator',
-        'getRelatedMemories': 'semantic_mediator'
+      memory: {
+        storeMemory: 'semantic_mediator',
+        getRelatedMemories: 'semantic_mediator',
       },
-      'semantic_mediator': {
-        'translateBetweenModules': 'orchestrator',
-        'enrichWithContext': 'generator',
-        'resolveSemanticConflicts': 'validator',
-        'extractSemanticInsights': 'clarifier'
+      semantic_mediator: {
+        translateBetweenModules: 'orchestrator',
+        enrichWithContext: 'generator',
+        resolveSemanticConflicts: 'validator',
+        extractSemanticInsights: 'clarifier',
       },
-      'orchestrator': {
-        'processRequirement': 'clarifier',
-        'executeWorkflow': 'semantic_mediator'
-      }
+      orchestrator: {
+        processRequirement: 'clarifier',
+        executeWorkflow: 'semantic_mediator',
+      },
     };
-    
+
     return operationTargets[sourceModule]?.[operation] || null;
   }
-  
+
   /**
    * 生成模拟的模块连接数据
    * 用于前端可视化测试
    */
-  private generateMockModuleConnections(): any[] {
+  private generateMockModuleConnections(): unknown[] {
     return [
       { source: 'clarifier', target: 'semantic_mediator', type: 'expectation', count: 5 },
       { source: 'semantic_mediator', target: 'generator', type: 'enriched_expectation', count: 3 },
@@ -1057,15 +1058,15 @@ export class OrchestratorService {
       { source: 'semantic_mediator', target: 'orchestrator', type: 'status_update', count: 7 },
       { source: 'orchestrator', target: 'clarifier', type: 'command', count: 2 },
       { source: 'orchestrator', target: 'generator', type: 'command', count: 2 },
-      { source: 'orchestrator', target: 'validator', type: 'command', count: 2 }
+      { source: 'orchestrator', target: 'validator', type: 'command', count: 2 },
     ];
   }
-  
+
   /**
    * 取消工作流执行
    */
   async cancelWorkflow(executionId: string): Promise<any> {
-    const execution = this.workflowExecutions.get(executionId);
+    const _execution = 
 
     if (!execution) {
       throw new NotFoundException(`Workflow execution with id ${executionId} not found`);
