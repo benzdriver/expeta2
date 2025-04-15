@@ -1,8 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-
 import { HttpModule } from '@nestjs/axios';
-
 import { HttpService } from '@nestjs/axios'; /* eslint-disable-line @typescript-eslint/no-unused-vars */
 import { of, throwError } from 'rxjs'; /* eslint-disable-line @typescript-eslint/no-unused-vars */
 import axios from 'axios'; /* eslint-disable-line @typescript-eslint/no-unused-vars */
@@ -10,16 +8,39 @@ import { AxiosResponse, AxiosError } from 'axios';
 import { LlmRouterService } from '../llm-router.service';
 import { AnthropicMessageResponse, OpenAIChatCompletionResponse } from '../llm-router.service';
 
+jest.mock('../prompt-templates', () => ({
+  ANALYZE_REQUIREMENT_PROMPT: 'Analyze the following requirement: {requirementText}',
+  GENERATE_CLARIFICATION_QUESTIONS_PROMPT: 'Generate clarification questions for: {requirementText}',
+  ANALYZE_CLARIFICATION_PROGRESS_PROMPT: 'Analyze clarification progress for: {requirementText}',
+  GENERATE_EXPECTATION_MODEL_PROMPT: 'Generate expectation model for: {requirementText}',
+  GENERATE_CODE_PROMPT: 'Generate code for: {expectationModel}',
+  OPTIMIZE_CODE_PROMPT: 'Optimize code for: {expectationModel}',
+  GENERATE_DOCUMENTATION_PROMPT: 'Generate documentation for: {expectationModel}',
+  VALIDATE_CODE_PROMPT: 'Validate code for: {expectationModel}',
+  GENERATE_TEST_CASES_PROMPT: 'Generate test cases for: {expectationModel}',
+  ANALYZE_VALIDATION_RESULTS_PROMPT: 'Analyze validation results: {validationResults}',
+  TRANSLATE_BETWEEN_MODULES_PROMPT: 'Translate between modules: {sourceModule} to {targetModule}',
+  ENRICH_WITH_CONTEXT_PROMPT: 'Enrich with context: {originalData}',
+  RESOLVE_SEMANTIC_CONFLICTS_PROMPT: 'Resolve semantic conflicts: {dataA} and {dataB}',
+  EXTRACT_SEMANTIC_INSIGHTS_PROMPT: 'Extract semantic insights for: {query}',
+  GENERATE_CODE_WITH_SEMANTIC_INPUT_PROMPT: 'Generate code with semantic input: {expectationModel}',
+  ANALYZE_MULTI_ROUND_DIALOGUE_PROMPT: 'Analyze multi-round dialogue: {requirementText}',
+  CLARIFIER_SYSTEM_PROMPT: 'You are a clarifier assistant',
+  GENERATOR_SYSTEM_PROMPT: 'You are a code generator assistant',
+  VALIDATOR_SYSTEM_PROMPT: 'You are a code validator assistant',
+  SEMANTIC_MEDIATOR_SYSTEM_PROMPT: 'You are a semantic mediator assistant'
+}));
+
 describe('LlmRouterService', () => {
   let service: LlmRouterService;
   let _configService: ConfigService;
 
-  const _mockAnthropicApiKey = 
-  const _mockOpenaiApiKey = 
-  const _mockAnthropicModel = 
-  const _mockOpenaiModel = 
+  const mockAnthropicApiKey = 'test-anthropic-api-key';
+  const mockOpenaiApiKey = 'test-openai-api-key';
+  const mockAnthropicModel = 'claude-3-opus-20240229';
+  const mockOpenaiModel = 'gpt-4-turbo';
 
-  const _mockConfigGet = 
+  const mockConfigGet = jest.fn((key: string) => {
     if (key === 'ANTHROPIC_API_KEY') return mockAnthropicApiKey;
     if (key === 'OPENAI_API_KEY') return mockOpenaiApiKey;
     if (key === 'ANTHROPIC_DEFAULT_MODEL') return mockAnthropicModel;
@@ -47,7 +68,7 @@ describe('LlmRouterService', () => {
       return null;
     });
 
-    const _module: TestingModule = 
+    const module: TestingModule = await Test.createTestingModule({
       imports: [HttpModule], // HttpModule is needed by the service itself
       providers: [
         LlmRouterService,
@@ -71,12 +92,12 @@ describe('LlmRouterService', () => {
   });
 
   describe('generateContent', () => {
-    const _prompt = 
-    const _options = 
+    const prompt = 'Test prompt for LLM generation';
+    const options = { systemPrompt: 'You are a helpful assistant.' };
 
     beforeEach(() => {
-      jest.spyOn(service as unknown, '_callAnthropic').mockClear(); // Clear any previous mocks/calls
-      jest.spyOn(service as unknown, '_callOpenAI').mockClear();
+      jest.spyOn(service as unknown as any, '_callAnthropic').mockClear(); // Clear any previous mocks/calls
+      jest.spyOn(service as unknown as any, '_callOpenAI').mockClear();
     });
 
     const _mockAnthropicSuccessResponse: AxiosResponse<AnthropicMessageResponse> = {
@@ -93,7 +114,7 @@ describe('LlmRouterService', () => {
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: { headers: {} as unknown }, // Use 'as any' to bypass strict type checks if needed
+      config: { headers: {} as any }, // Use 'as any' to bypass strict type checks if needed
     };
 
     const _mockOpenaiSuccessResponse: AxiosResponse<OpenAIChatCompletionResponse> = {
@@ -114,7 +135,7 @@ describe('LlmRouterService', () => {
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: { headers: {} as unknown }, // Use 'as any' to bypass strict type checks if needed
+      config: { headers: {} as any }, // Use 'as any' to bypass strict type checks if needed
     };
 
     const _mockAnthropicApiError = new AxiosError(
@@ -140,10 +161,10 @@ describe('LlmRouterService', () => {
     } as AxiosResponse);
 
     it('should call Anthropic API successfully and return response', async () => {
-      jest.spyOn(service as unknown, '_callAnthropic').mockResolvedValue('Anthropic response');
-      jest.spyOn(service as unknown, '_callOpenAI').mockResolvedValue('OpenAI response');
+      jest.spyOn(service as unknown as any, '_callAnthropic').mockResolvedValue('Anthropic response');
+      jest.spyOn(service as unknown as any, '_callOpenAI').mockResolvedValue('OpenAI response');
 
-      const _result = 
+      const result = await service.generateContent(prompt, options);
 
       expect(service['_callAnthropic']).toHaveBeenCalledTimes(1);
       expect(service['_callAnthropic']).toHaveBeenCalledWith(
@@ -158,11 +179,11 @@ describe('LlmRouterService', () => {
     });
 
     it('should fall back to OpenAI API when Anthropic API fails', async () => {
-      const _anthropicError = 
-      jest.spyOn(service as unknown, '_callAnthropic').mockRejectedValue(anthropicError);
-      jest.spyOn(service as unknown, '_callOpenAI').mockResolvedValue('OpenAI response');
+      const anthropicError = new Error('Anthropic API error');
+      jest.spyOn(service as unknown as any, '_callAnthropic').mockRejectedValue(anthropicError);
+      jest.spyOn(service as unknown as any, '_callOpenAI').mockResolvedValue('OpenAI response');
 
-      const _result = 
+      const result = await service.generateContent(prompt, options);
 
       expect(service['_callAnthropic']).toHaveBeenCalledTimes(1);
       expect(service['_callAnthropic']).toHaveBeenCalledWith(
@@ -184,10 +205,10 @@ describe('LlmRouterService', () => {
     });
 
     it('should throw an error when both Anthropic and OpenAI APIs fail', async () => {
-      const _anthropicError = 
-      jest.spyOn(service as unknown, '_callAnthropic').mockRejectedValue(anthropicError);
-      const _openaiError = 
-      jest.spyOn(service as unknown, '_callOpenAI').mockRejectedValue(openaiError);
+      const anthropicError = new Error('Anthropic API error');
+      jest.spyOn(service as unknown as any, '_callAnthropic').mockRejectedValue(anthropicError);
+      const openaiError = new Error('OpenAI API error');
+      jest.spyOn(service as unknown as any, '_callOpenAI').mockRejectedValue(openaiError);
 
       await expect(service.generateContent(prompt, options)).rejects.toThrow(
         `LLM generation failed with both primary (anthropic) and fallback (openai) providers. Primary Error: ${anthropicError.message}, Fallback Error: ${openaiError.message}`,
@@ -211,20 +232,19 @@ describe('LlmRouterService', () => {
         return null;
       });
 
-      const _module: TestingModule = 
+      const testModule: TestingModule = await Test.createTestingModule({
         imports: [HttpModule],
         providers: [LlmRouterService, { provide: ConfigService, useValue: { get: mockConfigGet } }],
       }).compile();
-      const _testService = 
+      const testService = testModule.get<LlmRouterService>(LlmRouterService);
 
-      const _anthropicSpy = 
-      const _openaiSpy = 
-        .spyOn(testService as unknown, '_callOpenAI')
+      const anthropicSpy = jest.spyOn(testService as unknown as any, '_callAnthropic');
+      const openaiSpy = jest.spyOn(testService as unknown as any, '_callOpenAI')
         .mockResolvedValue('OpenAI response');
 
-      const _result = 
+      const result = await testService.generateContent(prompt, options);
 
-      expect(anthropicSpy).not.toHaveBeenCalled();
+      expect(service['_callAnthropic']).not.toHaveBeenCalled();
       expect(openaiSpy).toHaveBeenCalledTimes(1);
       expect(openaiSpy).toHaveBeenCalledWith(
         prompt,
@@ -250,30 +270,30 @@ describe('LlmRouterService', () => {
         return null;
       });
 
-      const _module: TestingModule = 
+      const testModule2: TestingModule = await Test.createTestingModule({
         imports: [HttpModule],
         providers: [LlmRouterService, { provide: ConfigService, useValue: { get: mockConfigGet } }],
       }).compile();
-      const _testService = 
+      const testService2 = testModule2.get<LlmRouterService>(LlmRouterService);
 
-      const _anthropicSpy = 
-      const _openaiSpy = jest.spyOn(testService as unknown, '_callOpenAI');
+      const anthropicSpy2 = jest.spyOn(testService2 as unknown as any, '_callAnthropic');
+      const openaiSpy2 = jest.spyOn(testService2 as unknown as any, '_callOpenAI');
 
-      await expect(testService.generateContent(prompt, options)).rejects.toThrow(
+      await expect(testService2.generateContent(prompt, options)).rejects.toThrow(
         'LLM generation failed with primary provider (openai): Primary provider (openai) is configured but API key is missing.',
       );
 
-      expect(anthropicSpy).not.toHaveBeenCalled();
+      expect(service['_callAnthropic']).not.toHaveBeenCalled();
     });
 
     it('should use OpenAI if specified as provider', async () => {
-      jest.spyOn(service as unknown, '_callOpenAI').mockResolvedValue('OpenAI response');
-      const _anthropicSpy = 
+      jest.spyOn(service as unknown as any, '_callOpenAI').mockResolvedValue('OpenAI response');
+      const anthropicSpy = jest.spyOn(service as unknown as any, '_callAnthropic');
 
-      const _specificOptions = 
-      const _result = 
+      const specificOptions = { ...options, provider: 'openai' };
+      const result = await service.generateContent(prompt, options);
 
-      expect(anthropicSpy).not.toHaveBeenCalled();
+      expect(service['_callAnthropic']).not.toHaveBeenCalled();
       expect(service['_callOpenAI']).toHaveBeenCalledTimes(1);
       expect(service['_callOpenAI']).toHaveBeenCalledWith(
         prompt,
@@ -286,11 +306,11 @@ describe('LlmRouterService', () => {
     });
 
     it('should use Anthropic if specified as provider', async () => {
-      jest.spyOn(service as unknown, '_callAnthropic').mockResolvedValue('Anthropic response');
-      const _openaiSpy = 
+      jest.spyOn(service as unknown as any, '_callAnthropic').mockResolvedValue('Anthropic response');
+      const openaiSpy = jest.spyOn(service as unknown as any, '_callOpenAI');
 
-      const _specificOptions = 
-      const _result = 
+      const specificOptions = { ...options, provider: 'openai' };
+      const result = await service.generateContent(prompt, options);
 
       expect(openaiSpy).not.toHaveBeenCalled();
       expect(service['_callAnthropic']).toHaveBeenCalledTimes(1);
@@ -305,11 +325,11 @@ describe('LlmRouterService', () => {
     });
 
     it('should default to Anthropic if provider is invalid', async () => {
-      jest.spyOn(service as unknown, '_callAnthropic').mockResolvedValue('Anthropic response');
-      const _openaiSpy = 
+      jest.spyOn(service as unknown as any, '_callAnthropic').mockResolvedValue('Anthropic response');
+      const openaiSpy = jest.spyOn(service as unknown as any, '_callOpenAI');
 
-      const _specificOptions = 
-      const _result = 
+      const specificOptions = { ...options, provider: 'openai' };
+      const result = await service.generateContent(prompt, options);
 
       expect(openaiSpy).not.toHaveBeenCalled();
       expect(service['_callAnthropic']).toHaveBeenCalledTimes(1); // Should default to Anthropic

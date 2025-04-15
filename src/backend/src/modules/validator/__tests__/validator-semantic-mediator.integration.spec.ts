@@ -21,11 +21,11 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
     memoryService = {
       getMemoryByType: jest.fn(),
       storeMemory: jest.fn().mockResolvedValue({}),
-    } as unknown;
+    } as unknown as MemoryService;
 
     llmRouterService = {
       generateContent: jest.fn().mockResolvedValue('{"status":"passed","score":90,"details":[]}'),
-    } as unknown;
+    } as unknown as LlmRouterService;
 
     semanticMediatorService = {
       generateValidationContext: jest.fn().mockResolvedValue({
@@ -37,9 +37,9 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
       enrichWithContext: jest.fn().mockImplementation((_, data) => Promise.resolve(data)),
       translateBetweenModules: jest.fn().mockResolvedValue('test prompt'),
       trackSemanticTransformation: jest.fn().mockResolvedValue({}),
-    } as unknown;
+    } as unknown as SemanticMediatorService;
 
-    const _ValidationModelMock = 
+    const ValidationModelMock = function() {
       return {
         save: jest.fn().mockResolvedValue({}),
       };
@@ -57,9 +57,9 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
       exec: jest.fn().mockResolvedValue(null),
     });
 
-    validationModel = ValidationModelMock as unknown;
+    validationModel = ValidationModelMock as unknown as Model<Validation>;
 
-    const _moduleRef = 
+    const moduleRef = await Test.createTestingModule({
       providers: [
         ValidatorService,
         { provide: SemanticMediatorService, useValue: semanticMediatorService },
@@ -75,15 +75,15 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
 
   describe('Integration between ValidatorService and SemanticMediatorService', () => {
     it('should use semantic mediator to generate validation context', async () => {
-      const _expectationId = 
-      const _codeId = 
-      const _expectationMemory = 
+      const expectationId = 'test-expectation-id';
+      const codeId = 'test-code-id';
+      const expectationMemory = {
         content: {
           _id: { toString: () => expectationId },
           model: 'Create a function that adds two numbers',
         },
       };
-      const _codeMemory = 
+      const codeMemory = {
         content: {
           _id: { toString: () => codeId },
           files: [{ path: 'test.js', content: 'function add(a, b) { return a + b; }' }],
@@ -91,7 +91,7 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
       };
 
       // Mock memory service methods that are called by the validator service
-      (memoryService.getMemoryByType as jest.Mock).mockImplementation((type: MemoryType) => {
+      (memoryService['getMemoryByType'] as jest.Mock).mockImplementation((type: MemoryType) => {
         if (type === MemoryType.EXPECTATION) {
           return Promise.resolve([expectationMemory]);
         } else if (type === MemoryType.CODE) {
@@ -107,21 +107,21 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
       });
 
       // Verify that the semantic mediator's method was called
-      expect(semanticMediatorService.generateValidationContext).toHaveBeenCalled();
-      expect(semanticMediatorService.enrichWithContext).toHaveBeenCalled();
-      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
+      expect(semanticMediatorService['generateValidationContext']).toHaveBeenCalled();
+      expect(semanticMediatorService['enrichWithContext']).toHaveBeenCalled();
+      expect(semanticMediatorService['translateBetweenModules']).toHaveBeenCalled();
     });
 
     it('should use semantic mediator for adaptive context validation', async () => {
-      const _expectationId = 
-      const _codeId = 
-      const _expectationMemory = 
+      const expectationId = 'test-expectation-id';
+      const codeId = 'test-code-id';
+      const expectationMemory = {
         content: {
           _id: { toString: () => expectationId },
           model: 'Create a function that adds two numbers',
         },
       };
-      const _codeMemory = 
+      const codeMemory = {
         content: {
           _id: { toString: () => codeId },
           files: [{ path: 'test.js', content: 'function add(a, b) { return a + b; }' }],
@@ -129,7 +129,7 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
       };
 
       // Mock memory service methods
-      (memoryService.getMemoryByType as jest.Mock).mockImplementation((type: MemoryType) => {
+      (memoryService['getMemoryByType'] as jest.Mock).mockImplementation((type: MemoryType) => {
         if (type === MemoryType.EXPECTATION) {
           return Promise.resolve([expectationMemory]);
         } else if (type === MemoryType.CODE) {
@@ -145,20 +145,20 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
       });
 
       // Verify that the semantic mediator's methods were called
-      expect(semanticMediatorService.generateValidationContext).toHaveBeenCalled();
-      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
+      expect(semanticMediatorService['generateValidationContext']).toHaveBeenCalled();
+      expect(semanticMediatorService['translateBetweenModules']).toHaveBeenCalled();
     });
 
     it('should use semantic mediator for full semantic mediation validation', async () => {
-      const _expectationId = 
-      const _codeId = 
-      const _expectationMemory = 
+      const expectationId = 'test-expectation-id';
+      const codeId = 'test-code-id';
+      const expectationMemory = {
         content: {
           _id: { toString: () => expectationId },
           model: 'Create a function that adds two numbers',
         },
       };
-      const _codeMemory = 
+      const codeMemory = {
         content: {
           _id: { toString: () => codeId },
           files: [{ path: 'test.js', content: 'function add(a, b) { return a + b; }' }],
@@ -166,7 +166,7 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
       };
 
       // Mock memory service methods
-      (memoryService.getMemoryByType as jest.Mock).mockImplementation((type: MemoryType) => {
+      (memoryService['getMemoryByType'] as jest.Mock).mockImplementation((type: MemoryType) => {
         if (type === MemoryType.EXPECTATION) {
           return Promise.resolve([expectationMemory]);
         } else if (type === MemoryType.CODE) {
@@ -183,9 +183,9 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
       });
 
       // Verify that the semantic mediator's methods were called
-      expect(semanticMediatorService.generateValidationContext).toHaveBeenCalled();
-      expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalled();
-      expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalled();
+      expect(semanticMediatorService['generateValidationContext']).toHaveBeenCalled();
+      expect(semanticMediatorService['translateBetweenModules']).toHaveBeenCalled();
+      expect(semanticMediatorService['trackSemanticTransformation']).toHaveBeenCalled();
     });
   });
 });
