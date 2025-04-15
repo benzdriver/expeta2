@@ -27,7 +27,7 @@ jobs:
     - name: Install Backend Dependencies
       run: |
         cd src/backend
-        npm ci
+        npm install
     
     - name: Lint Backend
       run: |
@@ -60,7 +60,7 @@ jobs:
     - name: Install Frontend Dependencies
       run: |
         cd src/frontend
-        npm ci
+        npm install
     
     - name: Lint Frontend
       run: |
