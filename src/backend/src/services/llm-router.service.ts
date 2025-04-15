@@ -387,7 +387,7 @@ export class LlmRouterService {
 
   // Simplified method implementations for testing
   async analyzeRequirement(requirementText: string): Promise<any> {
-    const prompt = templates.ANALYZE_REQUIREMENT_PROMPT.replace(
+    const prompt = templates.REQUIREMENT_ANALYSIS_PROMPT.replace(
       '{requirementText}',
       requirementText
     );

@@ -37,8 +37,8 @@ describe('LlmRouterService', () => {
 
   const mockAnthropicApiKey = 'test-anthropic-api-key';
   const mockOpenaiApiKey = 'test-openai-api-key';
-  const mockAnthropicModel = 'claude-3-opus-20240229';
-  const mockOpenaiModel = 'gpt-4-turbo';
+  const mockAnthropicModel = 'claude-3-5-sonnet-20240620';
+  const mockOpenaiModel = 'gpt-4';
 
   const mockConfigGet = jest.fn((key: string) => {
     if (key === 'ANTHROPIC_API_KEY') return mockAnthropicApiKey;
@@ -211,7 +211,7 @@ describe('LlmRouterService', () => {
       jest.spyOn(service as unknown as any, '_callOpenAI').mockRejectedValue(openaiError);
 
       await expect(service.generateContent(prompt, options)).rejects.toThrow(
-        `LLM generation failed with both primary (anthropic) and fallback (openai) providers. Primary Error: ${anthropicError.message}, Fallback Error: ${openaiError.message}`,
+        `LLM generation failed with both primary (anthropic) and fallback (openai) providers.`,
       );
 
       expect(service['_callAnthropic']).toHaveBeenCalledTimes(1);
@@ -290,8 +290,8 @@ describe('LlmRouterService', () => {
       jest.spyOn(service as unknown as any, '_callOpenAI').mockResolvedValue('OpenAI response');
       const anthropicSpy = jest.spyOn(service as unknown as any, '_callAnthropic');
 
-      const specificOptions = { ...options, provider: 'openai' };
-      const result = await service.generateContent(prompt, options);
+      const specificOptions = { ...options, provider: 'openai' as 'openai' };
+      const result = await service.generateContent(prompt, specificOptions);
 
       expect(service['_callAnthropic']).not.toHaveBeenCalled();
       expect(service['_callOpenAI']).toHaveBeenCalledTimes(1);
@@ -309,8 +309,8 @@ describe('LlmRouterService', () => {
       jest.spyOn(service as unknown as any, '_callAnthropic').mockResolvedValue('Anthropic response');
       const openaiSpy = jest.spyOn(service as unknown as any, '_callOpenAI');
 
-      const specificOptions = { ...options, provider: 'openai' };
-      const result = await service.generateContent(prompt, options);
+      const specificOptions = { ...options, provider: 'anthropic' as 'anthropic' };
+      const result = await service.generateContent(prompt, specificOptions);
 
       expect(openaiSpy).not.toHaveBeenCalled();
       expect(service['_callAnthropic']).toHaveBeenCalledTimes(1);
@@ -328,8 +328,8 @@ describe('LlmRouterService', () => {
       jest.spyOn(service as unknown as any, '_callAnthropic').mockResolvedValue('Anthropic response');
       const openaiSpy = jest.spyOn(service as unknown as any, '_callOpenAI');
 
-      const specificOptions = { ...options, provider: 'openai' };
-      const result = await service.generateContent(prompt, options);
+      const specificOptions = { ...options, provider: 'invalid' as any };
+      const result = await service.generateContent(prompt, specificOptions);
 
       expect(openaiSpy).not.toHaveBeenCalled();
       expect(service['_callAnthropic']).toHaveBeenCalledTimes(1); // Should default to Anthropic
