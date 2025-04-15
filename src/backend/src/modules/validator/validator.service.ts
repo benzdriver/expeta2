@@ -307,12 +307,12 @@ export class ValidatorService {
     const _validation = new this.validationModel({
       expectationId,
       codeId,
-      status: _validationResult.status,
-      score: _validationResult.score,
-      details: _validationResult.details,
+      status: validationResult.status,
+      score: validationResult.score,
+      details: validationResult.details,
       metadata: {
-        semanticAnalysis: _validationResult.semanticAnalysis,
-        semanticInsights: _validationResult.semanticInsights,
+        semanticAnalysis: validationResult.semanticAnalysis,
+        semanticInsights: validationResult.semanticInsights,
         validationContext: _validationContext,
         validatedAt: new Date().toISOString(),
         validationType: 'semantic_mediation',
@@ -332,8 +332,8 @@ export class ValidatorService {
       metadata: {
         expectationId,
         codeId,
-        status: validationResult.status,
-        score: validationResult.score,
+        status: _validationResult.status,
+        score: _validationResult.score,
         isSemanticMediation: true,
         validationContext: {
           strategy: options.strategy || 'balanced',
@@ -575,14 +575,14 @@ export class ValidatorService {
       },
       metadata: {
         validationId,
-        expectationId: validation.expectationId,
-        codeId: validation.codeId,
+        expectationId: _validation.expectationId,
+        codeId: _validation.codeId,
         timestamp: new Date().toISOString(),
       },
-      tags: ['validation_feedback', validation.expectationId, validation.codeId, validationId],
+      tags: ['validation_feedback', _validation.expectationId, _validation.codeId, validationId],
     });
 
-    logger.log(`Successfully generated validation feedback for validation: ${validationId}`);
+    _logger.log(`Successfully generated validation feedback for validation: ${validationId}`);
     return feedback;
   }
 
