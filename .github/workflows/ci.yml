@@ -23,13 +23,11 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: 'src/backend/package-lock.json'
     
     - name: Install Backend Dependencies
       run: |
         cd src/backend
-        npm ci
+        npm install
     
     - name: Lint Backend
       run: |
@@ -58,13 +56,11 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: 'src/frontend/package-lock.json'
     
     - name: Install Frontend Dependencies
       run: |
         cd src/frontend
-        npm ci
+        npm install
     
     - name: Lint Frontend
       run: |
