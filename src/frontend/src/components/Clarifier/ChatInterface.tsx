@@ -27,7 +27,7 @@ const ConversationLogger = React.lazy(() => import('./ConversationLogger'));
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   initialMessages = [], 
   onSendMessage,
-  onExpectationCreated,
+  _onExpectationCreated,
   enableLogging = true,
   sessionId = `session-${Date.now()}`
 }) => {
@@ -58,7 +58,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     followUpQuestions: []
   });
   const [showLogger, setShowLogger] = useState(false);
-  const [requirementUnderstanding, setRequirementUnderstanding] = useState<string>('');
+  const [_requirementUnderstanding, setRequirementUnderstanding] = useState<string>('');
   const [_showUnderstandingSummary, setShowUnderstandingSummary] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -387,6 +387,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         try {
           loggingService.logSessionMessage(sessionId, correctionPromptMessage);
         } catch (error) {
+          /* eslint-disable-next-line no-console */
           console.error('Failed to log correction prompt message:', error);
         }
       }

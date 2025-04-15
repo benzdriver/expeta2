@@ -26,7 +26,7 @@ export class Memory extends Document {
   content: unknown;
 
   @Prop({ type: Object })
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 
   @Prop({ type: [String], default: [] })
   tags: string[];
@@ -40,9 +40,9 @@ export class Memory extends Document {
     /** 语义相关性分数 */
     relevanceScore?: number;
     /** 语义约束 */
-    constraints?: Record<string, any>[];
+    constraints?: Record<string, unknown>[];
     /** 语义验证结果 */
-    validationResults?: Record<string, any>[];
+    validationResults?: Record<string, unknown>[];
   };
 
   @Prop({ required: true })
@@ -52,6 +52,7 @@ export class Memory extends Document {
   updatedAt: Date;
 }
 
+export const MemorySchema = SchemaFactory.createForClass(Memory);
 export const _MemorySchema = MemorySchema.index({ type: 1 });
 MemorySchema.index({ tags: 1 });
 MemorySchema.index({
