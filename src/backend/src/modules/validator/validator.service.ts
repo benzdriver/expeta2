@@ -17,25 +17,25 @@ export class ValidatorService {
   ) {}
 
   async validateCode(expectationId: string, codeId: string): Promise<Validation> {
-    const expectationMemories = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
-    const expectation = expectationMemories.find(
+    const _expectationMemories = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
+    const _expectation = _expectationMemories.find(
       (memory) => memory.content._id.toString() === expectationId,
     )?.content;
 
-    const codeMemories = await this.memoryService.getMemoryByType(MemoryType.CODE);
-    const code = codeMemories.find((memory) => memory.content._id.toString() === codeId)?.content;
+    const _codeMemories = await this.memoryService.getMemoryByType(MemoryType.CODE);
+    const _code = _codeMemories.find((memory) => memory.content._id.toString() === codeId)?.content;
 
-    if (!expectation || !code) {
+    if (!_expectation || !_code) {
       throw new Error('Expectation or Code not found');
     }
 
-    const validationPrompt = `
+    const _validationPrompt = `
       基于以下期望模型和生成的代码，评估代码是否满足期望要求：
       
-      期望模型：${JSON.stringify(expectation.model, null, 2)}
+      期望模型：${JSON.stringify(_expectation.model, null, 2)}
       
       生成的代码：
-      ${code.files.map((file) => `文件路径: ${file.path}\n内容:\n${file.content}`).join('\n\n')}
+      ${_code.files.map((file) => `文件路径: ${file.path}\n内容:\n${file.content}`).join('\n\n')}
       
       请评估代码对每个期望的满足程度，并提供以下格式的JSON结果：
       {
@@ -52,33 +52,33 @@ export class ValidatorService {
       }
     `;
 
-    const validationResultText = await this.llmRouterService.generateContent(validationPrompt);
-    const validationResult = JSON.parse(validationResultText);
+    const _validationResultText = await this.llmRouterService.generateContent(_validationPrompt);
+    const _validationResult = JSON.parse(_validationResultText);
 
-    const validation = new this.validationModel({
+    const _validation = new this.validationModel({
       expectationId,
       codeId,
-      status: validationResult.status,
-      score: validationResult.score,
-      details: validationResult.details,
+      status: _validationResult.status,
+      score: _validationResult.score,
+      details: _validationResult.details,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    const savedValidation = await validation.save();
+    const _savedValidation = await _validation.save();
 
     await this.memoryService.storeMemory({
       type: MemoryType.VALIDATION,
-      content: savedValidation,
+      content: _savedValidation,
       metadata: {
         expectationId,
         codeId,
-        status: validationResult.status,
-        score: validationResult.score,
+        status: _validationResult.status,
+        score: _validationResult.score,
       },
     });
 
-    return savedValidation;
+    return _savedValidation;
   }
 
   async getValidationsByExpectationId(expectationId: string): Promise<Validation[]> {
@@ -106,30 +106,30 @@ export class ValidatorService {
       [key: string]: unknown;
     },
   ): Promise<Validation> {
-    const logger = new Logger('ValidatorService');
-    logger.log(
+    const _logger = new Logger('ValidatorService');
+    _logger.log(
       `Validating code with semantic input - expectation: ${expectationId}, code: ${codeId}`,
     );
 
-    const expectationMemories = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
-    const expectation = expectationMemories.find(
+    const _expectationMemories = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
+    const _expectation = _expectationMemories.find(
       (memory) => memory.content._id.toString() === expectationId,
     )?.content;
 
-    const codeMemories = await this.memoryService.getMemoryByType(MemoryType.CODE);
-    const code = codeMemories.find((memory) => memory.content._id.toString() === codeId)?.content;
+    const _codeMemories = await this.memoryService.getMemoryByType(MemoryType.CODE);
+    const _code = _codeMemories.find((memory) => memory.content._id.toString() === codeId)?.content;
 
-    if (!expectation || !code) {
-      logger.error(
+    if (!_expectation || !_code) {
+      _logger.error(
         `Expectation or Code not found - expectation: ${expectationId}, code: ${codeId}`,
       );
       throw new Error('Expectation or Code not found');
     }
 
-    logger.debug(`Found expectation and code for validation`);
+    _logger.debug(`Found expectation and code for validation`);
 
-    logger.debug('Generating validation context using semantic mediator');
-    const validationContext = await this.semanticMediatorService.generateValidationContext(
+    _logger.debug('Generating validation context using semantic mediator');
+    const _validationContext = await this.semanticMediatorService.generateValidationContext(
       expectationId,
       codeId,
       [], // No previous validations
@@ -139,47 +139,49 @@ export class ValidatorService {
       },
     );
 
-    logger.debug('Enriching semantic input with context');
-    const enrichedSemanticInput = await this.semanticMediatorService.enrichWithContext(
+    _logger.debug('Enriching semantic input with context');
+    const _enrichedSemanticInput = await this.semanticMediatorService.enrichWithContext(
       'validator',
       semanticInput,
       `expectation:${expectationId} code:${codeId}`,
     );
 
-    const enhancedValidationContext = {
-      expectation: expectation.model,
+    const _enhancedValidationContext = {
+      expectation: _expectation.model,
       code: {
-        files: code.files,
-        features: validationContext.semanticContext?.codeFeatures || {},
+        files: _code.files,
+        features: _validationContext.semanticContext?.codeFeatures || {},
       },
-      semanticInput: enrichedSemanticInput,
-      semanticRelationship: validationContext.semanticContext?.semanticRelationship || {},
+      semanticInput: _enrichedSemanticInput,
+      semanticRelationship: _validationContext.semanticContext?.semanticRelationship || {},
       validationType: 'semantic',
     };
 
-    logger.debug('Transforming validation context to prompt using semantic mediator');
-    const transformedPrompt = await this.semanticMediatorService.translateBetweenModules(
+    _logger.debug('Transforming validation context to prompt using semantic mediator');
+    const _transformedPrompt = await this.semanticMediatorService.translateBetweenModules(
       'validator',
       'llm',
-      enhancedValidationContext,
+      _enhancedValidationContext,
     );
 
-    logger.debug('Sending transformed validation prompt to LLM service');
-    const validationResultText = await this.llmRouterService.generateContent(transformedPrompt);
-    let validationResult;
+    _logger.debug('Sending transformed validation prompt to LLM service');
+    const _validationResultText = await this.llmRouterService.generateContent(_transformedPrompt);
+    let _validationResult;
     try {
-      validationResult = JSON.parse(validationResultText);
-      logger.debug(`Successfully parsed validation result with status: ${validationResult.status}`);
+      _validationResult = JSON.parse(_validationResultText);
+      _logger.debug(
+        `Successfully parsed validation result with status: ${_validationResult.status}`,
+      );
     } catch (error) {
-      logger.error(`Failed to parse validation result: ${error.message}`);
+      _logger.error(`Failed to parse validation result: ${error.message}`);
       throw new Error(`Failed to parse validation result: ${error.message}`);
     }
 
     await this.semanticMediatorService.trackSemanticTransformation(
       'llm',
       'validator',
-      validationResultText,
-      validationResult,
+      _validationResultText,
+      _validationResult,
       {
         trackDifferences: true,
         analyzeTransformation: true,
@@ -187,44 +189,44 @@ export class ValidatorService {
       },
     );
 
-    const validation = new this.validationModel({
+    const _validation = new this.validationModel({
       expectationId,
       codeId,
-      status: validationResult.status,
-      score: validationResult.score,
-      details: validationResult.details,
+      status: _validationResult.status,
+      score: _validationResult.score,
+      details: _validationResult.details,
       metadata: {
-        semanticAnalysis: validationResult.semanticAnalysis,
+        semanticAnalysis: _validationResult.semanticAnalysis,
         usedSemanticInput: true,
-        validationContext: validationContext.semanticContext || {},
+        validationContext: _validationContext.semanticContext || {},
         validatedAt: new Date().toISOString(),
       },
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    logger.debug('Saving validation result to database');
-    const savedValidation = await validation.save();
+    _logger.debug('Saving validation result to database');
+    const _savedValidation = await _validation.save();
 
-    logger.debug('Storing validation in memory service');
+    _logger.debug('Storing validation in memory service');
     await this.memoryService.storeMemory({
       type: MemoryType.VALIDATION,
-      content: savedValidation,
+      content: _savedValidation,
       metadata: {
         expectationId,
         codeId,
-        status: validationResult.status,
-        score: validationResult.score,
+        status: _validationResult.status,
+        score: _validationResult.score,
         usedSemanticInput: true,
         timestamp: new Date().toISOString(),
       },
       tags: ['validation', 'semantic_validation', expectationId, codeId],
     });
 
-    logger.log(
-      `Successfully validated code with semantic input - status: ${validationResult.status}, score: ${validationResult.score}`,
+    _logger.log(
+      `Successfully validated code with semantic input - status: ${_validationResult.status}, score: ${_validationResult.score}`,
     );
-    return savedValidation;
+    return _savedValidation;
   }
 
   /**
@@ -246,13 +248,13 @@ export class ValidatorService {
       iterative?: boolean;
     } = {},
   ): Promise<Validation> {
-    const logger = new Logger('ValidatorService');
-    logger.log(
+    const _logger = new Logger('ValidatorService');
+    _logger.log(
       `Performing semantic mediation validation - expectation: ${expectationId}, code: ${codeId}`,
     );
 
-    logger.debug('Generating comprehensive validation context using semantic mediator');
-    const validationContext = await this.semanticMediatorService.generateValidationContext(
+    _logger.debug('Generating comprehensive validation context using semantic mediator');
+    const _validationContext = await this.semanticMediatorService.generateValidationContext(
       expectationId,
       codeId,
       options.previousValidations || [],
@@ -263,38 +265,38 @@ export class ValidatorService {
       },
     );
 
-    logger.debug('Transforming validation context to prompt using semantic mediator');
-    const transformedPrompt = await this.semanticMediatorService.translateBetweenModules(
+    _logger.debug('Transforming validation context to prompt using semantic mediator');
+    const _transformedPrompt = await this.semanticMediatorService.translateBetweenModules(
       'validator',
       'llm',
       {
         expectationId,
         codeId,
-        validationContext,
+        validationContext: _validationContext,
         validationType: 'semantic_mediation',
         iterative: options.iterative || false,
       },
     );
 
-    logger.debug('Sending transformed validation prompt to LLM service');
-    const validationResultText = await this.llmRouterService.generateContent(transformedPrompt);
+    _logger.debug('Sending transformed validation prompt to LLM service');
+    const _validationResultText = await this.llmRouterService.generateContent(_transformedPrompt);
 
     let validationResult;
     try {
-      validationResult = JSON.parse(validationResultText);
-      logger.debug(
+      validationResult = JSON.parse(_validationResultText);
+      _logger.debug(
         `Successfully parsed semantic mediation validation result with status: ${validationResult.status}`,
       );
     } catch (error) {
-      logger.error(`Failed to parse semantic mediation validation result: ${error.message}`);
+      _logger.error(`Failed to parse semantic mediation validation result: ${error.message}`);
       throw new Error(`Failed to parse semantic mediation validation result: ${error.message}`);
     }
 
     await this.semanticMediatorService.trackSemanticTransformation(
       'llm',
       'validator',
-      validationResultText,
-      validationResult,
+      _validationResultText,
+      _validationResult,
       {
         trackDifferences: true,
         analyzeTransformation: true,
@@ -302,16 +304,16 @@ export class ValidatorService {
       },
     );
 
-    const validation = new this.validationModel({
+    const _validation = new this.validationModel({
       expectationId,
       codeId,
-      status: validationResult.status,
-      score: validationResult.score,
-      details: validationResult.details,
+      status: _validationResult.status,
+      score: _validationResult.score,
+      details: _validationResult.details,
       metadata: {
-        semanticAnalysis: validationResult.semanticAnalysis,
-        semanticInsights: validationResult.semanticInsights,
-        validationContext,
+        semanticAnalysis: _validationResult.semanticAnalysis,
+        semanticInsights: _validationResult.semanticInsights,
+        validationContext: _validationContext,
         validatedAt: new Date().toISOString(),
         validationType: 'semantic_mediation',
         iterative: options.iterative || false,
@@ -320,13 +322,13 @@ export class ValidatorService {
       updatedAt: new Date(),
     });
 
-    logger.debug('Saving semantic mediation validation result to database');
-    const savedValidation = await validation.save();
+    _logger.debug('Saving semantic mediation validation result to database');
+    const _savedValidation = await _validation.save();
 
-    logger.debug('Storing semantic mediation validation in memory service');
+    _logger.debug('Storing semantic mediation validation in memory service');
     await this.memoryService.storeMemory({
       type: MemoryType.VALIDATION,
-      content: savedValidation,
+      content: _savedValidation,
       metadata: {
         expectationId,
         codeId,
@@ -344,10 +346,10 @@ export class ValidatorService {
       tags: ['validation', 'semantic_mediation', expectationId, codeId],
     });
 
-    logger.log(
-      `Successfully performed semantic mediation validation - status: ${validationResult.status}, score: ${validationResult.score}`,
+    _logger.log(
+      `Successfully performed semantic mediation validation - status: ${_validationResult.status}, score: ${_validationResult.score}`,
     );
-    return savedValidation;
+    return _savedValidation;
   }
 
   async validateCodeIteratively(
@@ -356,49 +358,49 @@ export class ValidatorService {
     previousValidationId: string,
     iterationFocus?: string[],
   ): Promise<Validation> {
-    const logger = new Logger('ValidatorService');
-    logger.log(
+    const _logger = new Logger('ValidatorService');
+    _logger.log(
       `Performing iterative validation - expectation: ${expectationId}, code: ${codeId}, previous: ${previousValidationId}`,
     );
 
-    const expectationMemories = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
-    const expectation = expectationMemories.find(
+    const _expectationMemories = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
+    const _expectation = _expectationMemories.find(
       (memory) => memory.content._id.toString() === expectationId,
     )?.content;
 
-    const codeMemories = await this.memoryService.getMemoryByType(MemoryType.CODE);
-    const code = codeMemories.find((memory) => memory.content._id.toString() === codeId)?.content;
+    const _codeMemories = await this.memoryService.getMemoryByType(MemoryType.CODE);
+    const _code = _codeMemories.find((memory) => memory.content._id.toString() === codeId)?.content;
 
-    const previousValidation = await this.validationModel.findById(previousValidationId).exec();
+    const _previousValidation = await this.validationModel.findById(previousValidationId).exec();
 
-    if (!expectation || !code || !previousValidation) {
-      logger.error(`Expectation, Code or Previous Validation not found`);
+    if (!_expectation || !_code || !_previousValidation) {
+      _logger.error(`Expectation, Code or Previous Validation not found`);
       throw new Error('Expectation, Code or Previous Validation not found');
     }
 
-    logger.debug(`Found expectation, code and previous validation for iterative validation`);
+    _logger.debug(`Found expectation, code and previous validation for iterative validation`);
 
     const focusAreas =
       iterationFocus ||
-      previousValidation.details
+      _previousValidation.details
         .filter((detail) => detail.status !== 'passed')
         .map((detail) => detail.expectationId);
 
     if (focusAreas.length === 0) {
-      logger.debug('No focus areas specified and all previous validations passed');
-      return previousValidation; // 如果没有需要重点关注的方面，直接返回前一轮验证结果
+      _logger.debug('No focus areas specified and all previous validations passed');
+      return _previousValidation; // 如果没有需要重点关注的方面，直接返回前一轮验证结果
     }
 
-    const validationPrompt = `
+    const _validationPrompt = `
       基于以下期望模型、生成的代码和前一轮验证结果，进行迭代验证：
       
-      期望模型：${JSON.stringify(expectation.model, null, 2)}
+      期望模型：${JSON.stringify(_expectation.model, null, 2)}
       
       生成的代码：
-      ${code.files.map((file) => `文件路径: ${file.path}\n内容:\n${file.content}`).join('\n\n')}
+      ${_code.files.map((file) => `文件路径: ${file.path}\n内容:\n${file.content}`).join('\n\n')}
       
       前一轮验证结果：
-      ${JSON.stringify(previousValidation, null, 2)}
+      ${JSON.stringify(_previousValidation, null, 2)}
       
       本轮重点关注的方面：
       ${JSON.stringify(focusAreas, null, 2)}
@@ -422,21 +424,21 @@ export class ValidatorService {
       }
     `;
 
-    logger.debug('Sending iterative validation prompt to LLM service');
-    const validationResultText = await this.llmRouterService.generateContent(validationPrompt);
+    _logger.debug('Sending iterative validation prompt to LLM service');
+    const _validationResultText = await this.llmRouterService.generateContent(_validationPrompt);
 
     let validationResult;
     try {
-      validationResult = JSON.parse(validationResultText);
-      logger.debug(
+      validationResult = JSON.parse(_validationResultText);
+      _logger.debug(
         `Successfully parsed iterative validation result with status: ${validationResult.status}`,
       );
     } catch (error) {
-      logger.error(`Failed to parse iterative validation result: ${error.message}`);
+      _logger.error(`Failed to parse iterative validation result: ${error.message}`);
       throw new Error(`Failed to parse iterative validation result: ${error.message}`);
     }
 
-    const validation = new this.validationModel({
+    const _validation = new this.validationModel({
       expectationId,
       codeId,
       status: validationResult.status,
@@ -447,37 +449,37 @@ export class ValidatorService {
         improvementSuggestions: validationResult.improvementSuggestions,
         previousValidationId,
         focusAreas,
-        iterationNumber: (previousValidation.metadata?.iterationNumber || 0) + 1,
+        iterationNumber: (_previousValidation.metadata?.iterationNumber || 0) + 1,
         validatedAt: new Date().toISOString(),
       },
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    logger.debug('Saving iterative validation result to database');
-    const savedValidation = await validation.save();
+    _logger.debug('Saving iterative validation result to database');
+    const _savedValidation = await _validation.save();
 
-    logger.debug('Storing iterative validation in memory service');
+    _logger.debug('Storing iterative validation in memory service');
     await this.memoryService.storeMemory({
       type: MemoryType.VALIDATION,
-      content: savedValidation,
+      content: _savedValidation,
       metadata: {
         expectationId,
         codeId,
-        status: validationResult.status,
-        score: validationResult.score,
+        status: _validationResult.status,
+        score: _validationResult.score,
         isIterative: true,
-        iterationNumber: validation.metadata.iterationNumber,
+        iterationNumber: _validation.metadata.iterationNumber,
         previousValidationId,
         timestamp: new Date().toISOString(),
       },
       tags: ['validation', 'iterative_validation', expectationId, codeId, previousValidationId],
     });
 
-    logger.log(
-      `Successfully performed iterative validation - status: ${validationResult.status}, score: ${validationResult.score}`,
+    _logger.log(
+      `Successfully performed iterative validation - status: ${_validationResult.status}, score: ${_validationResult.score}`,
     );
-    return savedValidation;
+    return _savedValidation;
   }
 
   /**
@@ -496,37 +498,37 @@ export class ValidatorService {
     }>;
     codeOptimizationSuggestions: Record<string, string[]>;
   }> {
-    const logger = new Logger('ValidatorService');
-    logger.log(`Generating validation feedback for validation: ${validationId}`);
+    const _logger = new Logger('ValidatorService');
+    _logger.log(`Generating validation feedback for validation: ${validationId}`);
 
-    const validation = await this.validationModel.findById(validationId).exec();
+    const _validation = await this.validationModel.findById(validationId).exec();
 
-    if (!validation) {
-      logger.error(`Validation not found: ${validationId}`);
+    if (!_validation) {
+      _logger.error(`Validation not found: ${validationId}`);
       throw new Error('Validation not found');
     }
 
-    const expectationMemories = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
-    const expectation = expectationMemories.find(
-      (memory) => memory.content._id.toString() === validation.expectationId,
+    const _expectationMemories = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
+    const _expectation = _expectationMemories.find(
+      (memory) => memory.content._id.toString() === _validation.expectationId,
     )?.content;
 
-    const codeMemories = await this.memoryService.getMemoryByType(MemoryType.CODE);
-    const code = codeMemories.find(
-      (memory) => memory.content._id.toString() === validation.codeId,
+    const _codeMemories = await this.memoryService.getMemoryByType(MemoryType.CODE);
+    const _code = _codeMemories.find(
+      (memory) => memory.content._id.toString() === _validation.codeId,
     )?.content;
 
-    if (!expectation || !code) {
-      logger.error(`Related expectation or code not found for validation: ${validationId}`);
+    if (!_expectation || !_code) {
+      _logger.error(`Related expectation or code not found for validation: ${validationId}`);
       throw new Error('Related expectation or code not found');
     }
 
-    const feedbackPrompt = `
+    const _feedbackPrompt = `
       基于以下验证结果，生成详细的反馈，用于指导代码优化：
       
-      期望模型：${JSON.stringify(expectation.model, null, 2)}
+      期望模型：${JSON.stringify(_expectation.model, null, 2)}
       
-      验证结果：${JSON.stringify(validation, null, 2)}
+      验证结果：${JSON.stringify(_validation, null, 2)}
       
       请生成以下格式的JSON结果：
       {
@@ -552,15 +554,15 @@ export class ValidatorService {
       }
     `;
 
-    logger.debug('Sending feedback generation prompt to LLM service');
-    const feedbackText = await this.llmRouterService.generateContent(feedbackPrompt);
+    _logger.debug('Sending feedback generation prompt to LLM service');
+    const _feedbackText = await this.llmRouterService.generateContent(_feedbackPrompt);
 
     let feedback;
     try {
-      feedback = JSON.parse(feedbackText);
-      logger.debug('Successfully parsed validation feedback');
+      feedback = JSON.parse(_feedbackText);
+      _logger.debug('Successfully parsed validation feedback');
     } catch (error) {
-      logger.error(`Failed to parse validation feedback: ${error.message}`);
+      _logger.error(`Failed to parse validation feedback: ${error.message}`);
       throw new Error(`Failed to parse validation feedback: ${error.message}`);
     }
 
@@ -595,9 +597,9 @@ export class ValidatorService {
   private mapToValidStrategy(
     strategy: string,
   ): 'balanced' | 'strict' | 'lenient' | 'performance' | 'security' | 'custom' {
-    const validStrategies = ['balanced', 'strict', 'lenient', 'performance', 'security', 'custom'];
+    const _validStrategies = ['balanced', 'strict', 'lenient', 'performance', 'security', 'custom'];
 
-    if (!strategy || !validStrategies.includes(strategy)) {
+    if (!strategy || !_validStrategies.includes(strategy)) {
       return 'balanced'; // 默认使用平衡策略
     }
 
@@ -615,34 +617,34 @@ export class ValidatorService {
       semanticContext?: Record<string, unknown>;
     },
   ): Promise<Validation> {
-    const logger = new Logger('ValidatorService');
-    logger.log(
+    const _logger = new Logger('ValidatorService');
+    _logger.log(
       `Performing adaptive validation with context - expectation: ${expectationId}, code: ${codeId}`,
     );
 
-    const expectationMemories = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
-    const expectation = expectationMemories.find(
+    const _expectationMemories = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
+    const _expectation = _expectationMemories.find(
       (memory) => memory.content._id.toString() === expectationId,
     )?.content;
 
-    const codeMemories = await this.memoryService.getMemoryByType(MemoryType.CODE);
-    const code = codeMemories.find((memory) => memory.content._id.toString() === codeId)?.content;
+    const _codeMemories = await this.memoryService.getMemoryByType(MemoryType.CODE);
+    const _code = _codeMemories.find((memory) => memory.content._id.toString() === codeId)?.content;
 
-    if (!expectation || !code) {
-      logger.error(`Expectation or Code not found for adaptive validation`);
+    if (!_expectation || !_code) {
+      _logger.error(`Expectation or Code not found for adaptive validation`);
       throw new Error('Expectation or Code not found');
     }
 
-    let previousValidationsData = [];
+    let _previousValidationsData = [];
     if (validationContext.previousValidations && validationContext.previousValidations.length > 0) {
-      const previousValidationIds = validationContext.previousValidations;
-      const previousValidations = await this.validationModel
+      const _previousValidationIds = validationContext.previousValidations;
+      const _previousValidations = await this.validationModel
         .find({
-          _id: { $in: previousValidationIds },
+          _id: { $in: _previousValidationIds },
         })
         .exec();
 
-      previousValidationsData = previousValidations.map((v) => ({
+      _previousValidationsData = _previousValidations.map((v) => ({
         id: v._id.toString(),
         status: v.status,
         score: v.score,
@@ -651,64 +653,64 @@ export class ValidatorService {
       }));
     }
 
-    let enhancedContext = { ...validationContext };
+    let _enhancedContext = validationContext;
     if (!validationContext.semanticContext) {
-      logger.debug('Generating semantic validation context using semantic mediator');
-      const validStrategy = this.mapToValidStrategy(validationContext.strategy);
+      _logger.debug('Generating semantic validation context using semantic mediator');
+      const _validStrategy = this.mapToValidStrategy(validationContext.strategy);
 
-      const generatedContext = await this.semanticMediatorService.generateValidationContext(
+      const _generatedContext = await this.semanticMediatorService.generateValidationContext(
         expectationId,
         codeId,
         validationContext.previousValidations || [],
         {
-          strategy: validStrategy,
+          strategy: _validStrategy,
           focusAreas: validationContext.focusAreas,
           customWeights: validationContext.weights,
         },
       );
 
-      enhancedContext = {
+      _enhancedContext = {
         ...validationContext,
-        semanticContext: generatedContext.semanticContext,
+        semanticContext: _generatedContext.semanticContext,
       };
     }
 
-    const adaptiveValidationData = {
-      expectation: expectation.model,
+    const _adaptiveValidationData = {
+      expectation: _expectation.model,
       code: {
-        files: code.files,
+        files: _code.files,
       },
-      validationContext: enhancedContext,
-      previousValidations: previousValidationsData,
+      validationContext: _enhancedContext,
+      previousValidations: _previousValidationsData,
       validationType: 'adaptive',
     };
 
-    logger.debug('Transforming validation data to prompt using semantic mediator');
-    const transformedPrompt = await this.semanticMediatorService.translateBetweenModules(
+    _logger.debug('Transforming validation data to prompt using semantic mediator');
+    const _transformedPrompt = await this.semanticMediatorService.transformData(
       'validator',
       'llm',
-      adaptiveValidationData,
+      _adaptiveValidationData,
     );
 
-    logger.debug('Sending adaptive validation prompt to LLM service');
-    const validationResultText = await this.llmRouterService.generateContent(transformedPrompt);
+    _logger.debug('Sending adaptive validation prompt to LLM service');
+    const _validationResultText = await this.llmRouterService.generateContent(_transformedPrompt);
 
-    let validationResult;
+    let _validationResult;
     try {
-      validationResult = JSON.parse(validationResultText);
-      logger.debug(
-        `Successfully parsed adaptive validation result with status: ${validationResult.status}`,
+      _validationResult = JSON.parse(_validationResultText);
+      _logger.debug(
+        `Successfully parsed adaptive validation result with status: ${_validationResult.status}`,
       );
     } catch (error) {
-      logger.error(`Failed to parse adaptive validation result: ${error.message}`);
+      _logger.error(`Failed to parse adaptive validation result: ${error.message}`);
       throw new Error(`Failed to parse adaptive validation result: ${error.message}`);
     }
 
     await this.semanticMediatorService.trackSemanticTransformation(
       'llm',
       'validator',
-      validationResultText,
-      validationResult,
+      _validationResultText,
+      _validationResult,
       {
         trackDifferences: true,
         analyzeTransformation: true,
@@ -716,16 +718,16 @@ export class ValidatorService {
       },
     );
 
-    const validation = new this.validationModel({
+    const _validation = new this.validationModel({
       expectationId,
       codeId,
-      status: validationResult.status,
-      score: validationResult.score,
-      details: validationResult.details,
+      status: _validationResult.status,
+      score: _validationResult.score,
+      details: _validationResult.details,
       metadata: {
-        adaptiveInsights: validationResult.adaptiveInsights,
-        validationContext: enhancedContext,
-        previousValidations: validationContext.previousValidations || [],
+        adaptiveInsights: _validationResult.adaptiveInsights,
+        validationContext: _enhancedContext,
+        previousValidations: _generatedContext.previousValidations || [],
         validatedAt: new Date().toISOString(),
         validationType: 'adaptive',
       },
@@ -733,33 +735,33 @@ export class ValidatorService {
       updatedAt: new Date(),
     });
 
-    logger.debug('Saving adaptive validation result to database');
-    const savedValidation = await validation.save();
+    _logger.debug('Saving adaptive validation result to database');
+    const _savedValidation = await _validation.save();
 
-    logger.debug('Storing adaptive validation in memory service');
+    _logger.debug('Storing adaptive validation in memory service');
     await this.memoryService.storeMemory({
       type: MemoryType.VALIDATION,
-      content: savedValidation,
+      content: _savedValidation,
       metadata: {
         expectationId,
         codeId,
-        status: validationResult.status,
-        score: validationResult.score,
+        status: _validationResult.status,
+        score: _validationResult.score,
         isAdaptive: true,
         validationContext: {
-          strategy: enhancedContext.strategy,
-          focusAreas: enhancedContext.focusAreas,
-          weights: enhancedContext.weights,
-          semanticContext: enhancedContext.semanticContext ? true : false,
+          strategy: _enhancedContext.strategy,
+          focusAreas: _enhancedContext.focusAreas,
+          weights: _enhancedContext.weights,
+          semanticContext: _enhancedContext.semanticContext ? true : false,
         },
         timestamp: new Date().toISOString(),
       },
       tags: ['validation', 'adaptive_validation', expectationId, codeId],
     });
 
-    logger.log(
-      `Successfully performed adaptive validation - status: ${validationResult.status}, score: ${validationResult.score}`,
+    _logger.log(
+      `Successfully performed adaptive validation - status: ${_validationResult.status}, score: ${_validationResult.score}`,
     );
-    return savedValidation;
+    return _savedValidation;
   }
 }
