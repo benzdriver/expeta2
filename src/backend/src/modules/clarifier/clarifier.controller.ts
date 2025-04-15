@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Get, Param, Put, Delete, Logger } from '@nestjs/common';
 import { ClarifierService } from './clarifier.service';
-import { CreateRequirementDto, UpdateRequirementDto, ClarificationQuestionDto } from './dto';
+import { CreateRequirementDto, UpdateRequirementDto } from './dto';
 
 @Controller('clarifier')
 export class ClarifierController {

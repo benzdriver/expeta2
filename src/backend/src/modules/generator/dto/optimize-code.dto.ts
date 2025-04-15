@@ -18,7 +18,7 @@ export class OptimizeCodeDto {
    */
   @IsObject()
   @IsNotEmpty()
-  semanticFeedback: Record<string, any>;
+  semanticFeedback: Record<string, unknown>;
 
   /**
    * 优化选项
@@ -26,5 +26,5 @@ export class OptimizeCodeDto {
    */
   @IsObject()
   @IsOptional()
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
 }

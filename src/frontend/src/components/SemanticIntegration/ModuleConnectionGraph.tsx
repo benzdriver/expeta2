@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useExpeta } from '../../contexts/ExpetaContext';
 import './ModuleConnectionGraph.css';
 
@@ -16,23 +16,11 @@ const ModuleConnectionGraph: React.FC<ModuleConnectionGraphProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { getModuleConnections, isLoading } = useExpeta();
   
-  const [connections, setConnections] = useState<any[]>([]);
+  const [connections, setConnections] = useState<{ source: string, target: string, type: string, count: number }[]>([]);
   const [activeModule, setActiveModule] = useState<string | null>(null);
   const [highlightedPath, setHighlightedPath] = useState<string[]>([]);
   
-  useEffect(() => {
-    if (workflowId) {
-      fetchModuleConnections();
-    }
-  }, [workflowId]);
-  
-  useEffect(() => {
-    if (canvasRef.current && connections.length > 0) {
-      drawGraph();
-    }
-  }, [connections, activeModule, highlightedPath, canvasRef.current]);
-  
-  const fetchModuleConnections = async () => {
+  const fetchModuleConnections = useCallback(async () => {
     if (!workflowId) return;
     
     try {
@@ -77,9 +65,9 @@ const ModuleConnectionGraph: React.FC<ModuleConnectionGraphProps> = ({
       
       setConnections(mockConnections);
     }
-  };
+  }, [workflowId, getModuleConnections]);
   
-  const drawGraph = () => {
+  const drawGraph = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
@@ -177,7 +165,19 @@ const ModuleConnectionGraph: React.FC<ModuleConnectionGraphProps> = ({
       
       ctx.fillText(displayName, pos.x, pos.y);
     });
-  };
+  }, [connections, activeModule, highlightedPath, showSemanticFlow, canvasRef]);
+  
+  useEffect(() => {
+    if (workflowId) {
+      fetchModuleConnections();
+    }
+  }, [workflowId, fetchModuleConnections]);
+  
+  useEffect(() => {
+    if (canvasRef.current && connections.length > 0) {
+      drawGraph();
+    }
+  }, [connections, activeModule, highlightedPath, drawGraph]);
   
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;

@@ -3,7 +3,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const _app = app.useGlobalPipes(new ValidationPipe());
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe());
 
   app.enableCors({
     origin: true,
@@ -13,11 +14,10 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  const _port = await app.listen(port);
+  const port = process.env.PORT || 3001;
+  await app.listen(port);
   /* eslint-disable-next-line no-console */
-  /* eslint-disable-next-line no-console */
-  /* eslint-disable-next-line no-console */
-console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`Application is running on: http://localhost:${port}`);
 }
 
 bootstrap();
