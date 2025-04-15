@@ -24,7 +24,7 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: 'src/backend/package-lock.json'
+        cache-dependency-path: './src/backend/package-lock.json'
     
     - name: Install Backend Dependencies
       run: |
@@ -59,7 +59,7 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: 'src/frontend/package-lock.json'
+        cache-dependency-path: './src/frontend/package-lock.json'
     
     - name: Install Frontend Dependencies
       run: |
