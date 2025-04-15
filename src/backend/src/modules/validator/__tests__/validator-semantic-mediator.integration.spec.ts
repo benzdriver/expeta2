@@ -1,8 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { ValidatorService } from '../validator.service';
 import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediator.service';
 import { Model } from 'mongoose';
-import { Validation, ValidationSchema } from '../schemas/validation.schema';
+import { Validation } from '../schemas/validation.schema';
 import { getModelToken } from '@nestjs/mongoose';
 import { MemoryService } from '../../memory/memory.service';
 import { LlmRouterService } from '../../../services/llm-router.service';
@@ -21,30 +21,30 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
     memoryService = {
       getMemoryByType: jest.fn(),
       storeMemory: jest.fn().mockResolvedValue({}),
-    } as any;
+    } as unknown;
 
     llmRouterService = {
       generateContent: jest.fn().mockResolvedValue('{"status":"passed","score":90,"details":[]}'),
-    } as any;
+    } as unknown;
 
     semanticMediatorService = {
       generateValidationContext: jest.fn().mockResolvedValue({
         semanticContext: {
           codeFeatures: { complexity: 'low' },
-          semanticRelationship: { alignment: 'high' }
-        }
+          semanticRelationship: { alignment: 'high' },
+        },
       }),
       enrichWithContext: jest.fn().mockImplementation((_, data) => Promise.resolve(data)),
       translateBetweenModules: jest.fn().mockResolvedValue('test prompt'),
       trackSemanticTransformation: jest.fn().mockResolvedValue({}),
-    } as any;
+    } as unknown;
 
-    const ValidationModelMock = function() {
+    const _ValidationModelMock = 
       return {
         save: jest.fn().mockResolvedValue({}),
       };
     };
-    
+
     ValidationModelMock.create = jest.fn().mockReturnValue({
       save: jest.fn().mockResolvedValue({}),
     });
@@ -56,10 +56,10 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
     ValidationModelMock.findById = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue(null),
     });
-    
-    validationModel = ValidationModelMock as any;
 
-    const moduleRef = await Test.createTestingModule({
+    validationModel = ValidationModelMock as unknown;
+
+    const _moduleRef = 
       providers: [
         ValidatorService,
         { provide: SemanticMediatorService, useValue: semanticMediatorService },
@@ -75,15 +75,15 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
 
   describe('Integration between ValidatorService and SemanticMediatorService', () => {
     it('should use semantic mediator to generate validation context', async () => {
-      const expectationId = 'test-expectation-id';
-      const codeId = 'test-code-id';
-      const expectationMemory = {
+      const _expectationId = 
+      const _codeId = 
+      const _expectationMemory = 
         content: {
           _id: { toString: () => expectationId },
           model: 'Create a function that adds two numbers',
         },
       };
-      const codeMemory = {
+      const _codeMemory = 
         content: {
           _id: { toString: () => codeId },
           files: [{ path: 'test.js', content: 'function add(a, b) { return a + b; }' }],
@@ -113,15 +113,15 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
     });
 
     it('should use semantic mediator for adaptive context validation', async () => {
-      const expectationId = 'test-expectation-id';
-      const codeId = 'test-code-id';
-      const expectationMemory = {
+      const _expectationId = 
+      const _codeId = 
+      const _expectationMemory = 
         content: {
           _id: { toString: () => expectationId },
           model: 'Create a function that adds two numbers',
         },
       };
-      const codeMemory = {
+      const _codeMemory = 
         content: {
           _id: { toString: () => codeId },
           files: [{ path: 'test.js', content: 'function add(a, b) { return a + b; }' }],
@@ -150,15 +150,15 @@ describe('ValidatorService and SemanticMediatorService Integration', () => {
     });
 
     it('should use semantic mediator for full semantic mediation validation', async () => {
-      const expectationId = 'test-expectation-id';
-      const codeId = 'test-code-id';
-      const expectationMemory = {
+      const _expectationId = 
+      const _codeId = 
+      const _expectationMemory = 
         content: {
           _id: { toString: () => expectationId },
           model: 'Create a function that adds two numbers',
         },
       };
-      const codeMemory = {
+      const _codeMemory = 
         content: {
           _id: { toString: () => codeId },
           files: [{ path: 'test.js', content: 'function add(a, b) { return a + b; }' }],

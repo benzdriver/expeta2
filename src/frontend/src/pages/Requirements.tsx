@@ -11,7 +11,7 @@ interface Requirement {
 }
 
 const Requirements: React.FC = () => {
-  const [requirements, setRequirements] = useState<Requirement[]>([
+  const [requirements, _setRequirements] = useState<Requirement[]>([
     {
       id: 'req-001',
       title: '用户管理系统',
@@ -58,6 +58,7 @@ const Requirements: React.FC = () => {
   ];
 
   const handleSendMessage = (message: string) => {
+    /* eslint-disable-next-line no-console */
     console.log('Sending message:', message);
   };
 

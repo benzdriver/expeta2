@@ -7,12 +7,25 @@ interface WorkflowVisualizerProps {
   requirementId?: string;
 }
 
-const WorkflowVisualizer: React.FC<WorkflowVisualizerProps> = ({ workflowId, requirementId }) => {
+const WorkflowVisualizer: React.FC<WorkflowVisualizerProps> = ({ workflowId, requirementId: _requirementId }) => {
   const { getWorkflowStatus, isLoading } = useExpeta();
   
   const [workflowData, setWorkflowData] = useState<any>(null);
   const [refreshInterval, setRefreshInterval] = useState<number>(5000);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
+  
+  
+  const fetchWorkflowStatus = async () => {
+    if (!workflowId) return;
+    
+    try {
+      const status = await getWorkflowStatus(workflowId);
+      setWorkflowData(status);
+    } catch (err) {
+      /* eslint-disable-next-line no-console */
+      console.error('Failed to fetch workflow status', err);
+    }
+  };
   
   useEffect(() => {
     if (workflowId) {
@@ -23,19 +36,8 @@ const WorkflowVisualizer: React.FC<WorkflowVisualizerProps> = ({ workflowId, req
         return () => clearInterval(interval);
       }
     }
-  }, [workflowId, refreshInterval, autoRefresh]);
-  
-  const fetchWorkflowStatus = async () => {
-    if (!workflowId) return;
-    
-    try {
-      const status = await getWorkflowStatus(workflowId);
-      setWorkflowData(status);
-    } catch (err) {
-      console.error('Failed to fetch workflow status', err);
-    }
-  };
-  
+  }, [workflowId, refreshInterval, autoRefresh, fetchWorkflowStatus]);
+
   const getStepStatusClass = (step: any) => {
     if (!step) return 'step-pending';
     

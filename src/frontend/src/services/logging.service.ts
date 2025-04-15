@@ -48,11 +48,11 @@ export class LoggingService {
   private static instance: LoggingService;
   private logs: LogEntry[] = [];
   private sessions: Map<string, SessionLog> = new Map();
-  private consoleEnabled: boolean = true;
-  private storageEnabled: boolean = true;
-  private maxLogSize: number = 1000;
+  private consoleEnabled = true;
+  private storageEnabled = true;
+  private maxLogSize = 1000;
 
-  private constructor() {}
+  private constructor() { /* 单例模式 */ }
 
   /**
    * 获取日志服务单例
@@ -113,9 +113,11 @@ export class LoggingService {
     if (this.consoleEnabled) {
       const consoleMethod = this.getConsoleMethod(level);
       if (data) {
-        console[consoleMethod](`[${module}] ${message}`, data);
+        /* eslint-disable-next-line no-console */
+      console[consoleMethod](`[${module}] ${message}`, data);
       } else {
-        console[consoleMethod](`[${module}] ${message}`);
+        /* eslint-disable-next-line no-console */
+      console[consoleMethod](`[${module}] ${message}`);
       }
     }
 
@@ -149,6 +151,7 @@ export class LoggingService {
     try {
       localStorage.setItem('expeta_logs', JSON.stringify(this.logs.slice(-100)));
     } catch (error) {
+      /* eslint-disable-next-line no-console */
       console.error('Failed to save logs to storage:', error);
     }
   }
@@ -164,6 +167,7 @@ export class LoggingService {
         this.logs = [...parsedLogs, ...this.logs];
       }
     } catch (error) {
+      /* eslint-disable-next-line no-console */
       console.error('Failed to load logs from storage:', error);
     }
   }
@@ -183,6 +187,7 @@ export class LoggingService {
     try {
       localStorage.removeItem('expeta_logs');
     } catch (error) {
+      /* eslint-disable-next-line no-console */
       console.error('Failed to clear logs from storage:', error);
     }
   }

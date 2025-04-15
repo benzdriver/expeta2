@@ -5,18 +5,18 @@ import type { Expectation, ConversationStage, ConversationContext, ChatInterface
 
 const loggingService = (() => {
   try {
-    return require('../../services/logging.service').default;
+    return require('../../services/logging.service').default; /* eslint-disable-line @typescript-eslint/no-var-requires */
   } catch (e) {
     console.error('Failed to load logging service:', e);
     return {
-      startSession: () => {},
-      endSession: () => {},
-      info: () => {},
-      debug: () => {},
-      warn: () => {},
-      error: () => {},
-      logSessionMessage: () => {},
-      logSessionStateChange: () => {}
+      startSession: () => { /* Empty implementation for fallback */ },
+      endSession: () => { /* Empty implementation for fallback */ },
+      info: () => { /* Empty implementation for fallback */ },
+      debug: () => { /* Empty implementation for fallback */ },
+      warn: () => { /* Empty implementation for fallback */ },
+      error: () => { /* Empty implementation for fallback */ },
+      logSessionMessage: () => { /* Empty implementation for fallback */ },
+      logSessionStateChange: () => { /* Empty implementation for fallback */ }
     };
   }
 })();

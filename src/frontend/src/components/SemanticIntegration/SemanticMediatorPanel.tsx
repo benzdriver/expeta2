@@ -38,6 +38,7 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
       const translatedData = await translateBetweenModules(sourceModule, targetModule, data);
       setResult(translatedData);
     } catch (err: any) {
+      /* eslint-disable-next-line no-console */
       console.error('Translation failed', err);
       setResult({ error: err.message || 'Failed to translate between modules' });
     }
@@ -49,6 +50,7 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
       const enrichedData = await enrichWithContext(sourceModule, data, contextQuery);
       setResult(enrichedData);
     } catch (err: any) {
+      /* eslint-disable-next-line no-console */
       console.error('Enrichment failed', err);
       setResult({ error: err.message || 'Failed to enrich with context' });
     }
@@ -60,6 +62,7 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
       const insights = await extractSemanticInsights(data, insightQuery);
       setResult(insights);
     } catch (err: any) {
+      /* eslint-disable-next-line no-console */
       console.error('Insight extraction failed', err);
       setResult({ error: err.message || 'Failed to extract semantic insights' });
     }
@@ -72,6 +75,7 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
       const resolution = await resolveSemanticConflicts(moduleA, parsedDataA, moduleB, parsedDataB);
       setResult(resolution);
     } catch (err: any) {
+      /* eslint-disable-next-line no-console */
       console.error('Conflict resolution failed', err);
       setResult({ error: err.message || 'Failed to resolve semantic conflicts' });
     }
@@ -89,6 +93,7 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
       );
       setResult(result);
     } catch (err: any) {
+      /* eslint-disable-next-line no-console */
       console.error('Transformation tracking failed', err);
       setResult({ error: err.message || 'Failed to track semantic transformation' });
     }
@@ -105,6 +110,7 @@ const SemanticMediatorPanel: React.FC<SemanticMediatorPanelProps> = ({ initialDa
       );
       setResult(evaluation);
     } catch (err: any) {
+      /* eslint-disable-next-line no-console */
       console.error('Transformation evaluation failed', err);
       setResult({ error: err.message || 'Failed to evaluate semantic transformation' });
     }

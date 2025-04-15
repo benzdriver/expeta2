@@ -7,7 +7,7 @@ import {
   semanticMediatorApi 
 } from '../services/api';
 
-interface Expectation {
+interface _Expectation {
   id: string;
   title: string;
   description: string;
@@ -15,7 +15,7 @@ interface Expectation {
   semanticTags?: string[];
   priority?: 'low' | 'medium' | 'high';
   industryExamples?: string;
-  subExpectations?: Partial<Expectation>[];
+  subExpectations?: Partial<_Expectation>[];
 }
 
 interface Requirement {
@@ -128,13 +128,6 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    getRequirements().catch(err => {
-      console.error('Failed to load initial requirements', err);
-      setError('Failed to load initial data');
-    });
-  }, []);
-
   const handleApiCall = async <T,>(apiCall: () => Promise<T>): Promise<T> => {
     setIsLoading(true);
     setError(null);
@@ -142,6 +135,7 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
       const result = await apiCall();
       return result;
     } catch (err: any) {
+      /* eslint-disable-next-line no-console */
       console.error('API call failed:', err);
       setError(err.message || 'An error occurred');
       throw err;
@@ -354,6 +348,14 @@ export const ExpetaProvider: React.FC<ExpetaProviderProps> = ({ children }) => {
       return response.data;
     });
   };
+  
+  useEffect(() => {
+    getRequirements().catch(err => {
+      /* eslint-disable-next-line no-console */
+      console.error('Failed to load initial requirements', err);
+      setError('Failed to load initial data');
+    });
+  }, [getRequirements]);
 
   const value = {
     requirements,

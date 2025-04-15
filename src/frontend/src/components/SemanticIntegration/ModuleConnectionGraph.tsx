@@ -55,9 +55,11 @@ const ModuleConnectionGraph: React.FC<ModuleConnectionGraphProps> = ({
         ];
         
         setConnections(mockConnections);
+        /* eslint-disable-next-line no-console */
         console.warn('API returned unexpected data format, using mock data instead');
       }
     } catch (err) {
+      /* eslint-disable-next-line no-console */
       console.error('Failed to fetch module connections', err);
       
       const mockConnections = [

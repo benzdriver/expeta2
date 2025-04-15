@@ -42,7 +42,7 @@ export class Validation extends Document {
   details: ValidationDetail[];
 
   @Prop({ type: Object })
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 
   @Prop({ required: true })
   createdAt: Date;
@@ -51,4 +51,4 @@ export class Validation extends Document {
   updatedAt: Date;
 }
 
-export const ValidationSchema = SchemaFactory.createForClass(Validation);
+export const _ValidationSchema = 

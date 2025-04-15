@@ -6,8 +6,8 @@ import ModuleConnectionGraph from '../components/SemanticIntegration/ModuleConne
 import '../components/SemanticIntegration/SemanticIntegration.css';
 
 const Integration: React.FC = () => {
-  const [selectedRequirementId, setSelectedRequirementId] = useState<string>('');
-  const [initialData, setInitialData] = useState<any>(null);
+  const [selectedRequirementId, _setSelectedRequirementId] = useState<string>('');
+  const [initialData, _setInitialData] = useState<any>(null);
   const [activeWorkflowId, setActiveWorkflowId] = useState<string>('');
   const [showSemanticFlow, setShowSemanticFlow] = useState<boolean>(true);
   

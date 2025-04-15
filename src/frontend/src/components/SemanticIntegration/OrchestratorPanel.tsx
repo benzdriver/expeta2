@@ -24,14 +24,6 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
   const [selectedRequirementId, setSelectedRequirementId] = useState<string>(requirementId || '');
   const [showRequirementSelector, setShowRequirementSelector] = useState<boolean>(false);
   
-  useEffect(() => {
-    if (requirementId) {
-      setSelectedRequirementId(requirementId);
-      handleProcessRequirement();
-    }
-    
-    fetchRequirements();
-  }, [requirementId]);
   
   useEffect(() => {
     if (selectedRequirementId) {
@@ -44,6 +36,7 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
       const reqs = await getRequirements();
       setAvailableRequirements(reqs || requirements || []);
     } catch (err) {
+      /* eslint-disable-next-line no-console */
       console.error('Failed to fetch requirements', err);
     }
   };
@@ -57,6 +50,7 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
       
       setWorkflowParams((prev: any) => ({ ...prev, requirementId: selectedRequirementId }));
     } catch (err) {
+      /* eslint-disable-next-line no-console */
       console.error('Failed to process requirement', err);
     }
   };
@@ -72,10 +66,20 @@ const OrchestratorPanel: React.FC<OrchestratorPanelProps> = ({ requirementId, on
         onWorkflowExecuted(result.executionId);
       }
     } catch (err) {
+      /* eslint-disable-next-line no-console */
       console.error('Failed to execute workflow', err);
     }
   };
   
+  useEffect(() => {
+    if (requirementId) {
+      setSelectedRequirementId(requirementId);
+      handleProcessRequirement();
+    }
+    
+    fetchRequirements();
+  }, [requirementId, fetchRequirements, handleProcessRequirement]);
+
   const renderWorkflowOptions = () => {
     const workflows = [
       { id: 'full_process', label: '完整流程', description: '从需求到代码生成和验证的完整流程' },

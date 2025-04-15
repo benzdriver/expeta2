@@ -50,6 +50,7 @@ const Settings: React.FC = () => {
   };
   
   const handleSaveSettings = () => {
+    /* eslint-disable-next-line no-console */
     console.log('Saving settings:', { llmConfig, systemSettings });
     alert('设置已保存');
   };

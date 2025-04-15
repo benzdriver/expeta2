@@ -52,10 +52,10 @@ describe('ChatInterface Component', () => {
     const onSendMessage = jest.fn();
     const onExpectationCreated = jest.fn();
     
-    let currentStage: ConversationStage = 'initial';
-    let clarificationRound = 0;
+    const _currentStage: ConversationStage = 'initial';
+    const _clarificationRound = 0;
     
-    const { rerender } = render(
+    const { rerender: _rerender } = render(
       <ChatInterface 
         onSendMessage={onSendMessage} 
         onExpectationCreated={onExpectationCreated}
@@ -113,13 +113,13 @@ describe('ChatInterface Component', () => {
       expect(messages.length).toBeGreaterThan(6);
     });
     
-    const mockLoggingService = require('../../../services/logging.service').default;
+    const mockLoggingService = require('../../../services/logging.service').default; /* eslint-disable-line @typescript-eslint/no-var-requires */
     expect(mockLoggingService.logSessionStateChange).toHaveBeenCalled();
     expect(mockLoggingService.logSessionMessage).toHaveBeenCalled();
   });
 
   test('logs session events properly with detailed tracking', () => {
-    const mockLoggingService = require('../../../services/logging.service').default;
+    const mockLoggingService = require('../../../services/logging.service').default; /* eslint-disable-line @typescript-eslint/no-var-requires */
     render(<ChatInterface sessionId="test-session-123" enableLogging={true} />);
     
     expect(mockLoggingService.startSession).toHaveBeenCalledWith(
