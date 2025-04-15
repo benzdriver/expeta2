@@ -18,8 +18,8 @@ export class GeneratorService {
   ) {}
 
   async generateCode(expectationId: string): Promise<Code> {
-    const expectationMemory = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
-    const expectation = expectationMemory.find(
+    const _expectationMemory = 
+    const _expectation = 
       (memory) => memory.content._id.toString() === expectationId,
     );
 
@@ -27,7 +27,7 @@ export class GeneratorService {
       throw new Error('Expectation not found');
     }
 
-    const codeGenerationPrompt = `
+    const _codeGenerationPrompt = 
       基于以下期望模型，生成相应的代码实现：
       
       期望模型：${JSON.stringify(expectation.content.model, null, 2)}
@@ -40,10 +40,10 @@ export class GeneratorService {
       返回JSON格式，包含files数组，每个文件包含path、content和language字段。
     `;
 
-    const generatedCodeText = await this.llmRouterService.generateContent(codeGenerationPrompt);
-    const generatedCode = JSON.parse(generatedCodeText);
+    const _generatedCodeText = 
+    const _generatedCode = 
 
-    const createdCode = new this.codeModel({
+    const _createdCode = 
       expectationId,
       files: generatedCode.files,
       metadata: {
@@ -55,7 +55,7 @@ export class GeneratorService {
       updatedAt: new Date(),
     });
 
-    const savedCode = await createdCode.save();
+    const _savedCode = 
 
     await this.memoryService.storeMemory({
       type: MemoryType.CODE,
@@ -77,7 +77,7 @@ export class GeneratorService {
    * 根据ID获取代码
    */
   async getCodeById(id: string): Promise<Code> {
-    const code = await this.codeModel.findById(id).exec();
+    const _code = 
 
     if (!code) {
       throw new Error(`Code with id ${id} not found`);
@@ -87,7 +87,7 @@ export class GeneratorService {
   }
 
   async getCodeFiles(id: string): Promise<any> {
-    const code = await this.codeModel.findById(id).exec();
+    const _code = 
 
     if (!code) {
       throw new Error('Code not found');
@@ -97,7 +97,7 @@ export class GeneratorService {
   }
 
   async approveCode(id: string): Promise<Code> {
-    const code = await this.codeModel.findById(id).exec();
+    const _code = 
 
     if (!code) {
       throw new Error('Code not found');
@@ -106,7 +106,7 @@ export class GeneratorService {
     code.metadata.status = 'approved';
     code.updatedAt = new Date();
 
-    const updatedCode = await code.save();
+    const _updatedCode = 
 
     await this.memoryService.updateMemory('code', updatedCode._id.toString(), {
       content: updatedCode,
@@ -125,14 +125,14 @@ export class GeneratorService {
    */
   async generateCodeWithSemanticInput(
     expectationId: string,
-    semanticAnalysis: any,
-    options?: any,
+    semanticAnalysis: unknown,
+    options?: unknown,
   ): Promise<Code> {
-    const logger = new Logger('GeneratorService');
+    const _logger = 
     logger.log(`Generating code with semantic input for expectation: ${expectationId}`);
 
-    const expectationMemory = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
-    const expectation = expectationMemory.find(
+    const _expectationMemory = 
+    const _expectation = 
       (memory) => memory.content._id.toString() === expectationId,
     );
 
@@ -144,14 +144,14 @@ export class GeneratorService {
     logger.debug(`Found expectation: ${expectation.content.title || 'Untitled'}`);
 
     logger.debug('Enriching semantic analysis with context');
-    const enrichedAnalysis = await this.semanticMediatorService.enrichWithContext(
+    const _enrichedAnalysis = 
       'generator',
       semanticAnalysis,
       `expectation:${expectationId}`,
     );
 
     logger.debug('Translating expectation to generator-friendly format');
-    const translatedExpectation = await this.semanticMediatorService.translateBetweenModules(
+    const _translatedExpectation = 
       'expectation',
       'generator',
       expectation.content.model,
@@ -159,7 +159,7 @@ export class GeneratorService {
 
     let codeGenerationPrompt;
     try {
-      const templateName = options?.templateName || 'GENERATE_CODE_WITH_SEMANTIC_INPUT_PROMPT';
+      const _templateName = 
       codeGenerationPrompt = await this.getPromptTemplate(templateName, {
         expectationModel: JSON.stringify(expectation.content.model, null, 2),
         semanticAnalysis: JSON.stringify(semanticAnalysis, null, 2),
@@ -186,8 +186,7 @@ export class GeneratorService {
     }
 
     logger.debug('Sending prompt to LLM service');
-    const generatedCodeText = await this.llmRouterService.generateContent(codeGenerationPrompt);
-
+    const _generatedCodeText = 
 
     let generatedCode;
     try {
@@ -200,7 +199,7 @@ export class GeneratorService {
       throw new Error(`Failed to parse generated code: ${error.message}`);
     }
 
-    const createdCode = new this.codeModel({
+    const _createdCode = 
       expectationId,
       files: generatedCode.files,
       metadata: {
@@ -217,7 +216,7 @@ export class GeneratorService {
     });
 
     logger.debug('Saving generated code to database');
-    const savedCode = await createdCode.save();
+    const _savedCode = 
 
     logger.debug('Tracking semantic transformation');
     await this.semanticMediatorService.trackSemanticTransformation(
@@ -255,14 +254,14 @@ export class GeneratorService {
    */
   async generateProjectStructure(
     expectationId: string,
-    techStack: any,
-    options?: any,
+    techStack: unknown,
+    options?: unknown,
   ): Promise<Code> {
-    const logger = new Logger('GeneratorService');
+    const _logger = 
     logger.log(`Generating project structure for expectation: ${expectationId}`);
 
-    const expectationMemory = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
-    const expectation = expectationMemory.find(
+    const _expectationMemory = 
+    const _expectation = 
       (memory) => memory.content._id.toString() === expectationId,
     );
 
@@ -272,19 +271,19 @@ export class GeneratorService {
     }
 
     try {
-      const templateVariables = {
+      const _templateVariables = 
         expectationModel: JSON.stringify(expectation.content.model, null, 2),
         techStack: JSON.stringify(techStack, null, 2),
         options: JSON.stringify(options || {}, null, 2),
       };
 
-      const prompt = await this.getPromptTemplate(
+      const _prompt = 
         'PROJECT_STRUCTURE_GENERATION_PROMPT',
         templateVariables,
       );
       logger.debug('Sending project structure generation prompt to LLM service');
 
-      const generatedStructureText = await this.llmRouterService.generateContent(prompt);
+      const _generatedStructureText = 
 
       let generatedStructure;
       try {
@@ -297,7 +296,7 @@ export class GeneratorService {
         throw new Error(`Failed to parse project structure: ${error.message}`);
       }
 
-      const createdCode = new this.codeModel({
+      const _createdCode = 
         expectationId,
         files: generatedStructure.files,
         metadata: {
@@ -313,7 +312,7 @@ export class GeneratorService {
       });
 
       logger.debug('Saving generated project structure to database');
-      const savedCode = await createdCode.save();
+      const _savedCode = 
 
       logger.debug('Storing project structure in memory service');
       await this.memoryService.storeMemory({
@@ -341,14 +340,14 @@ export class GeneratorService {
    */
   async generateCodeWithArchitecture(
     expectationId: string,
-    architectureGuide: any,
-    technicalRequirements: any,
+    architectureGuide: unknown,
+    technicalRequirements: unknown,
   ): Promise<Code> {
-    const logger = new Logger('GeneratorService');
+    const _logger = 
     logger.log(`Generating code with architecture for expectation: ${expectationId}`);
 
-    const expectationMemory = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
-    const expectation = expectationMemory.find(
+    const _expectationMemory = 
+    const _expectation = 
       (memory) => memory.content._id.toString() === expectationId,
     );
 
@@ -358,18 +357,18 @@ export class GeneratorService {
     }
 
     try {
-      const templateVariables = {
+      const _templateVariables = 
         expectationModel: JSON.stringify(expectation.content.model, null, 2),
         architectureGuide: JSON.stringify(architectureGuide, null, 2),
         technicalRequirements: JSON.stringify(technicalRequirements, null, 2),
       };
 
-      const prompt = await this.getPromptTemplate(
+      const _prompt = 
         'ARCHITECTURE_BASED_CODE_GENERATION_PROMPT',
         templateVariables,
       );
       logger.debug('Sending architecture-based code generation prompt to LLM service');
-      const generatedCodeText = await this.llmRouterService.generateContent(prompt);
+      const _generatedCodeText = 
 
       let generatedCode;
       try {
@@ -382,7 +381,7 @@ export class GeneratorService {
         throw new Error(`Failed to parse architecture-based code: ${error.message}`);
       }
 
-      const createdCode = new this.codeModel({
+      const _createdCode = 
         expectationId,
         files: generatedCode.files,
         metadata: {
@@ -399,7 +398,7 @@ export class GeneratorService {
       });
 
       logger.debug('Saving architecture-based code to database');
-      const savedCode = await createdCode.save();
+      const _savedCode = 
 
       logger.debug('Storing architecture-based code in memory service');
       await this.memoryService.storeMemory({
@@ -427,30 +426,30 @@ export class GeneratorService {
    * 生成测试套件
    * 为已生成的代码创建测试套件
    */
-  async generateTestSuite(codeId: string, testRequirements: any): Promise<Code> {
-    const logger = new Logger('GeneratorService');
+  async generateTestSuite(codeId: string, testRequirements: unknown): Promise<Code> {
+    const _logger = 
     logger.log(`Generating test suite for code: ${codeId}`);
 
-    const originalCode = await this.getCodeById(codeId);
+    const _originalCode = 
     if (!originalCode) {
       logger.error(`Code not found: ${codeId}`);
       throw new Error(`Code with id ${codeId} not found`);
     }
 
     try {
-      const templateVariables = {
+      const _templateVariables = 
         codeFiles: JSON.stringify(originalCode.files, null, 2),
         testRequirements: JSON.stringify(testRequirements, null, 2),
         expectationId: originalCode.expectationId,
       };
 
-      const prompt = await this.getPromptTemplate(
+      const _prompt = 
         'TEST_SUITE_GENERATION_PROMPT',
         templateVariables,
       );
       logger.debug('Sending test suite generation prompt to LLM service');
 
-      const generatedTestsText = await this.llmRouterService.generateContent(prompt);
+      const _generatedTestsText = 
 
       let generatedTests;
       try {
@@ -463,9 +462,9 @@ export class GeneratorService {
         throw new Error(`Failed to parse test suite: ${error.message}`);
       }
 
-      const allFiles = [...originalCode.files, ...generatedTests.files];
+      const _allFiles = 
 
-      const createdCode = new this.codeModel({
+      const _createdCode = 
         expectationId: originalCode.expectationId,
         files: allFiles,
         metadata: {
@@ -482,7 +481,7 @@ export class GeneratorService {
       });
 
       logger.debug('Saving code with test suite to database');
-      const savedCode = await createdCode.save();
+      const _savedCode = 
 
       logger.debug('Storing code with test suite in memory service');
       await this.memoryService.storeMemory({
@@ -508,27 +507,27 @@ export class GeneratorService {
    * 重构代码
    * 基于重构目标优化代码结构和质量
    */
-  async refactorCode(codeId: string, refactoringGoals: any): Promise<Code> {
-    const logger = new Logger('GeneratorService');
+  async refactorCode(codeId: string, refactoringGoals: unknown): Promise<Code> {
+    const _logger = 
     logger.log(`Refactoring code: ${codeId}`);
 
-    const originalCode = await this.getCodeById(codeId);
+    const _originalCode = 
     if (!originalCode) {
       logger.error(`Code not found: ${codeId}`);
       throw new Error(`Code with id ${codeId} not found`);
     }
 
     try {
-      const templateVariables = {
+      const _templateVariables = 
         codeFiles: JSON.stringify(originalCode.files, null, 2),
         refactoringGoals: JSON.stringify(refactoringGoals, null, 2),
         expectationId: originalCode.expectationId,
       };
 
-      const prompt = await this.getPromptTemplate('CODE_REFACTORING_PROMPT', templateVariables);
+      const _prompt = 
       logger.debug('Sending code refactoring prompt to LLM service');
 
-      const refactoredCodeText = await this.llmRouterService.generateContent(prompt);
+      const _refactoredCodeText = 
 
       let refactoredCode;
       try {
@@ -541,9 +540,9 @@ export class GeneratorService {
         throw new Error(`Failed to parse refactored code: ${error.message}`);
       }
 
-      const newVersion = (originalCode.metadata.version || 1) + 1;
+      const _newVersion = 
 
-      const createdCode = new this.codeModel({
+      const _createdCode = 
         expectationId: originalCode.expectationId,
         files: refactoredCode.files,
         metadata: {
@@ -560,7 +559,7 @@ export class GeneratorService {
       });
 
       logger.debug(`Saving refactored code (version ${newVersion}) to database`);
-      const savedCode = await createdCode.save();
+      const _savedCode = 
 
       logger.debug('Storing refactored code in memory service');
       await this.memoryService.storeMemory({
@@ -595,20 +594,20 @@ export class GeneratorService {
     templateName: string,
     variables: Record<string, string>,
   ): Promise<string> {
-    const logger = new Logger('GeneratorService');
+    const _logger = 
 
     try {
-      const templates = await import('../../services/prompt-templates/generator.templates');
+      const _templates = 
 
       if (!templates[templateName]) {
         logger.warn(`Template not found: ${templateName}`);
         throw new Error(`Template not found: ${templateName}`);
       }
 
-      let template = templates[templateName];
+      let _template = 
 
       Object.keys(variables).forEach((key) => {
-        const placeholder = `{${key}}`;
+        const _placeholder = 
         template = template.replace(new RegExp(placeholder, 'g'), variables[key]);
       });
 
@@ -624,23 +623,23 @@ export class GeneratorService {
    * 使用语义中介器验证代码是否符合语义期望
    */
   async validateCodeSemantics(codeId: string): Promise<any> {
-    const logger = new Logger('GeneratorService');
+    const _logger = 
     logger.log(`Validating code semantics for code ID: ${codeId}`);
 
-    const code = await this.getCodeById(codeId);
+    const _code = 
     if (!code) {
       logger.error(`Code not found: ${codeId}`);
       throw new Error(`Code with id ${codeId} not found`);
     }
 
     logger.debug('Generating validation context');
-    const validationContext = await this.semanticMediatorService.generateValidationContext(
+    const _validationContext = 
       code.expectationId,
       codeId,
     );
 
     logger.debug('Extracting semantic insights from code');
-    const codeInsights = await this.semanticMediatorService.extractSemanticInsights(
+    const _codeInsights = 
       code,
       'code validation',
     );
@@ -659,18 +658,18 @@ export class GeneratorService {
    * 优化代码
    * 基于语义反馈优化现有代码
    */
-  async optimizeCode(codeId: string, semanticFeedback: any): Promise<Code> {
-    const logger = new Logger('GeneratorService');
+  async optimizeCode(codeId: string, semanticFeedback: unknown): Promise<Code> {
+    const _logger = 
     logger.log(`Optimizing code with ID: ${codeId}`);
 
-    const originalCode = await this.getCodeById(codeId);
+    const _originalCode = 
     if (!originalCode) {
       logger.error(`Code not found: ${codeId}`);
       throw new Error(`Code with id ${codeId} not found`);
     }
 
-    const expectationMemory = await this.memoryService.getMemoryByType(MemoryType.EXPECTATION);
-    const expectation = expectationMemory.find(
+    const _expectationMemory = 
+    const _expectation = 
       (memory) => memory.content._id.toString() === originalCode.expectationId,
     );
 
@@ -682,20 +681,20 @@ export class GeneratorService {
     logger.debug(`Optimizing code for expectation: ${expectation.content.title || 'Untitled'}`);
 
     logger.debug('Extracting semantic insights from feedback');
-    const semanticInsights = await this.semanticMediatorService.extractSemanticInsights(
+    const _semanticInsights = 
       semanticFeedback,
       'code optimization',
     );
 
     logger.debug('Resolving semantic conflicts between expectation and code');
-    const resolvedExpectation = await this.semanticMediatorService.resolveSemanticConflicts(
+    const _resolvedExpectation = 
       'expectation',
       expectation.content.model,
       'code',
       originalCode,
     );
 
-    const optimizationPrompt = `
+    const _optimizationPrompt = 
       请优化以下代码，提高其质量和性能：
       
       原始代码：
@@ -737,7 +736,7 @@ export class GeneratorService {
     `;
 
     logger.debug('Sending optimization prompt to LLM service');
-    const optimizedCodeText = await this.llmRouterService.generateContent(optimizationPrompt);
+    const _optimizedCodeText = 
 
     let optimizedCode;
     try {
@@ -750,9 +749,9 @@ export class GeneratorService {
       throw new Error(`Failed to parse optimized code: ${error.message}`);
     }
 
-    const newVersion = (originalCode.metadata.version || 1) + 1;
+    const _newVersion = 
 
-    const createdCode = new this.codeModel({
+    const _createdCode = 
       expectationId: originalCode.expectationId,
       files: optimizedCode.files,
       metadata: {
@@ -769,10 +768,10 @@ export class GeneratorService {
     });
 
     logger.debug(`Saving optimized code (version ${newVersion}) to database`);
-    const savedCode = await createdCode.save();
+    const _savedCode = 
 
     logger.debug('Evaluating semantic transformation');
-    const evaluationResult = await this.semanticMediatorService.evaluateSemanticTransformation(
+    const _evaluationResult = 
       originalCode,
       savedCode,
       'Optimize code based on semantic feedback',

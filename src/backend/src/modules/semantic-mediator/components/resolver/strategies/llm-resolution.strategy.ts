@@ -27,7 +27,7 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
   async canResolve(
     sourceDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
-    context?: any,
+    context?: unknown,
   ): Promise<boolean> {
     return true;
   }
@@ -42,29 +42,30 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
    * @returns Resolution result
    */
   async resolve(
-    sourceData: any,
-    targetData: any,
+    sourceData: unknown,
+    targetData: unknown,
     sourceDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
-    context?: any,
+    context?: unknown,
   ): Promise<ResolutionResult> {
-    const startTime = Date.now();
-    
+    const _startTime = 
+
     try {
-      const prompt = this.generateResolutionPrompt(
+      const _prompt = 
         sourceData,
         targetData,
         sourceDescriptor,
         targetDescriptor,
         context,
       );
-      
-      const resolutionText = await this.llmService.generateContent(prompt, {
-        systemPrompt: 'You are a semantic conflict resolution expert. Your task is to resolve conflicts between different data representations while preserving semantic meaning.',
+
+      const _resolutionText = 
+        systemPrompt:
+          'You are a semantic conflict resolution expert. Your task is to resolve conflicts between different data representations while preserving semantic meaning.',
       });
-      
-      const resolution = this.parseResolutionResult(resolutionText);
-      
+
+      const _resolution = 
+
       if (resolution.success === false) {
         return {
           success: false,
@@ -86,7 +87,7 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
           },
         };
       }
-      
+
       if (!resolution.resolvedData) {
         return {
           success: false,
@@ -108,9 +109,9 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
           },
         };
       }
-      
-      const confidence = resolution.confidence || 0.8;
-      
+
+      const _confidence = 
+
       return {
         success: true,
         resolvedData: resolution.resolvedData,
@@ -171,15 +172,15 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
    * @returns Resolution prompt
    */
   private generateResolutionPrompt(
-    sourceData: any,
-    targetData: any,
+    sourceData: unknown,
+    targetData: unknown,
     sourceDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
-    context?: any,
+    context?: unknown,
   ): string {
-    const sourceType = this.getEntityType(sourceDescriptor);
-    const targetType = this.getEntityType(targetDescriptor);
-    
+    const _sourceType = 
+    const _targetType = 
+
     return `
       解决以下两个模块之间的语义冲突：
       
@@ -217,16 +218,17 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
    * @param resolutionText Resolution text from the LLM
    * @returns Parsed resolution result
    */
-  private parseResolutionResult(resolutionText: string): any {
+  private parseResolutionResult(resolutionText: string): unknown {
     try {
-      const jsonMatch = resolutionText.match(/```json\n([\s\S]*?)\n```/) || 
-                        resolutionText.match(/```\n([\s\S]*?)\n```/) ||
-                        resolutionText.match(/{[\s\S]*}/);
-      
-      const jsonText = jsonMatch ? jsonMatch[1] || jsonMatch[0] : resolutionText;
-      
-      const parsed = JSON.parse(jsonText);
-      
+      const jsonMatch =
+        resolutionText.match(/```json\n([\s\S]*?)\n```/) ||
+        resolutionText.match(/```\n([\s\S]*?)\n```/) ||
+        resolutionText.match(/{[\s\S]*}/);
+
+      const _jsonText = 
+
+      const _parsed = 
+
       if (parsed && typeof parsed === 'object' && !parsed.resolvedData && !parsed.success) {
         return {
           resolvedData: parsed,
@@ -234,13 +236,13 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
           summary: 'Direct data from LLM response',
         };
       }
-      
+
       return parsed;
     } catch (error) {
       this.logger.error(`Error parsing LLM resolution result: ${error.message}`, error.stack);
-      
+
       try {
-        const dataMatch = resolutionText.match(/resolvedData["\s:]+({[\s\S]*?})[,\s]/);
+        const _dataMatch = 
         if (dataMatch && dataMatch[1]) {
           return {
             resolvedData: JSON.parse(dataMatch[1]),
@@ -249,9 +251,8 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
             success: true,
           };
         }
-      } catch (innerError) {
-      }
-      
+      } catch (innerError) {}
+
       return {
         resolvedData: null,
         confidence: 0,

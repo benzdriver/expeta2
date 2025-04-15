@@ -8,12 +8,14 @@ describe('LlmResolutionStrategy', () => {
   let strategy: LlmResolutionStrategy;
   let llmService: LlmRouterService;
 
-  const mockLlmService = {
-    generateContent: jest.fn().mockReturnValue(Promise.resolve('{"result": "llm generated result"}')),
+  const _mockLlmService = 
+    generateContent: jest
+      .fn()
+      .mockReturnValue(Promise.resolve('{"result": "llm generated result"}')),
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    const _module: TestingModule = 
       providers: [
         LlmResolutionStrategy,
         {
@@ -33,26 +35,26 @@ describe('LlmResolutionStrategy', () => {
 
   describe('canResolve', () => {
     it('should always return true', async () => {
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      const result = await strategy.canResolve(sourceDescriptor, targetDescriptor);
+      const _result = 
       expect(result).toBe(true);
     });
 
     it('should handle composite descriptors', async () => {
-      const sourceDescriptor = {
+      const _sourceDescriptor = 
         type: 'composite',
         components: [
           {
@@ -64,7 +66,7 @@ describe('LlmResolutionStrategy', () => {
         ],
       };
 
-      const targetDescriptor = {
+      const _targetDescriptor = 
         type: 'composite',
         components: [
           {
@@ -76,33 +78,40 @@ describe('LlmResolutionStrategy', () => {
         ],
       };
 
-      const result = await strategy.canResolve(sourceDescriptor, targetDescriptor);
+      const _result = 
       expect(result).toBe(true);
     });
   });
 
   describe('resolve', () => {
     it('should successfully resolve using LLM', async () => {
-      const sourceData = { id: 1, name: 'Source' };
-      const targetData = { id: 2, name: 'Target' };
+      const _sourceData = 
+      const _targetData = 
 
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      mockLlmService.generateContent.mockReturnValueOnce(Promise.resolve('{"id": 1, "name": "Target", "source_id": 1}'));
+      mockLlmService.generateContent.mockReturnValueOnce(
+        Promise.resolve('{"id": 1, "name": "Target", "source_id": 1}'),
+      );
 
-      const result = await strategy.resolve(sourceData, targetData, sourceDescriptor, targetDescriptor);
+      const _result = 
+        sourceData,
+        targetData,
+        sourceDescriptor,
+        targetDescriptor,
+      );
 
       expect(result.success).toBe(true);
       expect(result.strategyUsed).toBe('llm_resolution');
@@ -116,17 +125,17 @@ describe('LlmResolutionStrategy', () => {
     });
 
     it('should handle LLM response parsing errors', async () => {
-      const sourceData = { id: 1, name: 'Source' };
-      const targetData = { id: 2, name: 'Target' };
+      const _sourceData = 
+      const _targetData = 
 
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
@@ -135,7 +144,12 @@ describe('LlmResolutionStrategy', () => {
 
       mockLlmService.generateContent.mockReturnValueOnce(Promise.resolve('Invalid JSON response'));
 
-      const result = await strategy.resolve(sourceData, targetData, sourceDescriptor, targetDescriptor);
+      const _result = 
+        sourceData,
+        targetData,
+        sourceDescriptor,
+        targetDescriptor,
+      );
 
       expect(result.success).toBe(false);
       expect(result.strategyUsed).toBe('llm_resolution');
@@ -145,26 +159,33 @@ describe('LlmResolutionStrategy', () => {
     });
 
     it('should handle LLM service errors', async () => {
-      const sourceData = { id: 1, name: 'Source' };
-      const targetData = { id: 2, name: 'Target' };
+      const _sourceData = 
+      const _targetData = 
 
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      mockLlmService.generateContent.mockReturnValueOnce(Promise.reject(new Error('LLM service error')));
+      mockLlmService.generateContent.mockReturnValueOnce(
+        Promise.reject(new Error('LLM service error')),
+      );
 
-      const result = await strategy.resolve(sourceData, targetData, sourceDescriptor, targetDescriptor);
+      const _result = 
+        sourceData,
+        targetData,
+        sourceDescriptor,
+        targetDescriptor,
+      );
 
       expect(result.success).toBe(false);
       expect(result.strategyUsed).toBe('llm_resolution');
@@ -175,28 +196,35 @@ describe('LlmResolutionStrategy', () => {
     });
 
     it('should calculate confidence based on resolution quality', async () => {
-      const sourceData = { id: 1, name: 'Source', description: 'Test source' };
-      const targetData = { id: 2, name: 'Target', category: 'Test' };
+      const _sourceData = 
+      const _targetData = 
 
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      mockLlmService.generateContent.mockReturnValueOnce(Promise.resolve(
-        '{"id": 1, "name": "Target", "description": "Test source", "category": "Test"}'
-      ));
+      mockLlmService.generateContent.mockReturnValueOnce(
+        Promise.resolve(
+          '{"id": 1, "name": "Target", "description": "Test source", "category": "Test"}',
+        ),
+      );
 
-      const result = await strategy.resolve(sourceData, targetData, sourceDescriptor, targetDescriptor);
+      const _result = 
+        sourceData,
+        targetData,
+        sourceDescriptor,
+        targetDescriptor,
+      );
 
       expect(result.success).toBe(true);
       expect(result.strategyUsed).toBe('llm_resolution');

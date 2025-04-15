@@ -82,4 +82,4 @@ export class Requirement extends Document {
   createdBy?: string;
 }
 
-export const RequirementSchema = SchemaFactory.createForClass(Requirement);
+export const _RequirementSchema = 

@@ -10,7 +10,7 @@ export interface IHumanInTheLoop {
    * @param timeout 超时时间（毫秒）
    * @returns 审核请求ID
    */
-  requestHumanReview(data: any, context?: any, timeout?: number): Promise<string>;
+  requestHumanReview(data: unknown, context?: unknown, timeout?: number): Promise<string>;
 
   /**
    * 提交人类反馈
@@ -19,7 +19,7 @@ export interface IHumanInTheLoop {
    * @param metadata 元数据
    * @returns 是否成功
    */
-  submitHumanFeedback(reviewId: string, feedback: any, metadata?: any): Promise<boolean>;
+  submitHumanFeedback(reviewId: string, feedback: unknown, metadata?: unknown): Promise<boolean>;
 
   /**
    * 获取审核请求状态
@@ -34,7 +34,7 @@ export interface IHumanInTheLoop {
    * @param limit 结果数量限制
    * @returns 审核请求数组
    */
-  getPendingReviews(filters?: any, limit?: number): Promise<any[]>;
+  getPendingReviews(filters?: unknown, limit?: number): Promise<any[]>;
 
   /**
    * 取消审核请求
@@ -64,7 +64,7 @@ export interface IHumanInTheLoop {
    * @param limit 结果数量限制
    * @returns 反馈历史记录
    */
-  getFeedbackHistory(filters?: any, limit?: number): Promise<any[]>;
+  getFeedbackHistory(filters?: unknown, limit?: number): Promise<any[]>;
 
   /**
    * 分析反馈模式

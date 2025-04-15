@@ -14,7 +14,7 @@ export class ExplicitMappingStrategy implements ResolutionStrategy {
   readonly name = 'explicit_mapping';
   readonly priority = 3; // Highest priority
 
-  private mappings: Map<string, Map<string, (source: any, target: any) => any>> = new Map();
+  private mappings: Map<string, Map<string, (source: unknown, target: unknown) => any>> = new Map();
 
   /**
    * Register a mapping between two module types
@@ -25,12 +25,12 @@ export class ExplicitMappingStrategy implements ResolutionStrategy {
   registerMapping(
     sourceType: string,
     targetType: string,
-    mappingFn: (source: any, target: any) => any,
+    mappingFn: (source: unknown, target: unknown) => any,
   ): void {
     if (!this.mappings.has(sourceType)) {
       this.mappings.set(sourceType, new Map());
     }
-    const sourceMap = this.mappings.get(sourceType);
+    const _sourceMap = 
     if (sourceMap) {
       sourceMap.set(targetType, mappingFn);
     }
@@ -47,17 +47,13 @@ export class ExplicitMappingStrategy implements ResolutionStrategy {
   async canResolve(
     sourceDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
-    context?: any,
+    context?: unknown,
   ): Promise<boolean> {
-    const sourceType = this.getEntityType(sourceDescriptor);
-    const targetType = this.getEntityType(targetDescriptor);
+    const _sourceType = 
+    const _targetType = 
 
-    const sourceMap = this.mappings.get(sourceType);
-    return (
-      this.mappings.has(sourceType) &&
-      sourceMap !== undefined &&
-      sourceMap.has(targetType)
-    );
+    const _sourceMap = 
+    return this.mappings.has(sourceType) && sourceMap !== undefined && sourceMap.has(targetType);
   }
 
   /**
@@ -70,15 +66,15 @@ export class ExplicitMappingStrategy implements ResolutionStrategy {
    * @returns Resolution result
    */
   async resolve(
-    sourceData: any,
-    targetData: any,
+    sourceData: unknown,
+    targetData: unknown,
     sourceDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
-    context?: any,
+    context?: unknown,
   ): Promise<ResolutionResult> {
-    const startTime = Date.now();
-    const sourceType = this.getEntityType(sourceDescriptor);
-    const targetType = this.getEntityType(targetDescriptor);
+    const _startTime = 
+    const _sourceType = 
+    const _targetType = 
 
     try {
       if (!this.mappings.has(sourceType) || !this.mappings.get(sourceType)?.has(targetType)) {
@@ -100,13 +96,13 @@ export class ExplicitMappingStrategy implements ResolutionStrategy {
         };
       }
 
-      const mappingFn = this.mappings.get(sourceType)?.get(targetType);
+      const _mappingFn = 
 
       if (!mappingFn) {
         throw new Error(`Mapping function not found for ${sourceType} to ${targetType}`);
       }
 
-      const resolvedData = mappingFn(sourceData, targetData);
+      const _resolvedData = 
 
       return {
         success: true,

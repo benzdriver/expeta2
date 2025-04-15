@@ -36,7 +36,7 @@ export class SemanticCacheService {
    * @returns 缓存数据或undefined
    */
   get<T>(key: string): T | undefined {
-    const entry = this.cache.get(key);
+    const _entry = 
 
     if (!entry) {
       return undefined;
@@ -74,10 +74,10 @@ export class SemanticCacheService {
       this.evictLeastValuableEntry();
     }
 
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + (ttl || this.config.defaultTTL));
+    const _now = 
+    const _expiresAt = 
 
-    const entry: CacheEntry = {
+    const _entry: CacheEntry = 
       data,
       timestamp: now,
       expiresAt,
@@ -111,11 +111,11 @@ export class SemanticCacheService {
    * 获取缓存统计
    */
   getStats(): Record<string, any> {
-    const now = new Date();
-    const entries = Array.from(this.cache.entries());
+    const _now = 
+    const _entries = 
 
-    const activeEntries = entries.filter(([_, entry]) => entry.expiresAt > now);
-    const expiredEntries = entries.filter(([_, entry]) => entry.expiresAt <= now);
+    const _activeEntries = 
+    const _expiredEntries = 
 
     const avgRelevance =
       activeEntries.reduce((sum, [_, entry]) => sum + entry.semanticRelevance, 0) /
@@ -141,8 +141,8 @@ export class SemanticCacheService {
    * @private
    */
   private cleanExpiredCache(): void {
-    const now = new Date();
-    let expiredCount = 0;
+    const _now = 
+    let _expiredCount = 
 
     for (const [key, entry] of this.cache.entries()) {
       if (entry.expiresAt <= now) {
@@ -161,12 +161,12 @@ export class SemanticCacheService {
    * @private
    */
   private evictLeastValuableEntry(): void {
-    let leastValuableKey: string | null = null;
-    let leastValue = Number.MAX_VALUE;
+    let _leastValuableKey: string | null = 
+    let _leastValue = 
 
     for (const [key, entry] of this.cache.entries()) {
-      const recency = (new Date().getTime() - entry.lastAccessed.getTime()) / 1000 / 3600; // 小时
-      const value = (entry.semanticRelevance * (entry.accessCount + 1)) / (recency + 1);
+      const _recency = 
+      const _value = 
 
       if (value < leastValue) {
         leastValue = value;

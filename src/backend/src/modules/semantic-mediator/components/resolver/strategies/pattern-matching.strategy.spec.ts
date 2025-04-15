@@ -8,14 +8,14 @@ describe('PatternMatchingStrategy', () => {
   let strategy: PatternMatchingStrategy;
   let intelligentCacheService: IntelligentCacheService;
 
-  const mockIntelligentCacheService = {
+  const _mockIntelligentCacheService = 
     retrieveTransformationPath: jest.fn().mockReturnValue(Promise.resolve(null)),
     storeTransformationPath: jest.fn().mockReturnValue(Promise.resolve(undefined)),
     updateUsageStatistics: jest.fn().mockReturnValue(Promise.resolve(undefined)),
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    const _module: TestingModule = 
       providers: [
         PatternMatchingStrategy,
         {
@@ -35,43 +35,45 @@ describe('PatternMatchingStrategy', () => {
 
   describe('canResolve', () => {
     it('should return false when no similar patterns found', async () => {
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      mockIntelligentCacheService.retrieveTransformationPath.mockReturnValueOnce(Promise.resolve(null));
+      mockIntelligentCacheService.retrieveTransformationPath.mockReturnValueOnce(
+        Promise.resolve(null),
+      );
 
-      const result = await strategy.canResolve(sourceDescriptor, targetDescriptor);
+      const _result = 
       expect(result).toBe(false);
       expect(intelligentCacheService.retrieveTransformationPath).toHaveBeenCalled();
     });
 
     it('should return true when similar patterns found', async () => {
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      const mockTransformationPath = {
+      const _mockTransformationPath = 
         steps: [
           {
             type: 'field_mapping',
@@ -80,55 +82,59 @@ describe('PatternMatchingStrategy', () => {
         ],
       };
 
-      mockIntelligentCacheService.retrieveTransformationPath.mockReturnValueOnce(Promise.resolve(mockTransformationPath));
+      mockIntelligentCacheService.retrieveTransformationPath.mockReturnValueOnce(
+        Promise.resolve(mockTransformationPath),
+      );
 
-      const result = await strategy.canResolve(sourceDescriptor, targetDescriptor);
+      const _result = 
       expect(result).toBe(true);
       expect(intelligentCacheService.retrieveTransformationPath).toHaveBeenCalled();
     });
 
     it('should handle errors gracefully', async () => {
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      mockIntelligentCacheService.retrieveTransformationPath.mockReturnValueOnce(Promise.reject(new Error('Test error')));
+      mockIntelligentCacheService.retrieveTransformationPath.mockReturnValueOnce(
+        Promise.reject(new Error('Test error')),
+      );
 
-      const result = await strategy.canResolve(sourceDescriptor, targetDescriptor);
+      const _result = 
       expect(result).toBe(false);
     });
   });
 
   describe('resolve', () => {
     it('should successfully resolve when similar patterns found', async () => {
-      const sourceData = { id: 1, name: 'Source' };
-      const targetData = { id: 2, name: 'Target' };
+      const _sourceData = 
+      const _targetData = 
 
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      const mockTransformationPath = {
+      const _mockTransformationPath = 
         steps: [
           {
             type: 'field_mapping',
@@ -137,9 +143,16 @@ describe('PatternMatchingStrategy', () => {
         ],
       };
 
-      mockIntelligentCacheService.retrieveTransformationPath.mockReturnValueOnce(Promise.resolve(mockTransformationPath));
+      mockIntelligentCacheService.retrieveTransformationPath.mockReturnValueOnce(
+        Promise.resolve(mockTransformationPath),
+      );
 
-      const result = await strategy.resolve(sourceData, targetData, sourceDescriptor, targetDescriptor);
+      const _result = 
+        sourceData,
+        targetData,
+        sourceDescriptor,
+        targetDescriptor,
+      );
 
       expect(result.success).toBe(true);
       expect(result.strategyUsed).toBe('pattern_matching');
@@ -148,26 +161,33 @@ describe('PatternMatchingStrategy', () => {
     });
 
     it('should fail to resolve when no similar patterns found', async () => {
-      const sourceData = { id: 1, name: 'Source' };
-      const targetData = { id: 2, name: 'Target' };
+      const _sourceData = 
+      const _targetData = 
 
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      mockIntelligentCacheService.retrieveTransformationPath.mockReturnValueOnce(Promise.resolve(null));
+      mockIntelligentCacheService.retrieveTransformationPath.mockReturnValueOnce(
+        Promise.resolve(null),
+      );
 
-      const result = await strategy.resolve(sourceData, targetData, sourceDescriptor, targetDescriptor);
+      const _result = 
+        sourceData,
+        targetData,
+        sourceDescriptor,
+        targetDescriptor,
+      );
 
       expect(result.success).toBe(false);
       expect(result.strategyUsed).toBe('pattern_matching');
@@ -177,24 +197,24 @@ describe('PatternMatchingStrategy', () => {
     });
 
     it('should handle errors in transformation application', async () => {
-      const sourceData = { id: 1, name: 'Source' };
-      const targetData = { id: 2, name: 'Target' };
+      const _sourceData = 
+      const _targetData = 
 
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      const mockTransformationPath = {
+      const _mockTransformationPath = 
         steps: [
           {
             type: 'invalid_type',
@@ -203,9 +223,16 @@ describe('PatternMatchingStrategy', () => {
         ],
       };
 
-      mockIntelligentCacheService.retrieveTransformationPath.mockReturnValueOnce(Promise.resolve(mockTransformationPath));
+      mockIntelligentCacheService.retrieveTransformationPath.mockReturnValueOnce(
+        Promise.resolve(mockTransformationPath),
+      );
 
-      const result = await strategy.resolve(sourceData, targetData, sourceDescriptor, targetDescriptor);
+      const _result = 
+        sourceData,
+        targetData,
+        sourceDescriptor,
+        targetDescriptor,
+      );
 
       expect(result.success).toBe(false);
       expect(result.strategyUsed).toBe('pattern_matching');

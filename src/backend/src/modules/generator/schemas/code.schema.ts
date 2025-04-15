@@ -22,13 +22,13 @@ export interface CodeMetadata {
     | 'optimized';
   semanticAnalysisUsed?: boolean;
   semanticAnalysisSummary?: string;
-  techStack?: any;
+  techStack?: unknown;
   architecturePattern?: string;
   originalCodeId?: string;
-  generationOptions?: any;
-  refactoringGoals?: any;
-  testRequirements?: any;
-  optimizationFeedback?: any;
+  generationOptions?: unknown;
+  refactoringGoals?: unknown;
+  testRequirements?: unknown;
+  optimizationFeedback?: unknown;
 }
 
 @Schema()
@@ -49,4 +49,4 @@ export class Code extends Document {
   updatedAt: Date;
 }
 
-export const CodeSchema = SchemaFactory.createForClass(Code);
+export const _CodeSchema = 

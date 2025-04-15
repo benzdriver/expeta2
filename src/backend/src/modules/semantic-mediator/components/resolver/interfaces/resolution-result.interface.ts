@@ -11,7 +11,7 @@ export interface ResolutionResult {
   /**
    * The resolved data
    */
-  resolvedData: any;
+  resolvedData: unknown;
 
   /**
    * The strategy used for resolution
@@ -46,7 +46,7 @@ export interface ResolutionResult {
    */
   metadata?: {
     executionTime?: number;
-    transformationPath?: any;
-    additionalInfo?: any;
+    transformationPath?: unknown;
+    additionalInfo?: unknown;
   };
 }

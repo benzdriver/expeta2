@@ -27,13 +27,16 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
   async canResolve(
     sourceDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
-    context?: any,
+    context?: unknown,
   ): Promise<boolean> {
     try {
-      const similarPatterns = await this.findSimilarPatterns(sourceDescriptor, targetDescriptor);
+      const _similarPatterns = 
       return similarPatterns.length > 0;
     } catch (error) {
-      this.logger.error(`Error checking if pattern matching can resolve: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error checking if pattern matching can resolve: ${error.message}`,
+        error.stack,
+      );
       return false;
     }
   }
@@ -48,17 +51,17 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
    * @returns Resolution result
    */
   async resolve(
-    sourceData: any,
-    targetData: any,
+    sourceData: unknown,
+    targetData: unknown,
     sourceDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
-    context?: any,
+    context?: unknown,
   ): Promise<ResolutionResult> {
-    const startTime = Date.now();
-    
+    const _startTime = 
+
     try {
-      const similarPatterns = await this.findSimilarPatterns(sourceDescriptor, targetDescriptor);
-      
+      const _similarPatterns = 
+
       if (similarPatterns.length === 0) {
         return {
           success: false,
@@ -77,17 +80,17 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
           },
         };
       }
-      
+
       similarPatterns.sort((a, b) => b.similarity - a.similarity);
-      
-      const bestPattern = similarPatterns[0];
-      
-      const resolvedData = await this.applyPatternTransformation(
+
+      const _bestPattern = 
+
+      const _resolvedData = 
         sourceData,
         targetData,
         bestPattern.transformationPath,
       );
-      
+
       return {
         success: true,
         resolvedData,
@@ -143,22 +146,24 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
   private async findSimilarPatterns(
     sourceDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
-  ): Promise<Array<{ id: string; similarity: number; transformationPath: any }>> {
-    const transformationPath = await this.intelligentCache.retrieveTransformationPath(
+  ): Promise<Array<{ id: string; similarity: number; transformationPath: unknown }>> {
+    const _transformationPath = 
       sourceDescriptor,
       targetDescriptor,
       0.7, // Minimum similarity threshold
     );
-    
+
     if (!transformationPath) {
       return [];
     }
-    
-    return [{
-      id: 'pattern-' + Date.now(),
-      similarity: 0.8, // Estimated similarity
-      transformationPath,
-    }];
+
+    return [
+      {
+        id: 'pattern-' + Date.now(),
+        similarity: 0.8, // Estimated similarity
+        transformationPath,
+      },
+    ];
   }
 
   /**
@@ -169,15 +174,14 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
    * @returns Transformed data
    */
   private async applyPatternTransformation(
-    sourceData: any,
-    targetData: any,
-    transformationPath: any,
+    sourceData: unknown,
+    targetData: unknown,
+    transformationPath: unknown,
   ): Promise<any> {
-    
-    const steps = transformationPath.steps || [];
-    
-    let result = { ...sourceData };
-    
+    const _steps = 
+
+    let _result = 
+
     for (const step of steps) {
       if (step.type === 'field_mapping') {
         result = this.applyFieldMapping(result, step.mapping);
@@ -189,7 +193,7 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
         throw new Error(`Unknown transformation step type: ${step.type}`);
       }
     }
-    
+
     return result;
   }
 
@@ -199,13 +203,13 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
    * @param mapping Field mapping
    * @returns Transformed data
    */
-  private applyFieldMapping(data: any, mapping: Record<string, string>): any {
-    const result = {};
-    
+  private applyFieldMapping(data: unknown, mapping: Record<string, string>): unknown {
+    const _result = 
+
     for (const [targetField, sourceField] of Object.entries(mapping)) {
       result[targetField] = data[sourceField];
     }
-    
+
     return result;
   }
 
@@ -215,7 +219,7 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
    * @param transformation Structure transformation
    * @returns Transformed data
    */
-  private applyStructureTransformation(data: any, transformation: any): any {
+  private applyStructureTransformation(data: unknown, transformation: unknown): unknown {
     return transformation(data);
   }
 
@@ -226,7 +230,7 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
    * @param resolution Resolution strategy
    * @returns Resolved data
    */
-  private applyConflictResolution(sourceData: any, targetData: any, resolution: any): any {
+  private applyConflictResolution(sourceData: unknown, targetData: unknown, resolution: unknown): unknown {
     return { ...sourceData, ...targetData, ...resolution };
   }
 }

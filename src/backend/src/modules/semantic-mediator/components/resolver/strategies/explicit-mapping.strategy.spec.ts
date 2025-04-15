@@ -7,7 +7,7 @@ describe('ExplicitMappingStrategy', () => {
   let strategy: ExplicitMappingStrategy;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    const _module: TestingModule = 
       providers: [ExplicitMappingStrategy],
     }).compile();
 
@@ -20,47 +20,50 @@ describe('ExplicitMappingStrategy', () => {
 
   describe('canResolve', () => {
     it('should return false when no mapping exists', async () => {
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      const result = await strategy.canResolve(sourceDescriptor, targetDescriptor);
+      const _result = 
       expect(result).toBe(false);
     });
 
     it('should return true when mapping exists', async () => {
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      strategy.registerMapping('moduleA', 'moduleB', (source, target) => ({ ...source, ...target }));
+      strategy.registerMapping('moduleA', 'moduleB', (source, target) => ({
+        ...source,
+        ...target,
+      }));
 
-      const result = await strategy.canResolve(sourceDescriptor, targetDescriptor);
+      const _result = 
       expect(result).toBe(true);
     });
 
     it('should handle composite descriptors', async () => {
-      const sourceDescriptor = {
+      const _sourceDescriptor = 
         type: 'composite',
         components: [
           {
@@ -72,7 +75,7 @@ describe('ExplicitMappingStrategy', () => {
         ],
       };
 
-      const targetDescriptor = {
+      const _targetDescriptor = 
         type: 'composite',
         components: [
           {
@@ -84,26 +87,29 @@ describe('ExplicitMappingStrategy', () => {
         ],
       };
 
-      strategy.registerMapping('composite', 'composite', (source, target) => ({ ...source, ...target }));
+      strategy.registerMapping('composite', 'composite', (source, target) => ({
+        ...source,
+        ...target,
+      }));
 
-      const result = await strategy.canResolve(sourceDescriptor, targetDescriptor);
+      const _result = 
       expect(result).toBe(true);
     });
   });
 
   describe('resolve', () => {
     it('should successfully resolve when mapping exists', async () => {
-      const sourceData = { id: 1, name: 'Source' };
-      const targetData = { id: 2, name: 'Target' };
+      const _sourceData = 
+      const _targetData = 
 
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
@@ -116,7 +122,12 @@ describe('ExplicitMappingStrategy', () => {
         combined: `${source.name}-${target.name}`,
       }));
 
-      const result = await strategy.resolve(sourceData, targetData, sourceDescriptor, targetDescriptor);
+      const _result = 
+        sourceData,
+        targetData,
+        sourceDescriptor,
+        targetDescriptor,
+      );
 
       expect(result.success).toBe(true);
       expect(result.strategyUsed).toBe('explicit_mapping');
@@ -129,24 +140,29 @@ describe('ExplicitMappingStrategy', () => {
     });
 
     it('should fail to resolve when no mapping exists', async () => {
-      const sourceData = { id: 1, name: 'Source' };
-      const targetData = { id: 2, name: 'Target' };
+      const _sourceData = 
+      const _targetData = 
 
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
         metadata: {},
       };
 
-      const result = await strategy.resolve(sourceData, targetData, sourceDescriptor, targetDescriptor);
+      const _result = 
+        sourceData,
+        targetData,
+        sourceDescriptor,
+        targetDescriptor,
+      );
 
       expect(result.success).toBe(false);
       expect(result.strategyUsed).toBe('explicit_mapping');
@@ -156,17 +172,17 @@ describe('ExplicitMappingStrategy', () => {
     });
 
     it('should handle errors in mapping function', async () => {
-      const sourceData = { id: 1, name: 'Source' };
-      const targetData = { id: 2, name: 'Target' };
+      const _sourceData = 
+      const _targetData = 
 
-      const sourceDescriptor: SemanticDescriptor = {
+      const _sourceDescriptor: SemanticDescriptor = 
         entity: 'moduleA',
         description: 'Test module A',
         attributes: {},
         metadata: {},
       };
 
-      const targetDescriptor: SemanticDescriptor = {
+      const _targetDescriptor: SemanticDescriptor = 
         entity: 'moduleB',
         description: 'Test module B',
         attributes: {},
@@ -177,7 +193,12 @@ describe('ExplicitMappingStrategy', () => {
         throw new Error('Test mapping error');
       });
 
-      const result = await strategy.resolve(sourceData, targetData, sourceDescriptor, targetDescriptor);
+      const _result = 
+        sourceData,
+        targetData,
+        sourceDescriptor,
+        targetDescriptor,
+      );
 
       expect(result.success).toBe(false);
       expect(result.strategyUsed).toBe('explicit_mapping');
@@ -190,7 +211,7 @@ describe('ExplicitMappingStrategy', () => {
 
   describe('registerMapping', () => {
     it('should register a new mapping', () => {
-      const mappingFn = (source, target) => ({ ...source, ...target });
+      const _mappingFn = 
       strategy.registerMapping('moduleA', 'moduleB', mappingFn);
 
       return strategy
@@ -200,15 +221,15 @@ describe('ExplicitMappingStrategy', () => {
           { entity: 'moduleA', description: '', attributes: {}, metadata: {} },
           { entity: 'moduleB', description: '', attributes: {}, metadata: {} },
         )
-        .then(result => {
+        .then((result) => {
           expect(result.success).toBe(true);
           expect(result.resolvedData).toEqual({ id: 1, name: 'Test' });
         });
     });
 
     it('should override existing mapping', () => {
-      const mappingFn1 = (source, target) => ({ ...source, ...target, version: 1 });
-      const mappingFn2 = (source, target) => ({ ...source, ...target, version: 2 });
+      const _mappingFn1 = 
+      const _mappingFn2 = 
 
       strategy.registerMapping('moduleA', 'moduleB', mappingFn1);
       strategy.registerMapping('moduleA', 'moduleB', mappingFn2);
@@ -220,7 +241,7 @@ describe('ExplicitMappingStrategy', () => {
           { entity: 'moduleA', description: '', attributes: {}, metadata: {} },
           { entity: 'moduleB', description: '', attributes: {}, metadata: {} },
         )
-        .then(result => {
+        .then((result) => {
           expect(result.success).toBe(true);
           expect(result.resolvedData).toEqual({ id: 1, name: 'Test', version: 2 });
         });

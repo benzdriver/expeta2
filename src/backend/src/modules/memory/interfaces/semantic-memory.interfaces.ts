@@ -132,7 +132,7 @@ export interface SemanticConstraint {
   /** 约束描述 */
   constraint: string;
   /** 验证函数 */
-  validationFn?: (value: any) => boolean;
+  validationFn?: (value: unknown) => boolean;
   /** 错误消息 */
   errorMessage?: string;
   /** 约束严重性 */
@@ -147,8 +147,8 @@ export interface SemanticConstraint {
   description?: string;
   /** 约束示例 */
   examples?: {
-    valid: any[];
-    invalid: any[];
+    valid: unknown[];
+    invalid: unknown[];
   };
 }
 
@@ -207,5 +207,5 @@ export interface SemanticDataSource {
   /** 数据模式 */
   schema?: Record<string, any>;
   /** 查询函数 */
-  queryFn?: (query: string, options?: any) => Promise<any[]>;
+  queryFn?: (query: string, options?: unknown) => Promise<any[]>;
 }

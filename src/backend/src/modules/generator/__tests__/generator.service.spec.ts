@@ -17,9 +17,9 @@ describe('GeneratorService', () => {
   let semanticMediatorService: SemanticMediatorService;
 
   beforeEach(async () => {
-    const mockCodeModel = function() {
-      this.save = jest.fn().mockImplementation(function() {
-        const metadata = this.metadata || {
+    const _mockCodeModel = 
+      this.save = jest.fn().mockImplementation(function () {
+        const _metadata = 
           expectationId: 'test-expectation-id',
           version: 1,
           status: 'generated',
@@ -29,14 +29,17 @@ describe('GeneratorService', () => {
           architecturePattern: '',
           originalCodeId: null,
         };
-        
+
         return Promise.resolve({
           _id: 'test-code-id',
           expectationId: 'test-expectation-id',
           files: [
             {
               path: 'test.js',
-              content: 'console.log("test")',
+              content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("test")',
               language: 'javascript',
             },
           ],
@@ -47,7 +50,7 @@ describe('GeneratorService', () => {
       });
       return this;
     };
-    
+
     mockCodeModel.find = jest.fn().mockReturnValue({
       sort: jest.fn().mockReturnValue({
         exec: jest.fn().mockResolvedValue([
@@ -57,7 +60,10 @@ describe('GeneratorService', () => {
             files: [
               {
                 path: 'test.js',
-                content: 'console.log("test")',
+                content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("test")',
                 language: 'javascript',
               },
             ],
@@ -75,7 +81,7 @@ describe('GeneratorService', () => {
         ]),
       }),
     });
-    
+
     mockCodeModel.findById = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue({
         _id: 'test-code-id',
@@ -83,7 +89,10 @@ describe('GeneratorService', () => {
         files: [
           {
             path: 'test.js',
-            content: 'console.log("test")',
+            content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("test")',
             language: 'javascript',
           },
         ],
@@ -112,7 +121,7 @@ describe('GeneratorService', () => {
       }),
     });
 
-    const mockLlmRouterService = {
+    const _mockLlmRouterService = 
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('生成相应的代码实现')) {
           return Promise.resolve(
@@ -120,7 +129,10 @@ describe('GeneratorService', () => {
               files: [
                 {
                   path: 'test.js',
-                  content: 'console.log("test")',
+                  content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("test")',
                   language: 'javascript',
                 },
               ],
@@ -132,7 +144,10 @@ describe('GeneratorService', () => {
               files: [
                 {
                   path: 'enhanced.js',
-                  content: 'console.log("enhanced")',
+                  content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("enhanced")',
                   language: 'javascript',
                 },
               ],
@@ -144,7 +159,10 @@ describe('GeneratorService', () => {
               files: [
                 {
                   path: 'structure.js',
-                  content: 'console.log("structure")',
+                  content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("structure")',
                   language: 'javascript',
                 },
               ],
@@ -157,7 +175,10 @@ describe('GeneratorService', () => {
               files: [
                 {
                   path: 'architecture.js',
-                  content: 'console.log("architecture")',
+                  content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("architecture")',
                   language: 'javascript',
                 },
               ],
@@ -185,7 +206,10 @@ describe('GeneratorService', () => {
               files: [
                 {
                   path: 'refactored.js',
-                  content: 'console.log("refactored")',
+                  content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("refactored")',
                   language: 'javascript',
                 },
               ],
@@ -199,7 +223,10 @@ describe('GeneratorService', () => {
               files: [
                 {
                   path: 'optimized.js',
-                  content: 'console.log("optimized")',
+                  content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("optimized")',
                   language: 'javascript',
                 },
               ],
@@ -213,7 +240,7 @@ describe('GeneratorService', () => {
       }),
     };
 
-    const mockMemoryService = {
+    const _mockMemoryService = 
       getMemoryByType: jest.fn().mockImplementation((type) => {
         if (type === MemoryType.EXPECTATION) {
           return Promise.resolve([
@@ -238,7 +265,10 @@ describe('GeneratorService', () => {
                 files: [
                   {
                     path: 'test.js',
-                    content: 'console.log("test")',
+                    content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("test")',
                     language: 'javascript',
                   },
                 ],
@@ -270,7 +300,7 @@ describe('GeneratorService', () => {
       }),
     };
 
-    const mockSemanticMediatorService = {
+    const _mockSemanticMediatorService = 
       enrichWithContext: jest.fn().mockResolvedValue({
         enriched: true,
         summary: 'Enriched semantic analysis',
@@ -302,7 +332,7 @@ describe('GeneratorService', () => {
       }),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    const _module: TestingModule = 
       providers: [
         GeneratorService,
         {
@@ -337,9 +367,9 @@ describe('GeneratorService', () => {
 
   describe('generateCode', () => {
     it('should generate code based on expectation', async () => {
-      const expectationId = 'test-expectation-id';
+      const _expectationId = 
 
-      const result = await service.generateCode(expectationId);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result.expectationId).toBe(expectationId);
@@ -353,7 +383,7 @@ describe('GeneratorService', () => {
 
     it('should throw an error if expectation is not found', async () => {
       jest.spyOn(memoryService, 'getMemoryByType').mockResolvedValueOnce([]);
-      const expectationId = 'non-existent-id';
+      const _expectationId = 
 
       await expect(service.generateCode(expectationId)).rejects.toThrow('Expectation not found');
     });
@@ -361,9 +391,9 @@ describe('GeneratorService', () => {
 
   describe('getCodeByExpectationId', () => {
     it('should return code by expectation id', async () => {
-      const expectationId = 'test-expectation-id';
+      const _expectationId = 
 
-      const result = await service.getCodeByExpectationId(expectationId);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result).toHaveLength(1);
@@ -373,9 +403,9 @@ describe('GeneratorService', () => {
 
   describe('getCodeById', () => {
     it('should return code by id', async () => {
-      const codeId = 'test-code-id';
+      const _codeId = 
 
-      const result = await service.getCodeById(codeId);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result._id).toBe(codeId);
@@ -384,8 +414,8 @@ describe('GeneratorService', () => {
     it('should throw an error if code is not found', async () => {
       jest.spyOn(codeModel, 'findById').mockReturnValueOnce({
         exec: jest.fn().mockResolvedValueOnce(null),
-      } as any);
-      const codeId = 'non-existent-id';
+      } as unknown);
+      const _codeId = 
 
       await expect(service.getCodeById(codeId)).rejects.toThrow(`Code with id ${codeId} not found`);
     });
@@ -393,9 +423,9 @@ describe('GeneratorService', () => {
 
   describe('getCodeFiles', () => {
     it('should return code files', async () => {
-      const codeId = 'test-code-id';
+      const _codeId = 
 
-      const result = await service.getCodeFiles(codeId);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result).toHaveLength(1);
@@ -405,8 +435,8 @@ describe('GeneratorService', () => {
     it('should throw an error if code is not found', async () => {
       jest.spyOn(codeModel, 'findById').mockReturnValueOnce({
         exec: jest.fn().mockResolvedValueOnce(null),
-      } as any);
-      const codeId = 'non-existent-id';
+      } as unknown);
+      const _codeId = 
 
       await expect(service.getCodeFiles(codeId)).rejects.toThrow('Code not found');
     });
@@ -414,9 +444,9 @@ describe('GeneratorService', () => {
 
   describe('approveCode', () => {
     it('should approve code', async () => {
-      const codeId = 'test-code-id';
+      const _codeId = 
 
-      const result = await service.approveCode(codeId);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result.metadata.status).toBe('approved');
@@ -426,8 +456,8 @@ describe('GeneratorService', () => {
     it('should throw an error if code is not found', async () => {
       jest.spyOn(codeModel, 'findById').mockReturnValueOnce({
         exec: jest.fn().mockResolvedValueOnce(null),
-      } as any);
-      const codeId = 'non-existent-id';
+      } as unknown);
+      const _codeId = 
 
       await expect(service.approveCode(codeId)).rejects.toThrow('Code not found');
     });
@@ -435,20 +465,23 @@ describe('GeneratorService', () => {
 
   describe('generateCodeWithSemanticInput', () => {
     it('should generate code with semantic input using semantic mediator', async () => {
-      const expectationId = 'test-expectation-id';
-      const semanticAnalysis = {
+      const _expectationId = 
+      const _semanticAnalysis = 
         key: 'value',
         summary: 'Semantic analysis summary',
       };
 
       jest
-        .spyOn(service as any, 'getPromptTemplate')
+        .spyOn(service as unknown, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked prompt template');
 
-      const mockResult = {
+      const _mockResult = 
         _id: 'test-code-id',
         expectationId: expectationId,
-        files: [{ path: 'enhanced.js', content: 'console.log("enhanced")' }],
+        files: [{ path: 'enhanced.js', content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("enhanced")' }],
         metadata: {
           expectationId: expectationId,
           version: 1,
@@ -460,10 +493,10 @@ describe('GeneratorService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
-      jest.spyOn(service as any, 'createCode').mockResolvedValueOnce(mockResult);
 
-      const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
+      jest.spyOn(service as unknown, 'createCode').mockResolvedValueOnce(mockResult);
+
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result.expectationId).toBe(expectationId);
@@ -498,8 +531,8 @@ describe('GeneratorService', () => {
 
     it('should throw an error if expectation is not found', async () => {
       jest.spyOn(memoryService, 'getMemoryByType').mockResolvedValueOnce([]);
-      const expectationId = 'non-existent-id';
-      const semanticAnalysis = { key: 'value' };
+      const _expectationId = 
+      const _semanticAnalysis = 
 
       await expect(
         service.generateCodeWithSemanticInput(expectationId, semanticAnalysis),
@@ -507,14 +540,14 @@ describe('GeneratorService', () => {
     });
 
     it('should use default prompt if template is not found', async () => {
-      const expectationId = 'test-expectation-id';
-      const semanticAnalysis = { key: 'value' };
+      const _expectationId = 
+      const _semanticAnalysis = 
 
       jest
-        .spyOn(service as any, 'getPromptTemplate')
+        .spyOn(service as unknown, 'getPromptTemplate')
         .mockRejectedValueOnce(new Error('Template not found'));
 
-      const result = await service.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
@@ -528,21 +561,24 @@ describe('GeneratorService', () => {
 
   describe('generateProjectStructure', () => {
     it('should generate project structure', async () => {
-      const expectationId = 'test-expectation-id';
-      const techStack = {
+      const _expectationId = 
+      const _techStack = 
         frontend: 'React',
         backend: 'Node.js',
         database: 'MongoDB',
       };
 
       jest
-        .spyOn(service as any, 'getPromptTemplate')
+        .spyOn(service as unknown, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked project structure prompt');
-        
-      const mockSave = jest.fn().mockResolvedValueOnce({
+
+      const _mockSave = 
         _id: 'test-code-id',
         expectationId: expectationId,
-        files: [{ path: 'structure.js', content: 'console.log("structure")' }],
+        files: [{ path: 'structure.js', content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("structure")' }],
         metadata: {
           expectationId: expectationId,
           version: 1,
@@ -553,11 +589,11 @@ describe('GeneratorService', () => {
         updatedAt: new Date(),
       });
 
-      jest.spyOn(service as any, 'codeModel').mockImplementationOnce(() => ({
-        save: mockSave
+      jest.spyOn(service as unknown, 'codeModel').mockImplementationOnce(() => ({
+        save: mockSave,
       }));
 
-      const result = await service.generateProjectStructure(expectationId, techStack);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result.expectationId).toBe(expectationId);
@@ -569,8 +605,8 @@ describe('GeneratorService', () => {
 
     it('should throw an error if expectation is not found', async () => {
       jest.spyOn(memoryService, 'getMemoryByType').mockResolvedValueOnce([]);
-      const expectationId = 'non-existent-id';
-      const techStack = { frontend: 'React' };
+      const _expectationId = 
+      const _techStack = 
 
       await expect(service.generateProjectStructure(expectationId, techStack)).rejects.toThrow(
         'Expectation not found',
@@ -580,24 +616,27 @@ describe('GeneratorService', () => {
 
   describe('generateCodeWithArchitecture', () => {
     it('should generate code with architecture', async () => {
-      const expectationId = 'test-expectation-id';
-      const architectureGuide = {
+      const _expectationId = 
+      const _architectureGuide = 
         pattern: 'MVC',
         description: 'Model-View-Controller',
       };
-      const technicalRequirements = {
+      const _technicalRequirements = 
         performance: 'High',
         security: 'Medium',
       };
 
       jest
-        .spyOn(service as any, 'getPromptTemplate')
+        .spyOn(service as unknown, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked architecture prompt');
 
-      const mockResult = {
+      const _mockResult = 
         _id: 'test-code-id',
         expectationId: expectationId,
-        files: [{ path: 'architecture.js', content: 'console.log("architecture")' }],
+        files: [{ path: 'architecture.js', content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("architecture")' }],
         metadata: {
           expectationId: expectationId,
           version: 1,
@@ -608,10 +647,10 @@ describe('GeneratorService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
-      jest.spyOn(service as any, 'createCode').mockResolvedValueOnce(mockResult);
 
-      const result = await service.generateCodeWithArchitecture(
+      jest.spyOn(service as unknown, 'createCode').mockResolvedValueOnce(mockResult);
+
+      const _result = 
         expectationId,
         architectureGuide,
         technicalRequirements,
@@ -627,9 +666,9 @@ describe('GeneratorService', () => {
 
     it('should throw an error if expectation is not found', async () => {
       jest.spyOn(memoryService, 'getMemoryByType').mockResolvedValueOnce([]);
-      const expectationId = 'non-existent-id';
-      const architectureGuide = { pattern: 'MVC' };
-      const technicalRequirements = { performance: 'High' };
+      const _expectationId = 
+      const _architectureGuide = 
+      const _technicalRequirements = 
 
       await expect(
         service.generateCodeWithArchitecture(
@@ -643,17 +682,17 @@ describe('GeneratorService', () => {
 
   describe('generateTestSuite', () => {
     it('should generate test suite', async () => {
-      const codeId = 'test-code-id';
-      const testRequirements = {
+      const _codeId = 
+      const _testRequirements = 
         coverage: 'High',
         types: ['Unit', 'Integration'],
       };
 
       jest
-        .spyOn(service as any, 'getPromptTemplate')
+        .spyOn(service as unknown, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked test suite prompt');
 
-      const mockResult = {
+      const _mockResult = 
         _id: 'test-code-id',
         expectationId: 'test-expectation-id',
         files: [{ path: 'test.test.js', content: 'test("should work", () => {})' }],
@@ -669,10 +708,10 @@ describe('GeneratorService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
-      jest.spyOn(service as any, 'createCode').mockResolvedValueOnce(mockResult);
 
-      const result = await service.generateTestSuite(codeId, testRequirements);
+      jest.spyOn(service as unknown, 'createCode').mockResolvedValueOnce(mockResult);
+
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result.expectationId).toBe('test-expectation-id');
@@ -686,8 +725,8 @@ describe('GeneratorService', () => {
       jest
         .spyOn(service, 'getCodeById')
         .mockRejectedValueOnce(new Error('Code with id non-existent-id not found'));
-      const codeId = 'non-existent-id';
-      const testRequirements = { coverage: 'High' };
+      const _codeId = 
+      const _testRequirements = 
 
       await expect(service.generateTestSuite(codeId, testRequirements)).rejects.toThrow(
         'Code with id non-existent-id not found',
@@ -697,20 +736,23 @@ describe('GeneratorService', () => {
 
   describe('refactorCode', () => {
     it('should refactor code', async () => {
-      const codeId = 'test-code-id';
-      const refactoringGoals = {
+      const _codeId = 
+      const _refactoringGoals = 
         readability: 'Improve',
         performance: 'Optimize',
       };
 
       jest
-        .spyOn(service as any, 'getPromptTemplate')
+        .spyOn(service as unknown, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked refactoring prompt');
 
-      const mockSave = jest.fn().mockResolvedValueOnce({
+      const _mockSave = 
         _id: 'test-code-id',
         expectationId: 'test-expectation-id',
-        files: [{ path: 'refactored.js', content: 'console.log("refactored")' }],
+        files: [{ path: 'refactored.js', content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("refactored")' }],
         metadata: {
           expectationId: 'test-expectation-id',
           version: 2,
@@ -724,7 +766,7 @@ describe('GeneratorService', () => {
         updatedAt: new Date(),
       });
 
-      const result = await service.refactorCode(codeId, refactoringGoals);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result.expectationId).toBe('test-expectation-id');
@@ -738,8 +780,8 @@ describe('GeneratorService', () => {
       jest
         .spyOn(service, 'getCodeById')
         .mockRejectedValueOnce(new Error('Code with id non-existent-id not found'));
-      const codeId = 'non-existent-id';
-      const refactoringGoals = { readability: 'Improve' };
+      const _codeId = 
+      const _refactoringGoals = 
 
       await expect(service.refactorCode(codeId, refactoringGoals)).rejects.toThrow(
         'Code with id non-existent-id not found',
@@ -749,20 +791,23 @@ describe('GeneratorService', () => {
 
   describe('optimizeCode', () => {
     it('should optimize code using semantic mediator', async () => {
-      const codeId = 'test-code-id';
-      const semanticFeedback = {
+      const _codeId = 
+      const _semanticFeedback = 
         suggestions: ['Improve performance', 'Enhance readability'],
         priority: 'high',
       };
 
       jest
-        .spyOn(service as any, 'getPromptTemplate')
+        .spyOn(service as unknown, 'getPromptTemplate')
         .mockResolvedValueOnce('Mocked optimization prompt');
 
-      const mockSave = jest.fn().mockResolvedValueOnce({
+      const _mockSave = 
         _id: 'test-code-id',
         expectationId: 'test-expectation-id',
-        files: [{ path: 'optimized.js', content: 'console.log("optimized")' }],
+        files: [{ path: 'optimized.js', content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("optimized")' }],
         metadata: {
           expectationId: 'test-expectation-id',
           version: 2,
@@ -776,7 +821,7 @@ describe('GeneratorService', () => {
         updatedAt: new Date(),
       });
 
-      const result = await service.optimizeCode(codeId, semanticFeedback);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result.expectationId).toBe('test-expectation-id');
@@ -818,8 +863,8 @@ describe('GeneratorService', () => {
       jest
         .spyOn(service, 'getCodeById')
         .mockRejectedValueOnce(new Error('Code with id non-existent-id not found'));
-      const codeId = 'non-existent-id';
-      const semanticFeedback = { suggestions: ['Improve performance'] };
+      const _codeId = 
+      const _semanticFeedback = 
 
       await expect(service.optimizeCode(codeId, semanticFeedback)).rejects.toThrow(
         'Code with id non-existent-id not found',
@@ -829,9 +874,9 @@ describe('GeneratorService', () => {
 
   describe('validateCodeSemantics', () => {
     it('should validate code semantics using semantic mediator', async () => {
-      const codeId = 'test-code-id';
+      const _codeId = 
 
-      const result = await service.validateCodeSemantics(codeId);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result.codeId).toBe(codeId);
@@ -854,7 +899,7 @@ describe('GeneratorService', () => {
       jest
         .spyOn(service, 'getCodeById')
         .mockRejectedValueOnce(new Error('Code with id non-existent-id not found'));
-      const codeId = 'non-existent-id';
+      const _codeId = 
 
       await expect(service.validateCodeSemantics(codeId)).rejects.toThrow(
         'Code with id non-existent-id not found',

@@ -23,7 +23,7 @@ export class Memory extends Document {
   type: MemoryType;
 
   @Prop({ type: Object, required: true })
-  content: any;
+  content: unknown;
 
   @Prop({ type: Object })
   metadata: Record<string, any>;
@@ -52,9 +52,7 @@ export class Memory extends Document {
   updatedAt: Date;
 }
 
-export const MemorySchema = SchemaFactory.createForClass(Memory);
-
-MemorySchema.index({ type: 1 });
+export const _MemorySchema = MemorySchema.index({ type: 1 });
 MemorySchema.index({ tags: 1 });
 MemorySchema.index({
   'metadata.title': 'text',

@@ -9,10 +9,7 @@ import { MemoryModule } from '../../../memory/memory.module';
 import { LlmRouterModule } from '../../../../services/llm-router.module';
 
 @Module({
-  imports: [
-    MemoryModule,
-    LlmRouterModule,
-  ],
+  imports: [MemoryModule, LlmRouterModule],
   providers: [
     ResolverService,
     ExplicitMappingStrategy,

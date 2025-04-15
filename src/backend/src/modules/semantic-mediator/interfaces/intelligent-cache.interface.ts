@@ -12,10 +12,10 @@ export interface IIntelligentCache {
    * @returns 缓存条目ID
    */
   storeTransformationPath(
-    sourceDescriptor: any,
-    targetDescriptor: any,
-    transformationPath: any,
-    metadata?: any,
+    sourceDescriptor: unknown,
+    targetDescriptor: unknown,
+    transformationPath: unknown,
+    metadata?: unknown,
   ): Promise<string>;
 
   /**
@@ -26,8 +26,8 @@ export interface IIntelligentCache {
    * @returns 转换路径
    */
   retrieveTransformationPath(
-    sourceDescriptor: any,
-    targetDescriptor: any,
+    sourceDescriptor: unknown,
+    targetDescriptor: unknown,
     similarityThreshold?: number,
   ): Promise<any>;
 
@@ -37,7 +37,7 @@ export interface IIntelligentCache {
    * @param metadata 元数据
    * @returns 是否成功
    */
-  updateUsageStatistics(pathId: string, metadata?: any): Promise<boolean>;
+  updateUsageStatistics(pathId: string, metadata?: unknown): Promise<boolean>;
 
   /**
    * 获取最常用的转换路径

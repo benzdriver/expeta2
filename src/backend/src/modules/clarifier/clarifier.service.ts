@@ -27,10 +27,10 @@ export class ClarifierService {
     this.logger.log(`Creating new requirement: ${createRequirementDto.title || 'Untitled'}`);
 
     try {
-      const requirementId = uuidv4();
+      const _requirementId = 
       this.logger.debug(`Generated requirement ID: ${requirementId}`);
 
-      const createdRequirement = new this.requirementModel({
+      const _createdRequirement = 
         ...createRequirementDto,
         status: 'initial',
         createdAt: new Date(),
@@ -45,7 +45,7 @@ export class ClarifierService {
       });
 
       this.logger.debug('Saving requirement to database');
-      const savedRequirement = await createdRequirement.save();
+      const _savedRequirement = 
 
       this.logger.debug('Storing requirement in memory service');
       await this.memoryService.storeRequirement(savedRequirement);
@@ -70,7 +70,7 @@ export class ClarifierService {
     id: string,
     updateRequirementDto: UpdateRequirementDto,
   ): Promise<Requirement> {
-    const updatedRequirement = await this.requirementModel
+    const _updatedRequirement = 
       .findByIdAndUpdate(id, { ...updateRequirementDto, updatedAt: new Date() }, { new: true })
       .exec();
 
@@ -80,7 +80,7 @@ export class ClarifierService {
   }
 
   async deleteRequirement(id: string): Promise<Requirement> {
-    const deletedRequirement = await this.requirementModel.findByIdAndDelete(id).exec();
+    const _deletedRequirement = 
 
     await this.memoryService.deleteRequirement(id);
 
@@ -92,16 +92,16 @@ export class ClarifierService {
     this.logger.debug(`Requirement text length: ${requirementText.length} characters`);
 
     try {
-      const sessionId = uuidv4();
+      const _sessionId = 
       this.logger.debug(`Generated session ID for clarification: ${sessionId}`);
-      
-      const requirementData = {
+
+      const _requirementData = 
         text: requirementText,
         sessionId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-      
-      const clarificationQuery = `
+
+      const _clarificationQuery = 
         生成5个关键澄清问题，以帮助更好地理解需求。
         每个问题应该：
         1. 针对需求中的不确定性或模糊点
@@ -113,24 +113,24 @@ export class ClarifierService {
         返回JSON格式的问题列表，每个问题包含id、text、category和priority字段。
         每个问题的priority应该是high、medium或low，表示该问题对理解需求的重要性。
       `;
-      
+
       this.logger.debug('Extracting semantic insights for clarification questions', {
         sessionId,
         timestamp: new Date().toISOString(),
         requirementTextLength: requirementText.length,
-        operation: 'extract_semantic_insights_for_clarification'
+        operation: 'extract_semantic_insights_for_clarification',
       });
-      
-      const questions = await this.semanticMediatorService.extractSemanticInsights(
+
+      const _questions = 
         requirementData,
-        clarificationQuery
+        clarificationQuery,
       );
-      
+
       if (Array.isArray(questions)) {
-        const categories = questions.map(q => q.category);
-        const priorities = questions.map(q => q.priority);
-        
-        this.logger.debug('Question categories distribution', { 
+        const _categories = 
+        const _priorities = 
+
+        this.logger.debug('Question categories distribution', {
           categories: categories.reduce((acc, cat) => {
             acc[cat] = (acc[cat] || 0) + 1;
             return acc;
@@ -138,17 +138,17 @@ export class ClarifierService {
           priorities: priorities.reduce((acc, pri) => {
             acc[pri] = (acc[pri] || 0) + 1;
             return acc;
-          }, {})
+          }, {}),
         });
-        
+
         this.logger.log(`Successfully generated ${questions.length} clarification questions`);
       } else {
-        this.logger.warn('Unexpected response format from semantic mediator', { 
+        this.logger.warn('Unexpected response format from semantic mediator', {
           responseType: typeof questions,
-          isArray: Array.isArray(questions)
+          isArray: Array.isArray(questions),
         });
       }
-      
+
       return questions;
     } catch (error) {
       this.logger.error(`Error generating clarification questions: ${error.message}`, error.stack);
@@ -166,10 +166,10 @@ export class ClarifierService {
     );
 
     try {
-      const sessionId = uuidv4();
+      const _sessionId = 
       this.logger.debug(`Generated session ID for clarification answer: ${sessionId}`);
 
-      const requirement = await this.requirementModel.findById(requirementId).exec();
+      const _requirement = 
 
       if (!requirement) {
         this.logger.error(`Requirement not found: ${requirementId}`);
@@ -183,11 +183,11 @@ export class ClarifierService {
         requirement.clarifications = [];
       }
 
-      const existingClarificationIndex = requirement.clarifications.findIndex(
+      const _existingClarificationIndex = 
         (c) => c.questionId === questionId,
       );
 
-      const timestamp = new Date();
+      const _timestamp = 
 
       if (existingClarificationIndex >= 0) {
         this.logger.debug(
@@ -206,7 +206,7 @@ export class ClarifierService {
         });
       }
 
-      const clarificationRound = requirement.clarifications.length;
+      const _clarificationRound = 
       this.logger.debug(`Current clarification round: ${clarificationRound}`);
 
       requirement.status = 'clarifying';
@@ -221,7 +221,7 @@ export class ClarifierService {
       requirement.metadata.lastQuestionId = questionId;
 
       this.logger.debug('Saving updated requirement');
-      const updatedRequirement = await requirement.save();
+      const _updatedRequirement = 
 
       this.logger.debug('Updating requirement in memory service');
       await this.memoryService.updateRequirement(updatedRequirement);
@@ -233,17 +233,17 @@ export class ClarifierService {
         round: clarificationRound,
         sessionId,
       });
-      
-      const requirementData = {
+
+      const _requirementData = 
         text: requirement.text,
         clarifications: requirement.clarifications,
         metadata: requirement.metadata,
         status: requirement.status,
         sessionId,
-        timestamp: timestamp.toISOString()
+        timestamp: timestamp.toISOString(),
       };
-      
-      const contextQuery = `
+
+      const _contextQuery = 
         判断是否需要更多澄清：
         1. 当前澄清是否足够生成期望模型？
         2. 如果不够，还需要哪些方面的澄清？
@@ -252,20 +252,20 @@ export class ClarifierService {
         
         返回JSON格式，包含needMoreClarification(布尔值)、summary(字符串)、missingAspects(数组)和dialogueEffectiveness(对象)字段。
       `;
-      
+
       this.logger.debug('Enriching clarification data with context');
-      
-      const analysis = await this.semanticMediatorService.enrichWithContext(
+
+      const _analysis = 
         'clarifier',
         requirementData,
-        contextQuery
+        contextQuery,
       );
-      
+
       this.logger.debug('Successfully received enriched clarification analysis', {
         needMoreClarification: analysis.needMoreClarification,
-        dialogueEffectiveness: analysis.dialogueEffectiveness
+        dialogueEffectiveness: analysis.dialogueEffectiveness,
       });
-      
+
       requirement.metadata.needMoreClarification = analysis.needMoreClarification;
       requirement.metadata.lastAnalysisTimestamp = new Date().toISOString();
       if (analysis.dialogueEffectiveness) {
@@ -285,13 +285,13 @@ export class ClarifierService {
   }
 
   async generateExpectations(requirementId: string): Promise<any> {
-    const requirement = await this.requirementModel.findById(requirementId).exec();
+    const _requirement = 
 
     if (!requirement) {
       throw new Error('Requirement not found');
     }
-    
-    const sourceData = {
+
+    const _sourceData = 
       requirementId,
       text: requirement.text,
       clarifications: requirement.clarifications,
@@ -305,23 +305,23 @@ export class ClarifierService {
         4. 约束条件：描述系统必须遵守的限制
         
         返回JSON格式，包含id、name、description和children字段，其中children是子期望的数组。
-      `
+      `,
     };
-    
-    const parsedExpectations = await this.semanticMediatorService.translateBetweenModules(
+
+    const _parsedExpectations = 
       'clarifier',
       'expectation_generator',
-      sourceData
+      sourceData,
     );
-    
-    const createdExpectation = new this.expectationModel({
+
+    const _createdExpectation = 
       requirementId,
       model: parsedExpectations,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    const savedExpectation = await createdExpectation.save();
+    const _savedExpectation = 
 
     requirement.status = 'expectations_generated';
     requirement.updatedAt = new Date();
@@ -344,7 +344,7 @@ export class ClarifierService {
   }
 
   async analyzeClarificationProgress(requirementId: string): Promise<any> {
-    const requirement = await this.requirementModel.findById(requirementId).exec();
+    const _requirement = 
 
     if (!requirement) {
       throw new Error('Requirement not found');
@@ -359,11 +359,11 @@ export class ClarifierService {
       };
     }
 
-    const clarificationHistory = requirement.clarifications
+    const _clarificationHistory = 
       .map((c) => `问题ID: ${c.questionId}, 答案: ${c.answer}, 时间: ${c.timestamp}`)
       .join('\n');
 
-    const analysisPrompt = `
+    const _analysisPrompt = 
       分析以下需求及其澄清问题和答案，判断是否需要更多澄清：
       
       需求：${requirement.text}
@@ -386,7 +386,7 @@ export class ClarifierService {
       - dialogueEffectiveness: 对话有效性评估，包含score、strengths、weaknesses和recommendations
     `;
 
-    const analysisText = await this.llmRouterService.generateContent(analysisPrompt, {
+    const _analysisText = 
       systemPrompt: `你是一个专业的软件需求分析师，擅长将模糊的需求转化为清晰的期望模型。
       在多轮对话中，你应该记住之前的交流内容，并基于这些信息提出更有针对性的问题。
       每轮对话结束时，你应该明确总结你对需求的理解，并请用户确认。`,
@@ -408,10 +408,10 @@ export class ClarifierService {
     this.logger.log(`Analyzing multi-round dialogue for requirement: ${requirementId}`);
 
     try {
-      const sessionId = uuidv4();
+      const _sessionId = 
       this.logger.debug(`Generated session ID for multi-round dialogue analysis: ${sessionId}`);
 
-      const requirement = await this.requirementModel.findById(requirementId).exec();
+      const _requirement = 
 
       if (!requirement) {
         this.logger.error(`Requirement not found: ${requirementId}`);
@@ -427,8 +427,8 @@ export class ClarifierService {
         throw new Error('需要至少两轮对话才能进行多轮对话分析');
       }
 
-      const clarificationRounds = requirement.clarifications.length;
-      const totalDialogueMessages = requirement.dialogueLog?.length || 0;
+      const _clarificationRounds = 
+      const _totalDialogueMessages = 
       const averageAnswerLength =
         requirement.clarifications.reduce((sum, c) => sum + (c.answer?.length || 0), 0) /
         clarificationRounds;
@@ -442,8 +442,8 @@ export class ClarifierService {
         lastClarificationTime:
           requirement.clarifications[requirement.clarifications.length - 1]?.timestamp,
       });
-      
-      const requirementData = {
+
+      const _requirementData = 
         id: requirementId,
         title: requirement.title,
         text: requirement.text,
@@ -452,10 +452,10 @@ export class ClarifierService {
         clarifications: requirement.clarifications,
         dialogueLog: requirement.dialogueLog || [],
         metadata: requirement.metadata || {},
-        sessionId
+        sessionId,
       };
-      
-      const analysisData = {
+
+      const _analysisData = 
         analysisType: 'multi_round_dialogue',
         criteria: [
           '对话的有效性评分及评分理由',
@@ -467,12 +467,13 @@ export class ClarifierService {
           '改进对话效率的建议',
           '对话的语义连贯性分析',
           '需求的完整性评估',
-          '建议的后续澄清问题'
+          '建议的后续澄清问题',
         ],
         expectedFormat: {
           effectivenessScore: '数字(1-100)',
           scoreRationale: '字符串',
-          keyInsights: '对象数组，每个对象包含roundNumber、insights(字符串数组)和semanticTags(字符串数组)',
+          keyInsights:
+            '对象数组，每个对象包含roundNumber、insights(字符串数组)和semanticTags(字符串数组)',
           pivotalMoments: '对象数组，每个对象包含roundNumber、description和impact',
           focusShifts: '对象数组，每个对象包含from、to和roundNumber',
           requirementEvolution: '对象，包含initial、intermediate和current字段',
@@ -480,31 +481,31 @@ export class ClarifierService {
           improvementSuggestions: '字符串数组',
           semanticCoherence: '对象，包含score和analysis',
           completenessAssessment: '对象，包含score、missingElements和recommendations',
-          followUpQuestions: '对象数组，每个对象包含question、priority和rationale'
-        }
+          followUpQuestions: '对象数组，每个对象包含question、priority和rationale',
+        },
       };
-      
+
       this.logger.debug('Resolving semantic conflicts in multi-round dialogue');
-      
-      const analysis = await this.semanticMediatorService.resolveSemanticConflicts(
+
+      const _analysis = 
         'requirement',
         requirementData,
         'dialogue_analysis',
-        analysisData
+        analysisData,
       );
-      
+
       this.logger.debug('Successfully parsed multi-round dialogue analysis', {
         effectivenessScore: analysis.effectivenessScore,
         keyInsightsCount: analysis.keyInsights?.length || 0,
         pivotalMomentsCount: analysis.pivotalMoments?.length || 0,
         missedAspectsCount: analysis.missedAspects?.length || 0,
-        semanticCoherenceScore: analysis.semanticCoherence?.score
+        semanticCoherenceScore: analysis.semanticCoherence?.score,
       });
-      
+
       if (!requirement.metadata) {
         requirement.metadata = {};
       }
-      
+
       requirement.metadata.dialogueAnalysis = {
         timestamp: new Date().toISOString(),
         sessionId,
@@ -512,22 +513,24 @@ export class ClarifierService {
         semanticCoherenceScore: analysis.semanticCoherence?.score,
         completenessScore: analysis.completenessAssessment?.score,
         missedAspects: analysis.missedAspects,
-        followUpQuestionsCount: analysis.followUpQuestions?.length || 0
+        followUpQuestionsCount: analysis.followUpQuestions?.length || 0,
       };
-      
+
       await requirement.save();
       await this.memoryService.updateRequirement(requirement);
-      
+
       await this.logDialogue(requirementId, {
         type: 'dialogue_analysis',
         analysisType: 'multi_round',
         sessionId,
         effectivenessScore: analysis.effectivenessScore,
         semanticCoherenceScore: analysis.semanticCoherence?.score,
-        completenessScore: analysis.completenessAssessment?.score
+        completenessScore: analysis.completenessAssessment?.score,
       });
-      
-      this.logger.log(`Successfully analyzed multi-round dialogue for requirement: ${requirementId}`);
+
+      this.logger.log(
+        `Successfully analyzed multi-round dialogue for requirement: ${requirementId}`,
+      );
       return analysis;
     } catch (error) {
       this.logger.error(`Error analyzing multi-round dialogue: ${error.message}`, error.stack);
@@ -548,10 +551,10 @@ export class ClarifierService {
     this.logger.log(`Generating expectation summary for expectation: ${expectationId}`);
 
     try {
-      const sessionId = uuidv4();
+      const _sessionId = 
       this.logger.debug(`Generated session ID for expectation summary: ${sessionId}`);
 
-      const expectation = await this.expectationModel.findById(expectationId).exec();
+      const _expectation = 
 
       if (!expectation) {
         this.logger.error(`Expectation not found: ${expectationId}`);
@@ -560,7 +563,7 @@ export class ClarifierService {
 
       this.logger.debug(`Found expectation: ${expectation.title || 'Untitled'}`);
 
-      const modelSize = JSON.stringify(expectation.model).length;
+      const _modelSize = 
 
       this.logger.debug('Expectation metrics', {
         expectationId,
@@ -568,19 +571,19 @@ export class ClarifierService {
         createdAt: expectation.createdAt,
         updatedAt: expectation.updatedAt,
       });
-      
+
       this.logger.debug('Preparing expectation data for semantic transformation');
-      
-      const sourceData = {
+
+      const _sourceData = 
         expectationId,
         model: expectation.model,
         requirementId: expectation.requirementId,
         createdAt: expectation.createdAt,
         updatedAt: expectation.updatedAt,
-        metadata: expectation.metadata || {}
+        metadata: expectation.metadata || {},
       };
-      
-      const transformationParams = {
+
+      const _transformationParams = 
         transformationType: 'expectation_summary',
         outputFormat: {
           mainGoal: '字符串，表示系统的主要目标和价值',
@@ -590,18 +593,18 @@ export class ClarifierService {
           userImportance: '字符串，表示对用户最重要的方面',
           semanticCoherence: '对象，包含score和analysis',
           completenessScore: '数字(1-100)',
-          summary: '字符串，包含整体摘要'
+          summary: '字符串，包含整体摘要',
         },
         transformationRules: [
           '使用非技术语言，便于所有利益相关者理解',
           '突出最重要的期望',
           '清晰表达系统的价值主张',
           '长度适中（200-300字）',
-          '关注语义连贯性、需求完整性和实现可行性'
-        ]
+          '关注语义连贯性、需求完整性和实现可行性',
+        ],
       };
-      
-      const summaryObject = {
+
+      const _summaryObject = 
         mainGoal: `Summary of ${expectation.title || 'expectation'}`,
         coreFunctions: ['Function 1', 'Function 2'],
         nonFunctionalFeatures: ['Feature 1', 'Feature 2'],
@@ -609,51 +612,51 @@ export class ClarifierService {
         userImportance: 'Key user value proposition',
         semanticCoherence: { score: 85, analysis: 'Good coherence' },
         completenessScore: 90,
-        summary: `Comprehensive summary of the expectation model for ${expectation.title || 'the system'}`
+        summary: `Comprehensive summary of the expectation model for ${expectation.title || 'the system'}`,
       };
-      
+
       this.logger.debug('Tracking semantic transformation for expectation summary');
-      const transformationResult = await this.semanticMediatorService.trackSemanticTransformation(
+      const _transformationResult = 
         'expectation',
         'summary',
         sourceData,
-        summaryObject
+        summaryObject,
       );
-      
-      const summary = transformationResult.transformedData;
-      
+
+      const _summary = 
+
       this.logger.debug('Successfully received expectation summary', {
         mainGoalLength: summary.mainGoal?.length || 0,
         coreFunctionsCount: summary.coreFunctions?.length || 0,
         nonFunctionalFeaturesCount: summary.nonFunctionalFeatures?.length || 0,
         constraintsCount: summary.constraints?.length || 0,
         semanticCoherenceScore: summary.semanticCoherence?.score,
-        completenessScore: summary.completenessScore
+        completenessScore: summary.completenessScore,
       });
-      
+
       if (!expectation.metadata) {
         expectation.metadata = {};
       }
-      
+
       expectation.metadata.summary = {
         timestamp: new Date().toISOString(),
         sessionId,
         completenessScore: summary.completenessScore,
-        semanticCoherenceScore: summary.semanticCoherence?.score
+        semanticCoherenceScore: summary.semanticCoherence?.score,
       };
-      
+
       await expectation.save();
-      
+
       if (expectation.requirementId && process.env.NODE_ENV !== 'test') {
         await this.logDialogue(expectation.requirementId, {
           type: 'expectation_summary',
           expectationId,
           sessionId,
           completenessScore: summary.completenessScore,
-          semanticCoherenceScore: summary.semanticCoherence?.score
+          semanticCoherenceScore: summary.semanticCoherence?.score,
         });
       }
-      
+
       this.logger.log(`Successfully generated summary for expectation: ${expectationId}`);
       return summary;
     } catch (error) {
@@ -667,16 +670,16 @@ export class ClarifierService {
    * 记录用户与系统之间的对话，包括问题、回答和元数据
    * 增强版本包含详细的日志记录和错误处理
    */
-  async logDialogue(requirementId: string, message: any): Promise<void> {
+  async logDialogue(requirementId: string, message: unknown): Promise<void> {
     this.logger.log(`Logging dialogue message for requirement: ${requirementId}`);
 
     try {
-      const sessionId = message.sessionId || uuidv4();
-      const timestamp = new Date();
+      const _sessionId = 
+      const _timestamp = 
 
       this.logger.debug(`Dialogue log session ID: ${sessionId}`);
 
-      const requirement = await this.requirementModel.findById(requirementId).exec();
+      const _requirement = 
 
       if (!requirement) {
         this.logger.error(`Requirement not found: ${requirementId}`);
@@ -688,7 +691,7 @@ export class ClarifierService {
         requirement.dialogueLog = [];
       }
 
-      const enhancedMessage = {
+      const _enhancedMessage = 
         ...message,
         timestamp,
         sessionId,

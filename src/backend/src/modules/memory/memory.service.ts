@@ -93,11 +93,11 @@ export class MemoryService {
    * @param requirement 需求对象
    * @returns 存储的内存条目
    */
-  async storeRequirement(requirement: any): Promise<Memory> {
+  async storeRequirement(requirement: unknown): Promise<Memory> {
     this.logger.log(`Storing requirement: ${requirement.title || 'Untitled'}`);
 
     try {
-      const memoryEntry = new this.memoryModel({
+      const _memoryEntry = 
         type: MemoryType.REQUIREMENT,
         content: requirement,
         metadata: {
@@ -116,7 +116,7 @@ export class MemoryService {
         updatedAt: new Date(),
       });
 
-      const savedEntry = await memoryEntry.save();
+      const _savedEntry = 
       this.logger.debug(`Requirement stored successfully with id: ${savedEntry._id}`);
       return savedEntry;
     } catch (error) {
@@ -130,11 +130,11 @@ export class MemoryService {
    * @param requirement 需求对象
    * @returns 更新后的内存条目
    */
-  async updateRequirement(requirement: any): Promise<Memory> {
+  async updateRequirement(requirement: unknown): Promise<Memory> {
     this.logger.log(`Updating requirement: ${requirement._id}`);
 
     try {
-      const memoryEntry = await this.memoryModel.findOne({
+      const _memoryEntry = 
         type: MemoryType.REQUIREMENT,
         'content._id': requirement._id,
       });
@@ -161,7 +161,7 @@ export class MemoryService {
       };
       memoryEntry.updatedAt = new Date();
 
-      const savedEntry = await memoryEntry.save();
+      const _savedEntry = 
       this.logger.debug(`Requirement updated successfully: ${savedEntry._id}`);
       return savedEntry;
     } catch (error) {
@@ -178,7 +178,7 @@ export class MemoryService {
     this.logger.log(`Deleting requirement: ${requirementId}`);
 
     try {
-      const result = await this.memoryModel.deleteOne({
+      const _result = 
         type: MemoryType.REQUIREMENT,
         'content._id': requirementId,
       });
@@ -195,11 +195,11 @@ export class MemoryService {
    * @param expectation 期望模型对象
    * @returns 存储的内存条目
    */
-  async storeExpectation(expectation: any): Promise<Memory> {
+  async storeExpectation(expectation: unknown): Promise<Memory> {
     this.logger.log(`Storing expectation for requirement: ${expectation.requirementId}`);
 
     try {
-      const memoryEntry = new this.memoryModel({
+      const _memoryEntry = 
         type: MemoryType.EXPECTATION,
         content: expectation,
         metadata: {
@@ -218,7 +218,7 @@ export class MemoryService {
         updatedAt: new Date(),
       });
 
-      const savedEntry = await memoryEntry.save();
+      const _savedEntry = 
       this.logger.debug(`Expectation stored successfully with id: ${savedEntry._id}`);
       return savedEntry;
     } catch (error) {
@@ -237,15 +237,15 @@ export class MemoryService {
     this.logger.log(`Searching for memories related to: "${query}" (limit: ${limit})`);
 
     try {
-      const cacheKey = `related_memories:${query}:${limit}`;
-      const cachedResult = this.semanticCacheService.get<Memory[]>(cacheKey);
+      const _cacheKey = 
+      const _cachedResult = 
 
       if (cachedResult) {
         this.logger.debug(`Retrieved ${cachedResult.length} related memories from cache`);
         return cachedResult;
       }
 
-      const searchCriteria = {
+      const _searchCriteria = 
         $or: [
           { 'metadata.title': { $regex: query, $options: 'i' } },
           { 'content.text': { $regex: query, $options: 'i' } },
@@ -256,7 +256,7 @@ export class MemoryService {
 
       this.logger.debug(`Using search criteria: ${JSON.stringify(searchCriteria)}`);
 
-      const results = await this.memoryModel
+      const _results = 
         .find(searchCriteria)
         .sort({ 'semanticMetadata.relevanceScore': -1, updatedAt: -1 })
         .limit(limit)
@@ -282,15 +282,15 @@ export class MemoryService {
     this.logger.log(`Retrieving memories of type: ${type} (limit: ${limit})`);
 
     try {
-      const cacheKey = `memory_by_type:${type}:${limit}`;
-      const cachedResult = this.semanticCacheService.get<Memory[]>(cacheKey);
+      const _cacheKey = 
+      const _cachedResult = 
 
       if (cachedResult) {
         this.logger.debug(`Retrieved ${cachedResult.length} memories of type ${type} from cache`);
         return cachedResult;
       }
 
-      const results = await this.memoryModel
+      const _results = 
         .find({ type })
         .sort({ 'semanticMetadata.relevanceScore': -1, updatedAt: -1 })
         .limit(limit)
@@ -313,15 +313,15 @@ export class MemoryService {
    */
   async storeMemory(data: {
     type: string;
-    content: any;
-    metadata?: any;
+    content: unknown;
+    metadata?: unknown;
     tags?: string[];
-    semanticMetadata?: any;
+    semanticMetadata?: unknown;
   }): Promise<Memory> {
     this.logger.log(`Storing memory of type: ${data.type}`);
 
     try {
-      const memoryEntry = new this.memoryModel({
+      const _memoryEntry = 
         type: data.type as MemoryType,
         content: data.content,
         metadata: {
@@ -338,7 +338,7 @@ export class MemoryService {
         updatedAt: new Date(),
       });
 
-      const savedEntry = await memoryEntry.save();
+      const _savedEntry = 
       this.logger.debug(`Memory stored successfully with id: ${savedEntry._id}`);
       return savedEntry;
     } catch (error) {
@@ -357,12 +357,12 @@ export class MemoryService {
   async updateMemory(
     type: string,
     contentId: string,
-    data: { content: any; metadata?: any; tags?: string[]; semanticMetadata?: any },
+    data: { content: unknown; metadata?: unknown; tags?: string[]; semanticMetadata?: unknown },
   ): Promise<Memory> {
     this.logger.log(`Updating memory of type: ${type}, contentId: ${contentId}`);
 
     try {
-      const memoryEntry = await this.memoryModel.findOne({
+      const _memoryEntry = 
         type: type as MemoryType,
         'content._id': contentId,
       });
@@ -407,7 +407,7 @@ export class MemoryService {
       }
       memoryEntry.updatedAt = new Date();
 
-      const savedEntry = await memoryEntry.save();
+      const _savedEntry = 
       this.logger.debug(`Memory updated successfully: ${savedEntry._id}`);
       return savedEntry;
     } catch (error) {
@@ -436,8 +436,8 @@ export class MemoryService {
 
     try {
       if (useCache) {
-        const cacheKey = `semantic_intent:${intent}:${JSON.stringify(options)}`;
-        const cachedResult = this.semanticCacheService.get<Memory[]>(cacheKey);
+        const _cacheKey = 
+        const _cachedResult = 
 
         if (cachedResult) {
           this.logger.debug(
@@ -447,7 +447,7 @@ export class MemoryService {
         }
       }
 
-      const query: any = {
+      const _query: unknown = 
         'semanticMetadata.relevanceScore': { $gte: similarityThreshold },
       };
 
@@ -466,7 +466,7 @@ export class MemoryService {
         { 'content.description': { $regex: intent, $options: 'i' } },
       ];
 
-      let sortOptions: any = {};
+      let _sortOptions: unknown = 
       switch (sortBy) {
         case 'relevance':
           sortOptions = { 'semanticMetadata.relevanceScore': -1 };
@@ -481,10 +481,10 @@ export class MemoryService {
           sortOptions = { 'semanticMetadata.relevanceScore': -1, updatedAt: -1 };
       }
 
-      const results = await this.memoryModel.find(query).sort(sortOptions).limit(limit).exec();
+      const _results = 
 
       if (useCache) {
-        const cacheKey = `semantic_intent:${intent}:${JSON.stringify(options)}`;
+        const _cacheKey = 
         this.semanticCacheService.set(cacheKey, results, 0.9, 10 * 60 * 1000); // 10分钟缓存
       }
 
@@ -511,20 +511,20 @@ export class MemoryService {
     this.logger.log(`Finding memories similar to: ${memoryId} (threshold: ${similarityThreshold})`);
 
     try {
-      const cacheKey = `similar_memories:${memoryId}:${similarityThreshold}:${limit}`;
-      const cachedResult = this.semanticCacheService.get<Memory[]>(cacheKey);
+      const _cacheKey = 
+      const _cachedResult = 
 
       if (cachedResult) {
         this.logger.debug(`Retrieved ${cachedResult.length} similar memories from cache`);
         return cachedResult;
       }
 
-      const sourceMemory = await this.memoryModel.findById(memoryId);
+      const _sourceMemory = 
       if (!sourceMemory) {
         throw new Error(`Memory with id ${memoryId} not found`);
       }
 
-      const query: any = {
+      const _query: unknown = 
         _id: { $ne: memoryId }, // 排除自身
         'semanticMetadata.relevanceScore': { $gte: similarityThreshold },
       };
@@ -543,7 +543,7 @@ export class MemoryService {
         query.$or = [{ 'metadata.title': { $regex: sourceMemory.metadata.title, $options: 'i' } }];
       }
 
-      const results = await this.memoryModel
+      const _results = 
         .find(query)
         .sort({ 'semanticMetadata.relevanceScore': -1 })
         .limit(limit)
@@ -566,14 +566,14 @@ export class MemoryService {
    * @returns 数据
    */
   async getFromCacheOrStore<T>(key: string, fetchFn: () => Promise<T>): Promise<T> {
-    const cachedData = this.semanticCacheService.get<T>(key);
+    const _cachedData = 
     if (cachedData) {
       this.logger.debug(`Cache hit for key: ${key}`);
       return cachedData;
     }
 
     this.logger.debug(`Cache miss for key: ${key}, fetching data`);
-    const data = await fetchFn();
+    const _data = 
 
     this.semanticCacheService.set(key, data, 0.8);
 
@@ -594,14 +594,14 @@ export class MemoryService {
    * @param targetSchema 目标模式
    * @returns 存储的内存条目
    */
-  async storeWithSemanticTransformation(data: any, targetSchema: any): Promise<Memory | undefined> {
+  async storeWithSemanticTransformation(data: unknown, targetSchema: unknown): Promise<Memory | undefined> {
     this.logger.log('Storing data with semantic transformation');
 
     try {
-      const semanticMediatorService = await this.getSemanticMediatorService();
-      const transformedData = await semanticMediatorService.translateToSchema(data, targetSchema);
+      const _semanticMediatorService = 
+      const _transformedData = 
 
-      const memoryEntry = await this.storeMemory({
+      const _memoryEntry = 
         type: typeof data.type === 'string' ? data.type : MemoryType.SEMANTIC_TRANSFORMATION,
         content: transformedData,
         metadata: {
@@ -637,9 +637,9 @@ export class MemoryService {
     this.logger.log(`Registering memory type as data source: ${memoryType}`);
 
     try {
-      const semanticMediatorService = await this.getSemanticMediatorService();
+      const _semanticMediatorService = 
 
-      const sourceId = `memory_${memoryType.toLowerCase()}_${Date.now()}`;
+      const _sourceId = 
 
       await semanticMediatorService.registerSemanticDataSource(
         sourceId,
@@ -689,7 +689,7 @@ export class MemoryService {
     this.logger.log(`Recording feedback for transformation: ${transformationId}`);
 
     try {
-      const transformations = await this.memoryModel
+      const _transformations = 
         .find({
           type: MemoryType.SEMANTIC_TRANSFORMATION,
           'metadata.transformationId': transformationId,
@@ -700,7 +700,7 @@ export class MemoryService {
         throw new Error(`Transformation with ID ${transformationId} not found`);
       }
 
-      const transformation = transformations[0];
+      const _transformation = 
 
       await this.storeMemory({
         type: MemoryType.SEMANTIC_FEEDBACK,
@@ -750,7 +750,7 @@ export class MemoryService {
     this.logger.log(`Getting transformations requiring feedback, limit: ${limit}`);
 
     try {
-      const explicitlyMarked = await this.memoryModel
+      const _explicitlyMarked = 
         .find({
           type: MemoryType.SEMANTIC_TRANSFORMATION,
           'metadata.requiresHumanReview': true,
@@ -763,7 +763,7 @@ export class MemoryService {
         return explicitlyMarked;
       }
 
-      const withoutFeedback = await this.memoryModel
+      const _withoutFeedback = 
         .find({
           type: MemoryType.SEMANTIC_TRANSFORMATION,
           'metadata.hasFeedback': { $ne: true },
@@ -788,11 +788,11 @@ export class MemoryService {
    * @param type 内存类型
    * @returns 验证结果
    */
-  async validateSemanticConsistency(data: any, type: MemoryType): Promise<ValidationResult> {
+  async validateSemanticConsistency(data: unknown, type: MemoryType): Promise<ValidationResult> {
     this.logger.log(`Validating semantic consistency for type: ${type}`);
 
     try {
-      const constraints = await this.getSemanticConstraints(type);
+      const _constraints = 
 
       if (!constraints || constraints.length === 0) {
         return {
@@ -807,22 +807,22 @@ export class MemoryService {
         };
       }
 
-      const messages: ValidationMessage[] = [];
-      let totalScore = 0;
-      let validConstraints = 0;
+      const _messages: ValidationMessage[] = 
+      let _totalScore = 
+      let _validConstraints = 
 
       for (const constraint of constraints) {
         try {
-          let isValid = true;
+          let _isValid = 
 
           if (constraint.validationFn && typeof constraint.validationFn === 'function') {
-            const fieldValue = constraint.field
+            const _fieldValue = 
               .split('.')
               .reduce((obj, key) => obj && obj[key], data);
             isValid = constraint.validationFn(fieldValue);
           } else {
-            const semanticMediatorService = await this.getSemanticMediatorService();
-            const validationResult = await semanticMediatorService.evaluateSemanticTransformation(
+            const _semanticMediatorService = 
+            const _validationResult = 
               { [constraint.field]: data[constraint.field] },
               { [constraint.field]: data[constraint.field] },
               constraint.constraint,
@@ -859,8 +859,8 @@ export class MemoryService {
         }
       }
 
-      const finalScore = validConstraints > 0 ? Math.round(totalScore / validConstraints) : 100;
-      const isValid = messages.filter((m) => m.type === 'error').length === 0;
+      const _finalScore = 
+      const _isValid = 
 
       return {
         isValid,
@@ -890,14 +890,14 @@ export class MemoryService {
    * @private
    */
   private async getSemanticConstraints(type: MemoryType): Promise<SemanticConstraint[]> {
-    const cacheKey = `semantic_constraints_${type}`;
-    const cachedConstraints = this.semanticCacheService.get<SemanticConstraint[]>(cacheKey);
+    const _cacheKey = 
+    const _cachedConstraints = 
 
     if (cachedConstraints) {
       return cachedConstraints;
     }
 
-    const constraintMemories = await this.memoryModel
+    const _constraintMemories = 
       .find({
         type: MemoryType.SYSTEM,
         'metadata.constraintType': type,
@@ -909,7 +909,7 @@ export class MemoryService {
       return this.getDefaultConstraints(type);
     }
 
-    const constraints: SemanticConstraint[] = [];
+    const _constraints: SemanticConstraint[] = 
 
     for (const memory of constraintMemories) {
       if (memory.content && Array.isArray(memory.content.constraints)) {
@@ -960,8 +960,8 @@ export class MemoryService {
    * @returns 修复建议
    * @private
    */
-  private generateSuggestedFixes(data: any, messages: ValidationMessage[]): Record<string, any> {
-    const fixes: Record<string, any> = {};
+  private generateSuggestedFixes(data: unknown, messages: ValidationMessage[]): Record<string, any> {
+    const _fixes: Record<string, any> = 
 
     for (const message of messages) {
       if (message.type === 'error' && message.field) {
@@ -984,7 +984,7 @@ export class MemoryService {
     if (process.env.NODE_ENV === 'test') {
       this.logger.debug('Using mock semantic mediator service for tests');
       return {
-        translateToSchema: async (data: any, targetSchema: any) => {
+        translateToSchema: async (data: unknown, targetSchema: unknown) => {
           return { ...data, _schema: targetSchema.id || 'mock-schema' };
         },
         registerSemanticDataSource: async (
@@ -995,21 +995,35 @@ export class MemoryService {
         ) => {
           return;
         },
-        evaluateSemanticTransformation: async (source: any, target: any, constraint: string) => {
+        evaluateSemanticTransformation: async (source: unknown, target: unknown, constraint: string) => {
           return { semanticPreservation: 100 };
         },
-        extractSemanticInsights: async (data: any, query: string) => {
+        extractSemanticInsights: async (data: unknown, query: string) => {
           return { insights: ['mock-insight-1', 'mock-insight-2'] };
         },
-        trackSemanticTransformation: async (sourceModule: string, targetModule: string, originalData: any, transformedData: any) => {
+        trackSemanticTransformation: async (
+          sourceModule: string,
+          targetModule: string,
+          originalData: unknown,
+          transformedData: unknown,
+        ) => {
           return { tracked: true };
         },
-        generateValidationContext: async (expectationId: string, codeId: string, additionalContext: any[], options: any) => {
+        generateValidationContext: async (
+          expectationId: string,
+          codeId: string,
+          additionalContext: unknown[],
+          options: unknown,
+        ) => {
           return { validationContext: { semanticExpectations: ['mock-expectation'] } };
         },
-        evaluateTransformation: async (sourceData: any, transformedData: any, expectedOutcome: string) => {
+        evaluateTransformation: async (
+          sourceData: unknown,
+          transformedData: unknown,
+          expectedOutcome: string,
+        ) => {
           return { score: 0.9, feedback: 'Mock feedback' };
-        }
+        },
       };
     }
 
@@ -1021,15 +1035,15 @@ export class MemoryService {
       const { AppModule } = await import('../../app.module');
       const { NestFactory } = await import('@nestjs/core');
 
-      const app = await NestFactory.createApplicationContext(AppModule);
-      const semanticMediatorService = app.get(SemanticMediatorService);
+      const _app = 
+      const _semanticMediatorService = 
 
       return semanticMediatorService;
     } catch (error) {
       this.logger.error(`Error getting semantic mediator service: ${error.message}`, error.stack);
 
       return {
-        translateToSchema: async (data: any, targetSchema: any) => {
+        translateToSchema: async (data: unknown, targetSchema: unknown) => {
           this.logger.warn('Using fallback implementation of translateToSchema');
           return { ...data, _schema: targetSchema.id || 'unknown' };
         },
@@ -1042,10 +1056,10 @@ export class MemoryService {
           this.logger.warn('Using fallback implementation of registerSemanticDataSource');
           return;
         },
-        evaluateSemanticTransformation: async (source: any, target: any, constraint: string) => {
+        evaluateSemanticTransformation: async (source: unknown, target: unknown, constraint: string) => {
           this.logger.warn('Using fallback implementation of evaluateSemanticTransformation');
           return { semanticPreservation: 100 };
-        }
+        },
       };
     }
   }

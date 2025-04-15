@@ -7,9 +7,9 @@ import { SemanticCacheService } from '../services/semantic-cache.service';
 
 describe('MemoryService', () => {
   let service: MemoryService;
-  let mockMemoryModel: any;
+  let mockMemoryModel: unknown;
 
-  const mockMemory = {
+  const _mockMemory = 
     _id: 'test-id',
     type: MemoryType.REQUIREMENT,
     content: {
@@ -69,7 +69,7 @@ describe('MemoryService', () => {
     );
     mockMemoryModel.exec = jest.fn();
 
-    const mockSemanticCacheService = {
+    const _mockSemanticCacheService = 
       get: jest.fn(),
       set: jest.fn(),
       delete: jest.fn(),
@@ -83,7 +83,7 @@ describe('MemoryService', () => {
       }),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    const _module: TestingModule = 
       providers: [
         MemoryService,
         {
@@ -109,7 +109,7 @@ describe('MemoryService', () => {
 
   describe('storeRequirement', () => {
     it('should store a requirement successfully', async () => {
-      const requirement = {
+      const _requirement = 
         _id: 'req-123',
         title: 'Test Requirement',
         text: 'This is a test requirement',
@@ -135,14 +135,14 @@ describe('MemoryService', () => {
         }),
       }));
 
-      const result = await service.storeRequirement(requirement);
+      const _result = 
       expect(result).toBeDefined();
       expect(result.type).toBe(MemoryType.REQUIREMENT);
       expect(result.content).toEqual(requirement);
     });
 
     it('should handle errors when storing a requirement', async () => {
-      const requirement = {
+      const _requirement = 
         _id: 'req-123',
         title: 'Test Requirement',
         text: 'This is a test requirement',
@@ -160,7 +160,7 @@ describe('MemoryService', () => {
 
   describe('updateRequirement', () => {
     it('should update an existing requirement', async () => {
-      const requirement = {
+      const _requirement = 
         _id: 'req-123',
         title: 'Updated Requirement',
         text: 'This is an updated requirement',
@@ -190,14 +190,14 @@ describe('MemoryService', () => {
         }),
       });
 
-      const result = await service.updateRequirement(requirement);
+      const _result = 
       expect(result).toBeDefined();
       expect(result.content).toEqual(requirement);
       expect(result.metadata.updateCount).toBe(2);
     });
 
     it('should create a new requirement if not found', async () => {
-      const requirement = {
+      const _requirement = 
         _id: 'req-123',
         title: 'New Requirement',
         text: 'This is a new requirement',
@@ -216,9 +216,9 @@ describe('MemoryService', () => {
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as any);
+      } as unknown);
 
-      const result = await service.updateRequirement(requirement);
+      const _result = 
       expect(result).toBeDefined();
       expect(service.storeRequirement).toHaveBeenCalledWith(requirement);
     });
@@ -226,7 +226,7 @@ describe('MemoryService', () => {
 
   describe('deleteRequirement', () => {
     it('should delete a requirement successfully', async () => {
-      const requirementId = 'req-123';
+      const _requirementId = 
 
       mockMemoryModel.deleteOne = jest.fn().mockResolvedValue({ deletedCount: 1 });
 
@@ -238,7 +238,7 @@ describe('MemoryService', () => {
     });
 
     it('should handle errors when deleting a requirement', async () => {
-      const requirementId = 'req-123';
+      const _requirementId = 
 
       mockMemoryModel.deleteOne = jest.fn().mockRejectedValue(new Error('Database error'));
 
@@ -248,8 +248,8 @@ describe('MemoryService', () => {
 
   describe('getRelatedMemories', () => {
     it('should return related memories based on query', async () => {
-      const query = 'test';
-      const mockResults = [mockMemory, { ...mockMemory, _id: 'test-id-2' }];
+      const _query = 
+      const _mockResults = 
 
       mockMemoryModel.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnValue({
@@ -259,10 +259,10 @@ describe('MemoryService', () => {
         }),
       });
 
-      const result = await service.getRelatedMemories(query);
+      const _result = 
       expect(result).toEqual(mockResults);
 
-      const expectedQuery = {
+      const _expectedQuery = 
         $or: [
           { 'metadata.title': { $regex: query, $options: 'i' } },
           { 'content.text': { $regex: query, $options: 'i' } },
@@ -277,8 +277,8 @@ describe('MemoryService', () => {
 
   describe('getMemoryByType', () => {
     it('should return memories of specified type', async () => {
-      const type = MemoryType.EXPECTATION;
-      const mockResults = [
+      const _type = 
+      const _mockResults = 
         { ...mockMemory, type: MemoryType.EXPECTATION },
         { ...mockMemory, _id: 'test-id-2', type: MemoryType.EXPECTATION },
       ];
@@ -291,7 +291,7 @@ describe('MemoryService', () => {
         }),
       });
 
-      const result = await service.getMemoryByType(type);
+      const _result = 
       expect(result).toEqual(mockResults);
       expect(mockMemoryModel.find).toHaveBeenCalledWith({ type });
     });
@@ -299,7 +299,7 @@ describe('MemoryService', () => {
 
   describe('storeExpectation', () => {
     it('should store an expectation successfully', async () => {
-      const expectation = {
+      const _expectation = 
         requirementId: 'req-123',
         title: 'Test Expectation',
         version: 1,
@@ -327,7 +327,7 @@ describe('MemoryService', () => {
         }),
       }));
 
-      const result = await service.storeExpectation(expectation);
+      const _result = 
       expect(result).toBeDefined();
       expect(result.type).toBe(MemoryType.EXPECTATION);
       expect(result.content).toEqual(expectation);
@@ -336,9 +336,12 @@ describe('MemoryService', () => {
 
   describe('storeMemory', () => {
     it('should store a generic memory entry', async () => {
-      const data = {
+      const _data = 
         type: MemoryType.CODE,
-        content: { code: 'console.log("test")' },
+        content: { code: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("test")' },
         metadata: { language: 'javascript' },
         tags: ['code', 'test'],
       };
@@ -368,7 +371,7 @@ describe('MemoryService', () => {
         }),
       }));
 
-      const result = await service.storeMemory(data);
+      const _result = 
       expect(result).toBeDefined();
       expect(result.type).toBe(data.type);
       expect(result.content).toEqual(data.content);
@@ -378,10 +381,13 @@ describe('MemoryService', () => {
 
   describe('updateMemory', () => {
     it('should update an existing memory entry', async () => {
-      const type = MemoryType.CODE;
-      const contentId = 'code-123';
-      const data = {
-        content: { code: 'console.log("updated")' },
+      const _type = 
+      const _contentId = 
+      const _data = 
+        content: { code: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("updated")' },
         metadata: { language: 'javascript', version: 2 },
         tags: ['code', 'updated'],
       };
@@ -389,7 +395,10 @@ describe('MemoryService', () => {
       mockMemoryModel.findOne = jest.fn().mockResolvedValue({
         ...mockMemory,
         type,
-        content: { _id: contentId, code: 'console.log("test")' },
+        content: { _id: contentId, code: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("test")' },
         metadata: {
           language: 'javascript',
           version: 1,
@@ -416,7 +425,7 @@ describe('MemoryService', () => {
         }),
       });
 
-      const result = await service.updateMemory(type, contentId, data);
+      const _result = 
       expect(result).toBeDefined();
       expect(result.content).toEqual(data.content);
       expect(result.tags).toEqual(data.tags);
@@ -424,10 +433,13 @@ describe('MemoryService', () => {
     });
 
     it('should create a new memory entry if not found', async () => {
-      const type = MemoryType.CODE;
-      const contentId = 'code-123';
-      const data = {
-        content: { code: 'console.log("new")' },
+      const _type = 
+      const _contentId = 
+      const _data = 
+        content: { code: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("new")' },
         metadata: { language: 'javascript' },
         tags: ['code', 'new'],
       };
@@ -442,9 +454,9 @@ describe('MemoryService', () => {
         tags: data.tags,
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as any);
+      } as unknown);
 
-      const result = await service.updateMemory(type, contentId, data);
+      const _result = 
       expect(result).toBeDefined();
       expect(service.storeMemory).toHaveBeenCalledWith({
         type,

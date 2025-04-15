@@ -15,7 +15,7 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
   let llmRouterService: LlmRouterService;
   let codeModel: Model<Code>;
 
-  const mockExpectation = {
+  const _mockExpectation = 
     _id: 'test-expectation-id',
     content: {
       _id: 'test-expectation-id',
@@ -28,13 +28,16 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
     },
   };
 
-  const mockCode = {
+  const _mockCode = 
     _id: 'test-code-id',
     expectationId: 'test-expectation-id',
     files: [
       {
         path: 'test.ts',
-        content: 'console.log("test")',
+        content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("test")',
         language: 'typescript',
       },
     ],
@@ -53,8 +56,8 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
   };
 
   beforeEach(async () => {
-    const mockCodeModel = function() {
-      this.save = jest.fn().mockImplementation(function() {
+    const _mockCodeModel = 
+      this.save = jest.fn().mockImplementation(function () {
         return Promise.resolve({
           ...this,
           _id: 'test-code-id',
@@ -80,19 +83,24 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
     mockCodeModel.sort = jest.fn().mockReturnThis();
     mockCodeModel.exec = jest.fn().mockResolvedValue([mockCode]);
 
-    const mockLlmRouterService = {
-      generateContent: jest.fn().mockResolvedValue(JSON.stringify({
-        files: [
-          {
-            path: 'test.ts',
-            content: 'console.log("test")',
-            language: 'typescript',
-          },
-        ],
-      })),
+    const _mockLlmRouterService = 
+      generateContent: jest.fn().mockResolvedValue(
+        JSON.stringify({
+          files: [
+            {
+              path: 'test.ts',
+              content: '/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+/* eslint-disable-next-line no-console */
+console.log("test")',
+              language: 'typescript',
+            },
+          ],
+        }),
+      ),
     };
 
-    const mockMemoryService = {
+    const _mockMemoryService = 
       getMemoryByType: jest.fn().mockImplementation((type) => {
         if (type === MemoryType.EXPECTATION) {
           return Promise.resolve([mockExpectation]);
@@ -106,7 +114,7 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
       }),
     };
 
-    const mockSemanticMediatorService = {
+    const _mockSemanticMediatorService = 
       enrichWithContext: jest.fn().mockImplementation((source, data, context) => {
         return Promise.resolve({
           ...data,
@@ -129,14 +137,16 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
         target: 'code',
       }),
 
-      resolveSemanticConflicts: jest.fn().mockImplementation((source, target, sourceData, targetData) => {
-        return Promise.resolve({
-          resolved: true,
-          conflicts: [],
-          source,
-          target,
-        });
-      }),
+      resolveSemanticConflicts: jest
+        .fn()
+        .mockImplementation((source, target, sourceData, targetData) => {
+          return Promise.resolve({
+            resolved: true,
+            conflicts: [],
+            source,
+            target,
+          });
+        }),
       generateValidationContext: jest.fn().mockImplementation((expectationId, codeId) => {
         return Promise.resolve({
           expectationId,
@@ -153,20 +163,22 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
           data: data._id,
         });
       }),
-      evaluateSemanticTransformation: jest.fn().mockImplementation((sourceData, transformedData, expectedOutcome) => {
-        return Promise.resolve({
-          semanticPreservation: 95,
-          structuralAdaptability: 90,
-          informationCompleteness: 85,
-          overallQuality: 90,
-          improvements: ['Suggestion 1', 'Suggestion 2'],
-          isValid: true,
-          validationScore: 0.9,
-        });
-      }),
+      evaluateSemanticTransformation: jest
+        .fn()
+        .mockImplementation((sourceData, transformedData, expectedOutcome) => {
+          return Promise.resolve({
+            semanticPreservation: 95,
+            structuralAdaptability: 90,
+            informationCompleteness: 85,
+            overallQuality: 90,
+            improvements: ['Suggestion 1', 'Suggestion 2'],
+            isValid: true,
+            validationScore: 0.9,
+          });
+        }),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    const _module: TestingModule = 
       providers: [
         GeneratorService,
         {
@@ -197,13 +209,16 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
 
   describe('generateCodeWithSemanticInput', () => {
     it('should enrich semantic analysis with context', async () => {
-      const expectationId = 'test-expectation-id';
-      const semanticAnalysis = {
+      const _expectationId = 
+      const _semanticAnalysis = 
         key: 'value',
         summary: 'Semantic analysis summary',
       };
 
-      const result = await generatorService.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
+      const _result = 
+        expectationId,
+        semanticAnalysis,
+      );
 
       expect(result).toBeDefined();
       expect(semanticMediatorService.enrichWithContext).toHaveBeenCalledWith(
@@ -214,13 +229,16 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
     });
 
     it('should translate expectation to generator-friendly format', async () => {
-      const expectationId = 'test-expectation-id';
-      const semanticAnalysis = {
+      const _expectationId = 
+      const _semanticAnalysis = 
         key: 'value',
         summary: 'Semantic analysis summary',
       };
 
-      const result = await generatorService.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
+      const _result = 
+        expectationId,
+        semanticAnalysis,
+      );
 
       expect(result).toBeDefined();
       expect(semanticMediatorService.translateBetweenModules).toHaveBeenCalledWith(
@@ -231,13 +249,16 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
     });
 
     it('should track semantic transformation between expectation and code', async () => {
-      const expectationId = 'test-expectation-id';
-      const semanticAnalysis = {
+      const _expectationId = 
+      const _semanticAnalysis = 
         key: 'value',
         summary: 'Semantic analysis summary',
       };
 
-      const result = await generatorService.generateCodeWithSemanticInput(expectationId, semanticAnalysis);
+      const _result = 
+        expectationId,
+        semanticAnalysis,
+      );
 
       expect(result).toBeDefined();
       expect(semanticMediatorService.trackSemanticTransformation).toHaveBeenCalledWith(
@@ -252,13 +273,13 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
 
   describe('optimizeCode', () => {
     it('should extract semantic insights from feedback', async () => {
-      const codeId = 'test-code-id';
-      const semanticFeedback = {
+      const _codeId = 
+      const _semanticFeedback = 
         suggestions: ['Improve performance', 'Enhance readability'],
         priority: 'high',
       };
 
-      const result = await generatorService.optimizeCode(codeId, semanticFeedback);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(semanticMediatorService.extractSemanticInsights).toHaveBeenCalledWith(
@@ -268,13 +289,13 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
     });
 
     it('should resolve semantic conflicts between expectation and code', async () => {
-      const codeId = 'test-code-id';
-      const semanticFeedback = {
+      const _codeId = 
+      const _semanticFeedback = 
         suggestions: ['Improve performance', 'Enhance readability'],
         priority: 'high',
       };
 
-      const result = await generatorService.optimizeCode(codeId, semanticFeedback);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(semanticMediatorService.resolveSemanticConflicts).toHaveBeenCalledWith(
@@ -288,9 +309,9 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
 
   describe('validateCodeSemantics', () => {
     it('should validate code against semantic expectations', async () => {
-      const codeId = 'test-code-id';
+      const _codeId = 
 
-      const result = await generatorService.validateCodeSemantics(codeId);
+      const _result = 
 
       expect(result).toBeDefined();
       expect(result.validationContext).toBeDefined();
@@ -302,9 +323,11 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
     });
 
     it('should throw an error if code is not found', async () => {
-      const codeId = 'non-existent-id';
+      const _codeId = 
 
-      await expect(generatorService.validateCodeSemantics(codeId)).rejects.toThrow(`Code with id ${codeId} not found`);
+      await expect(generatorService.validateCodeSemantics(codeId)).rejects.toThrow(
+        `Code with id ${codeId} not found`,
+      );
     });
   });
 });

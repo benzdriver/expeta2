@@ -98,7 +98,7 @@ export class ClarifierController {
   }
 
   @Post('log-dialogue')
-  async logDialogue(@Body() data: { requirementId: string; message: any }) {
+  async logDialogue(@Body() data: { requirementId: string; message: unknown }) {
     this.logger.debug(`Logging dialogue message for requirement: ${data.requirementId}`);
     await this.clarifierService.logDialogue(data.requirementId, data.message);
     return { success: true };

@@ -10,7 +10,7 @@ describe('SemanticMediatorService Basic Tests', () => {
   let memoryService: MemoryService;
 
   beforeEach(async () => {
-    const mockLlmRouterService = {
+    const _mockLlmRouterService = 
       generateContent: jest.fn().mockImplementation((prompt, options) => {
         if (prompt.includes('translate')) {
           return Promise.resolve(JSON.stringify({ translated: true, data: 'translated data' }));
@@ -45,7 +45,7 @@ describe('SemanticMediatorService Basic Tests', () => {
       }),
     };
 
-    const memoryServiceMock = {
+    const _memoryServiceMock = 
       getRelatedMemories: jest.fn().mockResolvedValue([
         { content: 'memory1', type: MemoryType.EXPECTATION },
         { content: 'memory2', type: MemoryType.CODE },
@@ -60,7 +60,7 @@ describe('SemanticMediatorService Basic Tests', () => {
       }),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    const _module: TestingModule = 
       providers: [
         SemanticMediatorService,
         { provide: LlmRouterService, useValue: mockLlmRouterService },
@@ -78,31 +78,31 @@ describe('SemanticMediatorService Basic Tests', () => {
   });
 
   it('should translate between modules', async () => {
-    const result = await service.translateBetweenModules('clarifier', 'generator', {
+    const _result = 
       key: 'value',
     });
     expect(result).toBeDefined();
   });
 
   it('should enrich with context', async () => {
-    const result = await service.enrichWithContext('generator', { key: 'value' }, 'context query');
+    const _result = 
     expect(result).toBeDefined();
   });
 
   it('should resolve semantic conflicts', async () => {
-    const result = await service.resolveSemanticConflicts('moduleA', { key: 'source' }, 'moduleB', {
+    const _result = 
       key: 'target',
     });
     expect(result).toBeDefined();
   });
 
   it('should extract semantic insights', async () => {
-    const result = await service.extractSemanticInsights({ key: 'data' }, 'semantic query');
+    const _result = 
     expect(result).toBeDefined();
   });
 
   it('should track semantic transformation', async () => {
-    const result = await service.trackSemanticTransformation(
+    const _result = 
       'clarifier',
       'generator',
       { original: { key: 'value' } },
@@ -112,14 +112,14 @@ describe('SemanticMediatorService Basic Tests', () => {
   });
 
   it('should generate validation context', async () => {
-    const result = await service.generateValidationContext('exp-123', 'code-456', [], {
+    const _result = 
       strategy: 'balanced',
     });
     expect(result).toBeDefined();
   });
 
   it('should evaluate semantic transformation', async () => {
-    const result = await service.evaluateSemanticTransformation(
+    const _result = 
       { source: 'data' },
       { transformed: 'data' },
       'Expected outcome description',

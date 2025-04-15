@@ -10,7 +10,7 @@ export class GenerateCodeWithSemanticInputDto {
   /**
    * 语义分析结果
    */
-  semanticAnalysis: any;
+  semanticAnalysis: unknown;
 
   /**
    * 生成选项

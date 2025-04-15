@@ -7,10 +7,10 @@ import { SemanticQueryOptions } from '../interfaces/semantic-memory.interfaces';
 
 describe('MemoryService - Semantic Retrieval', () => {
   let service: MemoryService;
-  let mockMemoryModel: any;
-  let mockSemanticCacheService: any;
+  let mockMemoryModel: unknown;
+  let mockSemanticCacheService: unknown;
 
-  const mockMemory = {
+  const _mockMemory = 
     _id: 'test-id',
     type: MemoryType.REQUIREMENT,
     content: { text: 'Test requirement about user authentication' },
@@ -53,7 +53,7 @@ describe('MemoryService - Semantic Retrieval', () => {
       clear: jest.fn(),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    const _module: TestingModule = 
       providers: [
         MemoryService,
         {
@@ -80,14 +80,14 @@ describe('MemoryService - Semantic Retrieval', () => {
 
   describe('getBySemanticIntent', () => {
     it('should retrieve memories based on semantic intent', async () => {
-      const intent = 'find requirements about user authentication';
-      const options: SemanticQueryOptions = {
+      const _intent = 
+      const _options: SemanticQueryOptions = 
         similarityThreshold: 0.7,
         limit: 10,
         sortBy: 'relevance',
       };
 
-      const mockResults = [mockMemory, { ...mockMemory, _id: 'test-id-2' }];
+      const _mockResults = 
 
       mockMemoryModel.find.mockReturnValue({
         sort: jest.fn().mockReturnThis(),
@@ -95,19 +95,19 @@ describe('MemoryService - Semantic Retrieval', () => {
         exec: jest.fn().mockResolvedValue(mockResults),
       });
 
-      const result = await service.getBySemanticIntent(intent, options);
+      const _result = 
 
       expect(result).toEqual(mockResults);
       expect(mockMemoryModel.find).toHaveBeenCalled();
     });
 
     it('should use cache when available', async () => {
-      const intent = 'find requirements about user authentication';
-      const cachedResults = [mockMemory];
+      const _intent = 
+      const _cachedResults = 
 
       mockSemanticCacheService.get.mockReturnValue(cachedResults);
 
-      const result = await service.getBySemanticIntent(intent, { useCache: true });
+      const _result = 
 
       expect(result).toEqual(cachedResults);
       expect(mockSemanticCacheService.get).toHaveBeenCalled();
@@ -115,7 +115,7 @@ describe('MemoryService - Semantic Retrieval', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      const intent = 'find requirements about user authentication';
+      const _intent = 
 
       jest
         .spyOn<any, any>(service, 'getSemanticMediatorService')
@@ -127,7 +127,7 @@ describe('MemoryService - Semantic Retrieval', () => {
         exec: jest.fn().mockResolvedValue([]),
       });
 
-      const result = await service.getBySemanticIntent(intent);
+      const _result = 
 
       expect(result).toEqual([]);
     });
@@ -135,10 +135,10 @@ describe('MemoryService - Semantic Retrieval', () => {
 
   describe('findSimilarMemories', () => {
     it('should find similar memories based on memory ID', async () => {
-      const memoryId = 'test-id';
-      const similarityThreshold = 0.7;
+      const _memoryId = 
+      const _similarityThreshold = 
 
-      const mockResults = [
+      const _mockResults = 
         { ...mockMemory, _id: 'similar-id-1' },
         { ...mockMemory, _id: 'similar-id-2' },
       ];
@@ -153,7 +153,7 @@ describe('MemoryService - Semantic Retrieval', () => {
         exec: jest.fn().mockResolvedValue(mockResults),
       });
 
-      const result = await service.findSimilarMemories(memoryId, similarityThreshold);
+      const _result = 
 
       expect(result).toEqual(mockResults);
       expect(mockMemoryModel.findById).toHaveBeenCalledWith(memoryId);
@@ -161,7 +161,7 @@ describe('MemoryService - Semantic Retrieval', () => {
     });
 
     it('should return empty array if source memory not found', async () => {
-      const memoryId = 'non-existent-id';
+      const _memoryId = 
 
       mockMemoryModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
@@ -173,7 +173,7 @@ describe('MemoryService - Semantic Retrieval', () => {
         exec: jest.fn().mockResolvedValue([]),
       });
 
-      const result = await service.findSimilarMemories(memoryId);
+      const _result = 
 
       expect(result).toEqual([]);
       expect(mockMemoryModel.findById).toHaveBeenCalledWith(memoryId);

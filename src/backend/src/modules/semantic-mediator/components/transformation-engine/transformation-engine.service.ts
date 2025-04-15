@@ -34,11 +34,11 @@ export class TransformationEngineService implements ITransformationEngine {
   async generateTransformationPath(
     sourceDescriptor: SemanticDescriptor,
     targetDescriptor: SemanticDescriptor,
-    context?: any,
+    context?: unknown,
   ): Promise<any> {
     this.logger.debug('Generating transformation path');
 
-    const prompt = `
+    const _prompt = 
 生成从源数据结构到目标数据结构的转换路径：
 
 源结构描述：
@@ -63,12 +63,12 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmRouterService.generateContent(prompt, {
+      const _response = 
         temperature: 0.2,
         maxTokens: 2000,
       });
 
-      const transformationPath = JSON.parse(response);
+      const _transformationPath = 
 
       await this.memoryService.storeMemory({
         type: MemoryType.SEMANTIC_TRANSFORMATION,
@@ -98,14 +98,14 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param context 上下文信息
    * @returns 转换后的数据
    */
-  async executeTransformation(data: any, transformationPath: any, context?: any): Promise<any> {
+  async executeTransformation(data: unknown, transformationPath: unknown, context?: unknown): Promise<any> {
     this.logger.debug('Executing transformation');
 
-    const startTime = Date.now();
-    let result: any;
+    const _startTime = 
+    let result: unknown;
 
     try {
-      const strategyName = transformationPath.recommendedStrategy || 'default';
+      const _strategyName = 
 
       if (!this.transformationStrategies.has(strategyName)) {
         this.logger.warn(`Transformation strategy '${strategyName}' not found, using default`);
@@ -121,8 +121,8 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 
       result = await strategy(data, transformationPath, context);
 
-      const endTime = Date.now();
-      const executionTime = endTime - startTime;
+      const _endTime = 
+      const _executionTime = 
 
       await this.memoryService.storeMemory({
         type: MemoryType.SEMANTIC_TRANSFORMATION,
@@ -154,16 +154,16 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @returns 验证结果
    */
   async validateTransformation(
-    result: any,
+    result: unknown,
     targetDescriptor: SemanticDescriptor,
-    context?: any,
+    context?: unknown,
   ): Promise<{
     valid: boolean;
-    issues?: any[];
+    issues?: unknown[];
   }> {
     this.logger.debug('Validating transformation result');
 
-    const prompt = `
+    const _prompt = 
 验证转换结果是否符合目标结构描述：
 
 转换结果：
@@ -182,12 +182,12 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmRouterService.generateContent(prompt, {
+      const _response = 
         temperature: 0.1,
         maxTokens: 1500,
       });
 
-      const validationResult = JSON.parse(response);
+      const _validationResult = 
 
       await this.memoryService.storeMemory({
         type: MemoryType.SEMANTIC_TRANSFORMATION,
@@ -216,10 +216,10 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param metrics 性能指标
    * @returns 优化后的转换路径
    */
-  async optimizeTransformationPath(transformationPath: any, metrics?: any): Promise<any> {
+  async optimizeTransformationPath(transformationPath: unknown, metrics?: unknown): Promise<any> {
     this.logger.debug('Optimizing transformation path');
 
-    const prompt = `
+    const _prompt = 
 优化以下转换路径：
 
 转换路径：
@@ -236,12 +236,12 @@ ${metrics ? `性能指标：\n${JSON.stringify(metrics, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmRouterService.generateContent(prompt, {
+      const _response = 
         temperature: 0.2,
         maxTokens: 2000,
       });
 
-      const optimizedPath = JSON.parse(response);
+      const _optimizedPath = 
 
       await this.memoryService.storeMemory({
         type: MemoryType.SEMANTIC_TRANSFORMATION,
@@ -317,19 +317,19 @@ ${metrics ? `性能指标：\n${JSON.stringify(metrics, null, 2)}\n` : ''}
    * @returns 转换后的数据
    */
   private async defaultTransformationStrategy(
-    data: any,
-    transformationPath: any,
-    context?: any,
+    data: unknown,
+    transformationPath: unknown,
+    context?: unknown,
   ): Promise<any> {
     this.logger.debug('Executing default transformation strategy');
 
-    const result: any = {};
+    const _result: unknown = 
 
     if (transformationPath.mappings && Array.isArray(transformationPath.mappings)) {
       for (const mapping of transformationPath.mappings) {
         const { source, target, transform } = mapping;
 
-        let value = this.getNestedValue(data, source);
+        let _value = 
 
         if (transform) {
           value = await this.applyTransformation(value, transform, context);
@@ -370,13 +370,13 @@ ${metrics ? `性能指标：\n${JSON.stringify(metrics, null, 2)}\n` : ''}
    * @returns 转换后的数据
    */
   private async llmTransformationStrategy(
-    data: any,
-    transformationPath: any,
-    context?: any,
+    data: unknown,
+    transformationPath: unknown,
+    context?: unknown,
   ): Promise<any> {
     this.logger.debug('Executing LLM transformation strategy');
 
-    const prompt = `
+    const _prompt = 
 根据以下转换路径，将源数据转换为目标格式：
 
 源数据：
@@ -391,7 +391,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmRouterService.generateContent(prompt, {
+      const _response = 
         temperature: 0.1,
         maxTokens: 2000,
       });
@@ -411,19 +411,19 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @returns 转换后的数据
    */
   private async directMappingStrategy(
-    data: any,
-    transformationPath: any,
-    context?: any,
+    data: unknown,
+    transformationPath: unknown,
+    context?: unknown,
   ): Promise<any> {
     this.logger.debug('Executing direct mapping strategy');
 
-    const result: any = {};
+    const _result: unknown = 
 
     if (transformationPath.mappings && Array.isArray(transformationPath.mappings)) {
       for (const mapping of transformationPath.mappings) {
         const { source, target } = mapping;
 
-        const value = this.getNestedValue(data, source);
+        const _value = 
 
         this.setNestedValue(result, target, value);
       }
@@ -438,9 +438,9 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param path 路径
    * @returns 值
    */
-  private getNestedValue(obj: any, path: string): any {
-    const keys = path.split('.');
-    let value = obj;
+  private getNestedValue(obj: unknown, path: string): unknown {
+    const _keys = 
+    let _value = 
 
     for (const key of keys) {
       if (value === null || value === undefined) {
@@ -459,12 +459,12 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param path 路径
    * @param value 值
    */
-  private setNestedValue(obj: any, path: string, value: any): void {
-    const keys = path.split('.');
-    let current = obj;
+  private setNestedValue(obj: unknown, path: string, value: unknown): void {
+    const _keys = 
+    let _current = 
 
-    for (let i = 0; i < keys.length - 1; i++) {
-      const key = keys[i];
+    for (let _i = 
+      const _key = 
 
       if (!current[key] || typeof current[key] !== 'object') {
         current[key] = {};
@@ -483,7 +483,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param context 上下文
    * @returns 转换后的值
    */
-  private async applyTransformation(value: any, transform: any, context?: any): Promise<any> {
+  private async applyTransformation(value: unknown, transform: unknown, context?: unknown): Promise<any> {
     const { type, params } = transform;
 
     switch (type) {
@@ -505,7 +505,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param params 参数
    * @returns 格式化后的值
    */
-  private formatValue(value: any, params: any): any {
+  private formatValue(value: unknown, params: unknown): unknown {
     const { format } = params;
 
     if (!format) {
@@ -532,7 +532,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param params 参数
    * @returns 转换后的值
    */
-  private convertValue(value: any, params: any): any {
+  private convertValue(value: unknown, params: unknown): unknown {
     const { targetType } = params;
 
     if (!targetType) {
@@ -562,14 +562,14 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param context 上下文
    * @returns 转换后的值
    */
-  private async transformWithLlm(value: any, params: any, context?: any): Promise<any> {
+  private async transformWithLlm(value: unknown, params: unknown, context?: unknown): Promise<any> {
     const { instruction } = params;
 
     if (!instruction) {
       return value;
     }
 
-    const prompt = `
+    const _prompt = 
 根据以下指令转换值：
 
 值：
@@ -584,7 +584,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmRouterService.generateContent(prompt, {
+      const _response = 
         temperature: 0.1,
         maxTokens: 1000,
       });
@@ -605,7 +605,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param result 结果对象
    * @param params 参数
    */
-  private mergeObjects(result: any, params: any): void {
+  private mergeObjects(result: unknown, params: unknown): void {
     const { sources } = params;
 
     if (!sources || !Array.isArray(sources)) {
@@ -619,7 +619,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
         continue;
       }
 
-      const value = this.getNestedValue(result, path);
+      const _value = 
       this.setNestedValue(result, target, value);
     }
   }
@@ -629,7 +629,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param result 结果对象
    * @param params 参数
    */
-  private filterObject(result: any, params: any): void {
+  private filterObject(result: unknown, params: unknown): void {
     const { paths } = params;
 
     if (!paths || !Array.isArray(paths)) {
@@ -637,12 +637,12 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
     }
 
     for (const path of paths) {
-      const keys = path.split('.');
-      let current = result;
-      let parent = null;
-      let lastKey = '';
+      const _keys = 
+      let _current = 
+      let _parent = 
+      let _lastKey = 
 
-      for (let i = 0; i < keys.length - 1; i++) {
+      for (let _i = 
         if (!current || typeof current !== 'object') {
           break;
         }
@@ -665,14 +665,14 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param sourceData 源数据
    * @param context 上下文
    */
-  private computeValue(result: any, params: any, sourceData: any, context?: any): void {
+  private computeValue(result: unknown, params: unknown, sourceData: unknown, context?: unknown): void {
     const { target, expression, inputs } = params;
 
     if (!target || !expression) {
       return;
     }
 
-    const inputValues: any = {};
+    const _inputValues: unknown = 
 
     if (inputs && typeof inputs === 'object') {
       for (const [key, path] of Object.entries(inputs)) {
@@ -698,13 +698,13 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
    * @param context 上下文
    */
   private async computeExpressionWithLlm(
-    result: any,
+    result: unknown,
     target: string,
     expression: string,
-    inputs: any,
-    context?: any,
+    inputs: unknown,
+    context?: unknown,
   ): Promise<void> {
-    const prompt = `
+    const _prompt = 
 根据以下表达式和输入值计算结果：
 
 表达式：
@@ -719,7 +719,7 @@ ${context ? `上下文信息：\n${JSON.stringify(context, null, 2)}\n` : ''}
 `;
 
     try {
-      const response = await this.llmRouterService.generateContent(prompt, {
+      const _response = 
         temperature: 0.1,
         maxTokens: 500,
       });
