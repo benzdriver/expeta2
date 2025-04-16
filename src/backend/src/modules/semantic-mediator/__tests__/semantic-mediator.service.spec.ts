@@ -9,17 +9,7 @@ import { IntelligentCacheService } from '../components/intelligent-cache/intelli
 import { MonitoringSystemService } from '../components/monitoring-system/monitoring-system.service';
 import { HumanInTheLoopService } from '../components/human-in-the-loop/human-in-the-loop.service';
 import { SemanticMediatorExtensionService } from '../services/semantic-mediator-extension.service';
-
-// 模拟解析器服务
-class ResolverService {
-  async resolveConflicts(data1: any, data2: any, options?: any) {
-    return {
-      resolvedData: { resolved: true },
-      conflicts: [],
-      resolutionStrategy: 'merge'
-    };
-  }
-}
+import { ResolverService } from '../components/resolver/resolver.service';
 
 describe('SemanticMediatorService', () => {
   let service: SemanticMediatorService;
