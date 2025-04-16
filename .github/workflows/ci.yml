@@ -35,11 +35,10 @@ jobs:
         run: |
           cd src/backend
           npm run lint || echo "Linting failed but continuing"
-      # 暂时跳过测试，直到我们修复了TypeScript错误
-      # - name: Run Backend Tests
-      #   run: |
-      #     cd src/backend
-      #     npm test
+      - name: Run Backend Tests
+        run: |
+          cd src/backend
+          npm test
       - name: Build Backend
         run: |
           cd src/backend
@@ -66,7 +65,7 @@ jobs:
       - name: Run Frontend Tests
         run: |
           cd src/frontend
-          npm test || echo "Tests failed but continuing"
+          npm test
       - name: Build Frontend
         run: |
           cd src/frontend
