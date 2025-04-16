@@ -358,7 +358,7 @@ describe('OrchestratorService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           metadata: {},
-      });
+      } as any);
 
       const result = await service.executeWorkflow(workflowId, params);
 
