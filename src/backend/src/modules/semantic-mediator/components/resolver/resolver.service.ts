@@ -106,8 +106,8 @@ export class ResolverService {
 
       const cacheKey = this.generateDataHash(`${moduleA}:${moduleB}:${JSON.stringify(dataA)}:${JSON.stringify(dataB)}`);
       
-      // TODO: 解决类型兼容性问题，目前使用@ts-ignore临时解决
-      // @ts-ignore - 忽略类型错误，接口定义与实际使用存在差异
+      // TODO: 解决类型兼容性问题，目前使用@ts-expect-error临时解决
+      // @ts-expect-error - 忽略类型错误，接口定义与实际使用存在差异
       const cachedResult = await this.intelligentCache.retrieveTransformationPath(
         descriptorA as any,
         descriptorB as any,
@@ -144,8 +144,8 @@ export class ResolverService {
 
       if (!selectedStrategy) {
         for (const strategy of this.strategies) {
-          // TODO: 解决类型兼容性问题，目前使用@ts-ignore临时解决
-          // @ts-ignore - 忽略类型错误，接口定义与实际使用存在差异
+          // TODO: 解决类型兼容性问题，目前使用@ts-expect-error临时解决
+          // @ts-expect-error - 忽略类型错误，接口定义与实际使用存在差异
           const canResolve = await strategy.canResolve(dataA, dataB, descriptorA, descriptorB);
 
           if (canResolve) {
@@ -182,8 +182,8 @@ export class ResolverService {
       });
 
       if (result.success && options?.cacheResults !== false) {
-        // TODO: 解决类型兼容性问题，目前使用@ts-ignore临时解决
-        // @ts-ignore - 忽略类型错误，接口定义与实际使用存在差异
+        // TODO: 解决类型兼容性问题，目前使用@ts-expect-error临时解决
+        // @ts-expect-error - 忽略类型错误，接口定义与实际使用存在差异
         await this.intelligentCache.storeTransformationPath(
           descriptorA as any,
           descriptorB as any,
