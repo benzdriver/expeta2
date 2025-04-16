@@ -6,9 +6,13 @@ import { SemanticCacheService } from '../services/semantic-cache.service';
 
 describe('MemoryService - Semantic Mediator Integration', () => {
   let service: MemoryService;
-  let mockMemoryModel: unknown;
+  let mockMemoryModel: Record<string, jest.Mock>;
   let mockSemanticCacheService: unknown;
-  let mockSemanticMediatorService: unknown;
+  let mockSemanticMediatorService: {
+    translateToSchema: jest.Mock;
+    registerSemanticDataSource: jest.Mock;
+    evaluateSemanticTransformation?: jest.Mock;
+  };
 
   const _mockMemory = {
     _id: 'test-id',
@@ -21,31 +25,26 @@ describe('MemoryService - Semantic Mediator Integration', () => {
   };
 
   beforeEach(async () => {
-    mockMemoryModel = jest.fn().mockImplementation((data) => {
-      return {
-        ...data,
-        save: jest.fn().mockResolvedValue({
-          ...data,
-          _id: 'test-id',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }),
-      };
-    });
-
-    mockMemoryModel.find = jest.fn().mockReturnThis();
-    mockMemoryModel.findById = jest.fn().mockReturnThis();
-    mockMemoryModel.findOne = jest.fn().mockReturnThis();
-    mockMemoryModel.create = jest.fn().mockResolvedValue(_mockMemory);
-    mockMemoryModel.exec = jest.fn().mockResolvedValue([_mockMemory]);
-    mockMemoryModel.sort = jest.fn().mockReturnThis();
-    mockMemoryModel.limit = jest.fn().mockReturnThis();
+    mockMemoryModel = {
+      save: jest.fn().mockResolvedValue({
+        _id: 'test-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+      find: jest.fn().mockReturnThis(),
+      findById: jest.fn().mockReturnThis(),
+      findOne: jest.fn().mockReturnThis(),
+      create: jest.fn().mockResolvedValue(_mockMemory),
+      exec: jest.fn().mockResolvedValue([_mockMemory]),
+      sort: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis()
+    };
 
     mockSemanticCacheService = {
       get: jest.fn(),
       set: jest.fn(),
       delete: jest.fn(),
-      clear: jest.fn(),
+      clear: jest.fn()
     };
 
     mockSemanticMediatorService = {
@@ -55,7 +54,7 @@ describe('MemoryService - Semantic Mediator Integration', () => {
           _schema: schema.id || 'test-schema',
         });
       }),
-      registerSemanticDataSource: jest.fn().mockResolvedValue(undefined),
+      registerSemanticDataSource: jest.fn().mockResolvedValue(undefined)
     };
 
     const _module: TestingModule = await Test.createTestingModule({
@@ -96,9 +95,9 @@ describe('MemoryService - Semantic Mediator Integration', () => {
         updatedAt: new Date(),
       } as unknown);
 
-      const _result = 
+      const result = await (service as any).storeWithSemanticTransformation(_data, _targetSchema);
 
-      expect(_result).toBeDefined();
+      expect(result).toBeDefined();
       expect(mockSemanticMediatorService.translateToSchema).toHaveBeenCalledWith(
         _data,
         _targetSchema,
@@ -119,22 +118,18 @@ describe('MemoryService - Semantic Mediator Integration', () => {
         new Error('Transformation error'),
       );
 
-      const _originalConsoleError = 
+      const originalConsoleError = console.error;
       /* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
 console.error = jest.fn();
 
-      const _originalLoggerError = 
+      const originalLoggerError = service['logger'].error;
       service['logger'].error = jest.fn();
 
       try {
-        const _result = 
-        expect(_result).toBeUndefined();
+        const result = await (service as any).storeWithSemanticTransformation(_data, _targetSchema);
+        expect(result).toBeUndefined();
       } finally {
         /* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
 console.error = originalConsoleError;
         service['logger'].error = originalLoggerError;
       }
@@ -149,7 +144,7 @@ console.error = originalConsoleError;
       jest.spyOn(service, 'storeMemory').mockResolvedValue({
         _id: 'registry-id',
         type: MemoryType.SEMANTIC_TRANSFORMATION, // Use an existing memory type
-        content: { memoryType, description: semanticDescription },
+        content: { memoryType: _memoryType, description: _semanticDescription },
         metadata: {
           isRegistry: true,
           registrationType: 'dataSource',
@@ -159,40 +154,38 @@ console.error = originalConsoleError;
         updatedAt: new Date(),
       } as unknown);
 
-      await service.registerAsDataSource(memoryType, semanticDescription);
+      await (service as any).registerAsDataSource(_memoryType, _semanticDescription);
 
       expect(mockSemanticMediatorService.registerSemanticDataSource).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining('Memory'),
         expect.any(String), // The service might convert memoryType to string
-        semanticDescription,
+        _semanticDescription,
       );
     });
 
     it('should handle registration errors gracefully', async () => {
       const _memoryType = MemoryType.REQUIREMENT;
       const _semanticDescription = "Test semantic description";
+      const _data = {};
+      const _targetSchema = {};
 
       mockSemanticMediatorService.registerSemanticDataSource.mockRejectedValue(
         new Error('Registration error'),
       );
 
-      const _originalConsoleError = 
+      const originalConsoleError = console.error;
       /* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
 console.error = jest.fn();
 
-      const _originalLoggerError = 
+      const originalLoggerError = service['logger'].error;
       service['logger'].error = jest.fn();
 
       try {
-        const _result = 
-        expect(_result).toBeUndefined();
+        const result = await (service as any).registerAsDataSource(_memoryType, _semanticDescription);
+        expect(result).toBeUndefined();
       } finally {
         /* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
 console.error = originalConsoleError;
         service['logger'].error = originalLoggerError;
       }
@@ -204,17 +197,17 @@ console.error = originalConsoleError;
       jest.spyOn<any, any>(service, 'getSemanticMediatorService').mockRestore();
 
       try {
-        const _result = 
-        expect(_result).toBeDefined();
+        const result = await (service as any).getSemanticMediatorService();
+        expect(result).toBeDefined();
       } catch (error) {
-        const _fallback = {
+        const fallback = {
           translateToSchema: expect.any(Function),
           registerSemanticDataSource: expect.any(Function),
           evaluateSemanticTransformation: expect.any(Function),
         };
 
-        const _result = 
-        expect(_result).toMatchObject(fallback);
+        const fallbackResult = (service as any).getSemanticMediatorService();
+        expect(fallbackResult).toMatchObject(fallback);
       }
     });
   });
