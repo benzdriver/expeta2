@@ -411,7 +411,7 @@ describe('ClarifierService', () => {
   describe('generateClarificationQuestions', () => {
     it('should generate clarification questions using semantic mediator', async () => {
       const requirementText = 'Test requirement for clarification questions';
-      
+
       const result = await service.generateClarificationQuestions(requirementText);
       expect(result).toBeDefined();
       expect(result).toBeInstanceOf(Array);
@@ -624,7 +624,11 @@ describe('ClarifierService', () => {
         }),
       } as any);
 
-      const mockResult = await service.processClarificationAnswer(requirementId, questionId, answer);
+      const mockResult = await service.processClarificationAnswer(
+        requirementId,
+        questionId,
+        answer,
+      );
       expect(mockResult).toBeDefined();
       expect(mockResult.needMoreClarification).toBe(false);
       expect(mockResult.summary).toBe('All requirements are clear and well-defined');
@@ -707,14 +711,16 @@ describe('ClarifierService', () => {
 
     it('should generate complex hierarchical expectations', async () => {
       const requirementId = 'test-id';
-      
+
       jest.spyOn(requirementModel, 'findById').mockReturnValueOnce({
         exec: jest.fn().mockResolvedValue({
           _id: requirementId,
           title: 'E-commerce Platform',
           text: 'Build an e-commerce platform with user authentication and product catalog',
           status: 'clarifying',
-          save: jest.fn().mockImplementation(function() { return Promise.resolve(this); }),
+          save: jest.fn().mockImplementation(function () {
+            return Promise.resolve(this);
+          }),
           clarifications: [
             {
               questionId: 'q1',
@@ -736,21 +742,19 @@ describe('ClarifierService', () => {
         children: [
           {
             id: 'auth',
-            children: [
-              { id: 'login' },
-              { id: 'register' }
-            ]
+            children: [{ id: 'login' }, { id: 'register' }],
           },
-          { id: 'catalog' }
-        ]
+          { id: 'catalog' },
+        ],
       };
 
-      jest.spyOn(semanticMediatorService, 'translateBetweenModules')
+      jest
+        .spyOn(semanticMediatorService, 'translateBetweenModules')
         .mockResolvedValueOnce(mockModel);
 
       // 使用实际方法，不再mock
       const result = await service.generateExpectations(requirementId);
-      
+
       expect(result).toBeDefined();
       expect(result.requirementId).toBe(requirementId);
       expect(result.model).toBeDefined();
@@ -806,7 +810,7 @@ describe('ClarifierService', () => {
   describe('getExpectations', () => {
     it('should get expectations for a requirement', async () => {
       const testRequirementId = 'test-id';
-      
+
       // Mock the service's getExpectations method to return a test value
       const mockExpectationResult = {
         _id: 'test-expectation-id',
@@ -815,10 +819,10 @@ describe('ClarifierService', () => {
           id: 'root',
           name: 'Test Expectation',
           description: 'Test description',
-          children: []
-        }
+          children: [],
+        },
       };
-      
+
       jest.spyOn(service, 'getExpectations').mockResolvedValueOnce(mockExpectationResult as any);
 
       const result = await service.getExpectations(testRequirementId);
@@ -831,7 +835,7 @@ describe('ClarifierService', () => {
   describe('getExpectationById', () => {
     it('should get an expectation by id', async () => {
       const testExpectationId = 'test-expectation-id';
-      
+
       // Mock the service's getExpectationById method to return a test value
       const mockExpectationResult = {
         _id: 'test-expectation-id',
@@ -840,10 +844,10 @@ describe('ClarifierService', () => {
           id: 'root',
           name: 'Test Expectation',
           description: 'Test description',
-          children: []
-        }
+          children: [],
+        },
       };
-      
+
       jest.spyOn(service, 'getExpectationById').mockResolvedValueOnce(mockExpectationResult as any);
 
       const result = await service.getExpectationById(testExpectationId);
@@ -859,13 +863,13 @@ describe('ClarifierService', () => {
       const mockAnalysisResult = {
         needMoreClarification: true,
         suggestedQuestions: [
-          { id: 'q1', text: 'What is your budget?', type: 'business', priority: 'high' }
+          { id: 'q1', text: 'What is your budget?', type: 'business', priority: 'high' },
         ],
         summary: 'Need more information about budget and timeline',
         conversationStage: '初始理解',
-        dialogueEffectiveness: { score: 65 }
+        dialogueEffectiveness: { score: 65 },
       };
-      
+
       // Mock requirement model
       jest.spyOn(requirementModel, 'findById').mockReturnValueOnce({
         exec: jest.fn().mockResolvedValue({
@@ -873,26 +877,29 @@ describe('ClarifierService', () => {
           title: 'Test Requirement',
           text: 'Test requirement text',
           status: 'clarifying',
-          clarifications: [{ 
-            questionId: 'previous-question', 
-            answer: 'Previous answer',
-            timestamp: new Date()
-          }]
+          clarifications: [
+            {
+              questionId: 'previous-question',
+              answer: 'Previous answer',
+              timestamp: new Date(),
+            },
+          ],
         }),
       } as any);
-      
+
       // Mock llmRouterService to return expected analysis result
-      jest.spyOn(llmRouterService, 'generateContent')
+      jest
+        .spyOn(llmRouterService, 'generateContent')
         .mockResolvedValueOnce(JSON.stringify(mockAnalysisResult));
-      
+
       // Don't mock the service method, use the real one
       const result = await service.analyzeClarificationProgress(testRequirementId);
-      
+
       expect(result).toBeDefined();
       expect(result.needMoreClarification).toBe(true);
       expect(result.suggestedQuestions).toHaveLength(1);
       expect(result.conversationStage).toBe('初始理解');
-      
+
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('分析以下需求及其澄清问题和答案'),
         expect.any(Object),
@@ -903,7 +910,7 @@ describe('ClarifierService', () => {
   describe('analyzeMultiRoundDialogue', () => {
     it('should analyze multi-round dialogue using semantic mediator', async () => {
       const testRequirementId = 'test-id';
-      
+
       // 准备一个模拟的要求对象，具有多轮对话
       const mockRequirement = {
         _id: 'test-id',
@@ -939,11 +946,11 @@ describe('ClarifierService', () => {
           },
         }),
       };
-      
+
       jest.spyOn(requirementModel, 'findById').mockReturnValueOnce({
         exec: jest.fn().mockResolvedValue(mockRequirement),
       } as any);
-      
+
       // 准备一个模拟的分析结果
       const mockAnalysisResult = {
         dialogueEffectiveness: {
@@ -957,8 +964,9 @@ describe('ClarifierService', () => {
           improvements: ['More focused questions'],
         },
       };
-      
-      jest.spyOn(semanticMediatorService, 'resolveSemanticConflicts')
+
+      jest
+        .spyOn(semanticMediatorService, 'resolveSemanticConflicts')
         .mockResolvedValueOnce(mockAnalysisResult);
 
       const result = await service.analyzeMultiRoundDialogue(testRequirementId);
@@ -990,7 +998,7 @@ describe('ClarifierService', () => {
 
     it('should handle complex dialogue analysis with multiple rounds', async () => {
       const testRequirementId = 'test-id';
-      
+
       // 准备复杂对话测试数据
       const mockRequirement = {
         _id: 'complex-dialogue-id',
@@ -1015,14 +1023,54 @@ describe('ClarifierService', () => {
           },
         ],
         dialogueLog: [
-          { type: 'system', content: 'Initial system prompt', sender: 'system', timestamp: new Date(Date.now() - 4000000) },
-          { type: 'user', content: 'User requirement description', sender: 'user', timestamp: new Date(Date.now() - 3800000) },
-          { type: 'assistant', content: 'First clarification question', sender: 'clarifier', timestamp: new Date(Date.now() - 3700000) },
-          { type: 'user', content: 'First answer', sender: 'user', timestamp: new Date(Date.now() - 3600000) },
-          { type: 'assistant', content: 'Second clarification question', sender: 'clarifier', timestamp: new Date(Date.now() - 2500000) },
-          { type: 'user', content: 'Second answer', sender: 'user', timestamp: new Date(Date.now() - 2400000) },
-          { type: 'assistant', content: 'Third clarification question', sender: 'clarifier', timestamp: new Date(Date.now() - 1300000) },
-          { type: 'user', content: 'Third answer', sender: 'user', timestamp: new Date(Date.now() - 1200000) },
+          {
+            type: 'system',
+            content: 'Initial system prompt',
+            sender: 'system',
+            timestamp: new Date(Date.now() - 4000000),
+          },
+          {
+            type: 'user',
+            content: 'User requirement description',
+            sender: 'user',
+            timestamp: new Date(Date.now() - 3800000),
+          },
+          {
+            type: 'assistant',
+            content: 'First clarification question',
+            sender: 'clarifier',
+            timestamp: new Date(Date.now() - 3700000),
+          },
+          {
+            type: 'user',
+            content: 'First answer',
+            sender: 'user',
+            timestamp: new Date(Date.now() - 3600000),
+          },
+          {
+            type: 'assistant',
+            content: 'Second clarification question',
+            sender: 'clarifier',
+            timestamp: new Date(Date.now() - 2500000),
+          },
+          {
+            type: 'user',
+            content: 'Second answer',
+            sender: 'user',
+            timestamp: new Date(Date.now() - 2400000),
+          },
+          {
+            type: 'assistant',
+            content: 'Third clarification question',
+            sender: 'clarifier',
+            timestamp: new Date(Date.now() - 1300000),
+          },
+          {
+            type: 'user',
+            content: 'Third answer',
+            sender: 'user',
+            timestamp: new Date(Date.now() - 1200000),
+          },
         ],
         sessionId: 'complex-session-id',
         save: jest.fn().mockResolvedValue({
@@ -1040,11 +1088,11 @@ describe('ClarifierService', () => {
           },
         }),
       };
-      
+
       jest.spyOn(requirementModel, 'findById').mockReturnValueOnce({
         exec: jest.fn().mockResolvedValue(mockRequirement),
       } as any);
-      
+
       // 模拟语义解析服务返回的复杂分析结果
       const mockAnalysisResult = {
         dialogueEffectiveness: {
@@ -1071,12 +1119,13 @@ describe('ClarifierService', () => {
           'Clarify expected performance metrics',
         ],
       };
-      
-      jest.spyOn(semanticMediatorService, 'resolveSemanticConflicts')
+
+      jest
+        .spyOn(semanticMediatorService, 'resolveSemanticConflicts')
         .mockResolvedValueOnce(mockAnalysisResult);
-        
+
       const result = await service.analyzeMultiRoundDialogue(testRequirementId);
-      
+
       expect(result).toBeDefined();
       expect(result.dialogueEffectiveness).toBeDefined();
       expect(result.dialogueEffectiveness.score).toBe(92);
@@ -1093,7 +1142,7 @@ describe('ClarifierService', () => {
 
     it('should throw an error if there are not enough dialogue rounds', async () => {
       const testRequirementId = 'test-id';
-      
+
       // 模拟只有一轮对话的需求
       const mockInsufficientDialogue = {
         _id: 'test-id',
@@ -1108,19 +1157,19 @@ describe('ClarifierService', () => {
           },
         ],
       };
-      
+
       jest.spyOn(requirementModel, 'findById').mockReturnValueOnce({
         exec: jest.fn().mockResolvedValue(mockInsufficientDialogue),
       } as any);
 
-      await expect(
-        service.analyzeMultiRoundDialogue(testRequirementId),
-      ).rejects.toThrow('需要至少两轮对话才能进行多轮对话分析');
+      await expect(service.analyzeMultiRoundDialogue(testRequirementId)).rejects.toThrow(
+        '需要至少两轮对话才能进行多轮对话分析',
+      );
     });
 
     it('should handle errors from semantic mediator gracefully', async () => {
       const testRequirementId = 'test-id';
-      
+
       // 模拟会导致错误的需求
       const mockErrorProneRequirement = {
         _id: 'error-test-id',
@@ -1145,17 +1194,18 @@ describe('ClarifierService', () => {
         ],
         sessionId: 'error-session-id',
       };
-      
+
       jest.spyOn(requirementModel, 'findById').mockReturnValueOnce({
         exec: jest.fn().mockResolvedValue(mockErrorProneRequirement),
       } as any);
 
-      jest.spyOn(semanticMediatorService, 'resolveSemanticConflicts')
+      jest
+        .spyOn(semanticMediatorService, 'resolveSemanticConflicts')
         .mockRejectedValueOnce(new Error('Failed to analyze dialogue'));
 
-      await expect(
-        service.analyzeMultiRoundDialogue(testRequirementId),
-      ).rejects.toThrow('Failed to analyze dialogue');
+      await expect(service.analyzeMultiRoundDialogue(testRequirementId)).rejects.toThrow(
+        'Failed to analyze dialogue',
+      );
 
       expect(semanticMediatorService.resolveSemanticConflicts).toHaveBeenCalledWith(
         'requirement',
@@ -1183,13 +1233,15 @@ describe('ClarifierService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         metadata: {},
-        save: jest.fn().mockImplementation(function() { return Promise.resolve(this); }),
+        save: jest.fn().mockImplementation(function () {
+          return Promise.resolve(this);
+        }),
       };
 
       jest.spyOn(expectationModel, 'findById').mockReturnValueOnce({
         exec: jest.fn().mockResolvedValue(mockExpectation),
       } as any);
-      
+
       // Mock the summary result
       const expectedSummary = {
         mainGoal: 'Create a responsive web application',
@@ -1202,15 +1254,14 @@ describe('ClarifierService', () => {
         summary: 'A responsive web application with authentication and data visualization',
       };
 
-      jest.spyOn(semanticMediatorService, 'trackSemanticTransformation')
-        .mockResolvedValueOnce({
-          transformedData: expectedSummary,
-          transformationMetadata: {
-            transformationId: 'transform-123',
-            timestamp: new Date().toISOString(),
-            transformationType: 'expectation_summary',
-          },
-        });
+      jest.spyOn(semanticMediatorService, 'trackSemanticTransformation').mockResolvedValueOnce({
+        transformedData: expectedSummary,
+        transformationMetadata: {
+          transformationId: 'transform-123',
+          timestamp: new Date().toISOString(),
+          transformationType: 'expectation_summary',
+        },
+      });
 
       const result = await service.generateExpectationSummary(testExpectationId);
       expect(result).toBeDefined();
@@ -1252,11 +1303,14 @@ describe('ClarifierService', () => {
             children: [],
           },
           requirementId: 'error-requirement-id',
-          save: jest.fn().mockImplementation(function() { return Promise.resolve(this); }),
+          save: jest.fn().mockImplementation(function () {
+            return Promise.resolve(this);
+          }),
         }),
       } as any);
 
-      jest.spyOn(semanticMediatorService, 'trackSemanticTransformation')
+      jest
+        .spyOn(semanticMediatorService, 'trackSemanticTransformation')
         .mockRejectedValueOnce(new Error('Failed to generate summary'));
 
       await expect(service.generateExpectationSummary(testExpectationId)).rejects.toThrow(
