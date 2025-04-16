@@ -3,12 +3,12 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../../../app.module'; // Assuming AppModule imports ClarifierModule
 import { ClarifierService } from '../clarifier.service';
-import { ClarifierController } from '../clarifier.controller';
+// import { ClarifierController } from '../clarifier.controller';
 import mongoose from 'mongoose';
 
 describe('Clarifier Frontend-Backend Integration (e2e)', () => {
   let app: INestApplication;
-  let clarifierService: ClarifierService; // May not be needed if testing via HTTP requests
+  let _clarifierService: ClarifierService; // Prefixed with underscore as it's only used for initialization
 
   beforeAll(async () => {
     try {
@@ -19,7 +19,7 @@ describe('Clarifier Frontend-Backend Integration (e2e)', () => {
       app = moduleFixture.createNestApplication();
       await app.init();
 
-      clarifierService = moduleFixture.get<ClarifierService>(ClarifierService);
+      _clarifierService = moduleFixture.get<ClarifierService>(ClarifierService);
     } catch (error) {
       /* eslint-disable-next-line no-console */
       console.error(
@@ -70,12 +70,12 @@ describe('Clarifier Frontend-Backend Integration (e2e)', () => {
       answer: "我需要用户能够登录并查看他们的数据统计"
     };
 
-    const clarifyResponse = await request(app.getHttpServer())
+    const _clarifyResponse = await request(app.getHttpServer())
       .post(`/clarifier/answer`) // Correct endpoint
       .send(clarificationDto)
       .expect(200); // Expecting OK status
 
-    const updatedStatusResponse = await request(app.getHttpServer())
+    const _updatedStatusResponse = await request(app.getHttpServer())
       .get(`/clarifier/requirements/${requirementId}`) // Correct endpoint
       .expect(200);
   });

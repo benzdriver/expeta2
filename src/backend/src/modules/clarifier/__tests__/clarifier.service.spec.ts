@@ -52,13 +52,13 @@ describe('ClarifierService', () => {
       }),
     }));
 
-    (_mockRequirementModel as any).find = jest.fn().mockReturnValue({
+    (_mockRequirementModel as unknown as Record<string, jest.Mock>).find = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue([{ ..._mockRequirementInstance, save: _mockReqSave }]),
     });
-    (_mockRequirementModel as any).findById = jest.fn().mockReturnValue({
+    (_mockRequirementModel as unknown as Record<string, jest.Mock>).findById = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue(_mockRequirementInstance),
     });
-    (_mockRequirementModel as any).findByIdAndUpdate = jest.fn().mockReturnValue({
+    (_mockRequirementModel as unknown as Record<string, jest.Mock>).findByIdAndUpdate = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue({
         ..._mockRequirementInstance,
         title: 'Updated Requirement',
@@ -67,7 +67,7 @@ describe('ClarifierService', () => {
         save: jest.fn().mockResolvedValue({}),
       }),
     });
-    (_mockRequirementModel as any).findByIdAndDelete = jest.fn().mockReturnValue({
+    (_mockRequirementModel as unknown as Record<string, jest.Mock>).findByIdAndDelete = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue({
         ..._mockRequirementInstance,
         title: 'Deleted Requirement',
@@ -106,13 +106,13 @@ describe('ClarifierService', () => {
       }),
     }));
 
-    (_mockExpectationModel as any).findOne = jest.fn().mockReturnValue({
+    (_mockExpectationModel as unknown as Record<string, jest.Mock>).findOne = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue({ ..._mockExpectationInstance, save: _mockExpSave }),
     });
-    (_mockExpectationModel as any).findById = jest.fn().mockReturnValue({
+    (_mockExpectationModel as unknown as Record<string, jest.Mock>).findById = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue(_mockExpectationInstance),
     });
-    (_mockExpectationModel as any).findByIdAndUpdate = jest.fn().mockReturnValue({
+    (_mockExpectationModel as unknown as Record<string, jest.Mock>).findByIdAndUpdate = jest.fn().mockReturnValue({
       exec: jest
         .fn()
         .mockResolvedValue({ ..._mockExpectationInstance, status: 'updated', save: _mockExpSave }),
@@ -446,7 +446,7 @@ describe('ClarifierService', () => {
 
       jest
         .spyOn(semanticMediatorService, 'extractSemanticInsights')
-        .mockImplementationOnce((data: any, query) => {
+        .mockImplementationOnce((data: { text: string; sessionId: string; timestamp: string }, query) => {
           if (query.includes('生成5个关键澄清问题') && data.text.includes('e-commerce')) {
             return Promise.resolve([
               {
