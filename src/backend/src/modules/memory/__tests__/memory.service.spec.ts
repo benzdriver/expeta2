@@ -59,7 +59,7 @@ describe('MemoryService', () => {
           }),
         };
       }),
-      exec: jest.fn()
+      exec: jest.fn(),
     };
 
     const _mockSemanticCacheService = {
@@ -242,9 +242,7 @@ describe('MemoryService', () => {
   describe('getRelatedMemories', () => {
     it('should return related memories based on query', async () => {
       const _query = 'test query';
-      const _mockResults = [
-        { ..._mockMemory, content: { text: 'test query result' } }
-      ];
+      const _mockResults = [{ ..._mockMemory, content: { text: 'test query result' } }];
 
       mockMemoryModel.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnValue({
@@ -275,7 +273,7 @@ describe('MemoryService', () => {
       const _type = MemoryType.EXPECTATION;
       const _mockResults = [
         { ..._mockMemory, type: MemoryType.EXPECTATION },
-        { ..._mockMemory, _id: 'test-id-2', type: MemoryType.EXPECTATION }
+        { ..._mockMemory, _id: 'test-id-2', type: MemoryType.EXPECTATION },
       ];
 
       mockMemoryModel.find = jest.fn().mockReturnValue({
@@ -298,7 +296,7 @@ describe('MemoryService', () => {
         requirementId: 'req-123',
         title: 'Test Expectation',
         version: 1,
-        semanticTracking: { key: 'value' }
+        semanticTracking: { key: 'value' },
       };
 
       mockMemoryModel.mockImplementationOnce((data) => ({
@@ -333,9 +331,11 @@ describe('MemoryService', () => {
     it('should store a generic memory entry', async () => {
       const _data = {
         type: MemoryType.CODE,
-        content: { code: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")' },
+        content: {
+          code: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")',
+        },
         metadata: { language: 'javascript' },
-        tags: ['code', 'test']
+        tags: ['code', 'test'],
       };
 
       mockMemoryModel.mockImplementationOnce((modelData) => ({
@@ -376,15 +376,20 @@ describe('MemoryService', () => {
       const _type = MemoryType.CODE;
       const _contentId = 'code-123';
       const _data = {
-        content: { code: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("updated")' },
+        content: {
+          code: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("updated")',
+        },
         metadata: { language: 'javascript', version: 2 },
-        tags: ['code', 'updated']
+        tags: ['code', 'updated'],
       };
 
       mockMemoryModel.findOne = jest.fn().mockResolvedValue({
         ..._mockMemory,
         type: _type,
-        content: { _id: _contentId, code: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")' },
+        content: {
+          _id: _contentId,
+          code: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")',
+        },
         metadata: {
           language: 'javascript',
           version: 1,
@@ -422,9 +427,11 @@ describe('MemoryService', () => {
       const _type = MemoryType.CODE;
       const _contentId = 'code-123';
       const _data = {
-        content: { code: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("new")' },
+        content: {
+          code: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("new")',
+        },
         metadata: { language: 'javascript' },
-        tags: ['code', 'new']
+        tags: ['code', 'new'],
       };
 
       mockMemoryModel.findOne = jest.fn().mockResolvedValue(null);
