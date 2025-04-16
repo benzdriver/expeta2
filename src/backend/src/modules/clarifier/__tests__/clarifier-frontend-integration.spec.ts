@@ -39,10 +39,10 @@ describe('Clarifier Frontend-Backend Integration (e2e)', () => {
 
   it('should accept a new requirement and initiate clarification', async () => {
     const requirementDto = {
-      title: "新的测试需求",
-      text: "作为一个用户，我想要一个响应式网站，有用户登录和数据可视化功能。",
-      priority: "high",
-      domain: "web"
+      title: '新的测试需求',
+      text: '作为一个用户，我想要一个响应式网站，有用户登录和数据可视化功能。',
+      priority: 'high',
+      domain: 'web',
     };
 
     const createResponse = await request(app.getHttpServer())
@@ -62,12 +62,12 @@ describe('Clarifier Frontend-Backend Integration (e2e)', () => {
 
   it.skip('should process a user clarification message', async () => {
     // Skipping due to complex setup needed
-    const requirementId = "test-requirement-id";
-    const questionId = "test-question-id";
+    const requirementId = 'test-requirement-id';
+    const questionId = 'test-question-id';
     const clarificationDto = {
       requirementId,
       questionId,
-      answer: "我需要用户能够登录并查看他们的数据统计"
+      answer: '我需要用户能够登录并查看他们的数据统计',
     };
 
     const _clarifyResponse = await request(app.getHttpServer())
@@ -82,13 +82,13 @@ describe('Clarifier Frontend-Backend Integration (e2e)', () => {
 
   it.skip('should transition requirement status when clarification is sufficient', async () => {
     // Skipping due to complex setup needed
-    const requirementId = "test-requirement-id";
+    const requirementId = 'test-requirement-id';
 
-    const finalQuestionId = "final-question-id";
+    const finalQuestionId = 'final-question-id';
     const finalMessageDto = {
       requirementId,
       questionId: finalQuestionId,
-      answer: "确认完成了所有需求澄清，可以生成期望模型了"
+      answer: '确认完成了所有需求澄清，可以生成期望模型了',
     };
     await request(app.getHttpServer())
       .post(`/clarifier/answer`) // Correct endpoint

@@ -104,14 +104,16 @@ export class ResolverService {
         },
       };
 
-      const cacheKey = this.generateDataHash(`${moduleA}:${moduleB}:${JSON.stringify(dataA)}:${JSON.stringify(dataB)}`);
-      
+      const cacheKey = this.generateDataHash(
+        `${moduleA}:${moduleB}:${JSON.stringify(dataA)}:${JSON.stringify(dataB)}`,
+      );
+
       // TODO: 解决类型兼容性问题，目前使用@ts-ignore临时解决
       // @ts-ignore - 忽略类型错误，接口定义与实际使用存在差异
       const cachedResult = await this.intelligentCache.retrieveTransformationPath(
         descriptorA as any,
         descriptorB as any,
-        0.95
+        0.95,
       );
 
       if (cachedResult && !options?.forceStrategy) {
@@ -192,7 +194,7 @@ export class ResolverService {
             strategyUsed: selectedStrategy.name,
             confidence: result.confidence,
             timestamp: new Date().toISOString(),
-          }
+          },
         );
 
         await this.memoryService.storeMemory({

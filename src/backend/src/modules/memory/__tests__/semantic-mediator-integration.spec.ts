@@ -37,14 +37,14 @@ describe('MemoryService - Semantic Mediator Integration', () => {
       create: jest.fn().mockResolvedValue(_mockMemory),
       exec: jest.fn().mockResolvedValue([_mockMemory]),
       sort: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockReturnThis()
+      limit: jest.fn().mockReturnThis(),
     };
 
     mockSemanticCacheService = {
       get: jest.fn(),
       set: jest.fn(),
       delete: jest.fn(),
-      clear: jest.fn()
+      clear: jest.fn(),
     };
 
     mockSemanticMediatorService = {
@@ -54,7 +54,7 @@ describe('MemoryService - Semantic Mediator Integration', () => {
           _schema: schema.id || 'test-schema',
         });
       }),
-      registerSemanticDataSource: jest.fn().mockResolvedValue(undefined)
+      registerSemanticDataSource: jest.fn().mockResolvedValue(undefined),
     };
 
     const _module: TestingModule = await Test.createTestingModule({
@@ -120,7 +120,7 @@ describe('MemoryService - Semantic Mediator Integration', () => {
 
       const originalConsoleError = console.error;
       /* eslint-disable-next-line no-console */
-console.error = jest.fn();
+      console.error = jest.fn();
 
       const originalLoggerError = service['logger'].error;
       service['logger'].error = jest.fn();
@@ -130,7 +130,7 @@ console.error = jest.fn();
         expect(result).toBeUndefined();
       } finally {
         /* eslint-disable-next-line no-console */
-console.error = originalConsoleError;
+        console.error = originalConsoleError;
         service['logger'].error = originalLoggerError;
       }
     });
@@ -139,7 +139,7 @@ console.error = originalConsoleError;
   describe('registerAsDataSource', () => {
     it('should register memory type as a data source in semantic registry', async () => {
       const _memoryType = MemoryType.REQUIREMENT;
-      const _semanticDescription = "Test semantic description";
+      const _semanticDescription = 'Test semantic description';
 
       jest.spyOn(service, 'storeMemory').mockResolvedValue({
         _id: 'registry-id',
@@ -166,7 +166,7 @@ console.error = originalConsoleError;
 
     it('should handle registration errors gracefully', async () => {
       const _memoryType = MemoryType.REQUIREMENT;
-      const _semanticDescription = "Test semantic description";
+      const _semanticDescription = 'Test semantic description';
       const _data = {};
       const _targetSchema = {};
 
@@ -176,17 +176,20 @@ console.error = originalConsoleError;
 
       const originalConsoleError = console.error;
       /* eslint-disable-next-line no-console */
-console.error = jest.fn();
+      console.error = jest.fn();
 
       const originalLoggerError = service['logger'].error;
       service['logger'].error = jest.fn();
 
       try {
-        const result = await (service as any).registerAsDataSource(_memoryType, _semanticDescription);
+        const result = await (service as any).registerAsDataSource(
+          _memoryType,
+          _semanticDescription,
+        );
         expect(result).toBeUndefined();
       } finally {
         /* eslint-disable-next-line no-console */
-console.error = originalConsoleError;
+        console.error = originalConsoleError;
         service['logger'].error = originalLoggerError;
       }
     });

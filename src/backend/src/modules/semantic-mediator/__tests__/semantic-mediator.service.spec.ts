@@ -108,9 +108,10 @@ describe('SemanticMediatorService', () => {
               content: {
                 _id: 'code-1',
                 files: [
-                  { 
-                    path: 'file1.js', 
-                    content: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")' 
+                  {
+                    path: 'file1.js',
+                    content:
+                      '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")',
                   },
                   { path: 'file2.js', content: 'function test() { return true; }' },
                 ],
@@ -277,8 +278,8 @@ describe('SemanticMediatorService', () => {
       resolveConflicts: jest.fn().mockResolvedValue({
         resolvedData: { resolved: true },
         conflicts: [],
-        resolutionStrategy: 'merge'
-      })
+        resolutionStrategy: 'merge',
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -398,9 +399,7 @@ describe('SemanticMediatorService', () => {
       const data = { key: 'value' };
       const contextQuery = 'test context';
 
-      mockLlmRouterService.enrichWithContext.mockRejectedValueOnce(
-        new Error('Enrichment error'),
-      );
+      mockLlmRouterService.enrichWithContext.mockRejectedValueOnce(new Error('Enrichment error'));
 
       await expect(service.enrichWithContext(module, data, contextQuery)).rejects.toThrow(
         'Failed to enrich data with context: Enrichment error',
@@ -531,9 +530,7 @@ describe('SemanticMediatorService', () => {
       const sourceData = { key: 'original' };
       const transformedData = { key: 'transformed' };
 
-      mockLlmRouterService.generateContent.mockRejectedValueOnce(
-        new Error('Tracking error'),
-      );
+      mockLlmRouterService.generateContent.mockRejectedValueOnce(new Error('Tracking error'));
 
       await expect(
         service.trackSemanticTransformation(
@@ -571,9 +568,7 @@ describe('SemanticMediatorService', () => {
       const transformedData = { key: 'transformed' };
       const expectedOutcome = 'Expected transformation result';
 
-      mockLlmRouterService.generateContent.mockRejectedValueOnce(
-        new Error('Evaluation error'),
-      );
+      mockLlmRouterService.generateContent.mockRejectedValueOnce(new Error('Evaluation error'));
 
       await expect(
         service.evaluateSemanticTransformation(sourceData, transformedData, expectedOutcome),
