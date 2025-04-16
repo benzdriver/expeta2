@@ -30,7 +30,7 @@ export class ExplicitMappingStrategy implements ResolutionStrategy {
     if (!this.mappings.has(sourceType)) {
       this.mappings.set(sourceType, new Map());
     }
-    const _sourceMap = 
+    const sourceMap = this.mappings.get(sourceType);
     if (sourceMap) {
       sourceMap.set(targetType, mappingFn);
     }
@@ -49,10 +49,10 @@ export class ExplicitMappingStrategy implements ResolutionStrategy {
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     context?: unknown,
   ): Promise<boolean> {
-    const _sourceType = 
-    const _targetType = 
+    const sourceType = this.getEntityType(sourceDescriptor);
+    const targetType = this.getEntityType(targetDescriptor);
 
-    const _sourceMap = 
+    const sourceMap = this.mappings.get(sourceType);
     return this.mappings.has(sourceType) && sourceMap !== undefined && sourceMap.has(targetType);
   }
 
@@ -72,9 +72,9 @@ export class ExplicitMappingStrategy implements ResolutionStrategy {
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     context?: unknown,
   ): Promise<ResolutionResult> {
-    const _startTime = 
-    const _sourceType = 
-    const _targetType = 
+    const startTime = Date.now();
+    const sourceType = this.getEntityType(sourceDescriptor);
+    const targetType = this.getEntityType(targetDescriptor);
 
     try {
       if (!this.mappings.has(sourceType) || !this.mappings.get(sourceType)?.has(targetType)) {
@@ -96,13 +96,13 @@ export class ExplicitMappingStrategy implements ResolutionStrategy {
         };
       }
 
-      const _mappingFn = 
+      const mappingFn = this.mappings.get(sourceType)?.get(targetType);
 
       if (!mappingFn) {
         throw new Error(`Mapping function not found for ${sourceType} to ${targetType}`);
       }
 
-      const _resolvedData = 
+      const resolvedData = mappingFn(sourceData, targetData);
 
       return {
         success: true,

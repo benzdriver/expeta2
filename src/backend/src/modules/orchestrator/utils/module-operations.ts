@@ -3,45 +3,95 @@
  * 用于执行各个模块的操作
  */
 
+interface ClarifierParams {
+  requirementId?: string;
+  requirement?: any;
+  updateData?: any;
+  requirementText?: string;
+  questionId?: string;
+  answer?: string;
+  expectationId?: string;
+}
+
+interface GeneratorParams {
+  expectationId?: string;
+  semanticAnalysis?: any;
+  options?: any;
+  codeId?: string;
+}
+
+interface ValidatorParams {
+  expectationId?: string;
+  codeId?: string;
+  semanticInput?: any;
+  validationId?: string;
+}
+
+interface MemoryParams {
+  memory?: any;
+  memoryId?: string;
+  query?: any;
+  options?: any;
+  updateData?: any;
+}
+
+interface SemanticMediatorParams {
+  sourceModule?: string;
+  targetModule?: string;
+  data?: any;
+  module?: string;
+  contextQuery?: string;
+  moduleA?: string;
+  dataA?: any;
+  moduleB?: string;
+  dataB?: any;
+  sourceData?: any;
+  transformedData?: any;
+  expectedOutcome?: string;
+  query?: string;
+}
+
 /**
  * 执行Clarifier模块操作
  */
 export async function executeClarifierOperation(
-  clarifierService: unknown,
+  clarifierService: any,
   operation: string,
   params: unknown,
 ): Promise<any> {
+  const typedParams = params as ClarifierParams;
+  
   switch (operation) {
     case 'getRequirementById':
-      return clarifierService.getRequirementById(params.requirementId);
+      return clarifierService.getRequirementById(typedParams.requirementId);
 
     case 'createRequirement':
-      return clarifierService.createRequirement(params.requirement);
+      return clarifierService.createRequirement(typedParams.requirement);
 
     case 'updateRequirement':
-      return clarifierService.updateRequirement(params.requirementId, params.updateData);
+      return clarifierService.updateRequirement(typedParams.requirementId, typedParams.updateData);
 
     case 'generateClarificationQuestions':
-      return clarifierService.generateClarificationQuestions(params.requirementText);
+      return clarifierService.generateClarificationQuestions(typedParams.requirementText);
 
     case 'processClarificationAnswer':
       return clarifierService.processClarificationAnswer(
-        params.requirementId,
-        params.questionId,
-        params.answer,
+        typedParams.requirementId,
+        typedParams.questionId,
+        typedParams.answer,
       );
 
     case 'generateExpectations':
-      return clarifierService.generateExpectations(params.requirementId);
+      return clarifierService.generateExpectations(typedParams.requirementId);
 
     case 'getExpectations':
-      return clarifierService.getExpectations(params.requirementId);
+      return clarifierService.getExpectations(typedParams.requirementId);
 
     case 'getExpectationById':
-      return clarifierService.getExpectationById(params.expectationId);
+      return clarifierService.getExpectationById(typedParams.expectationId);
 
     case 'analyzeClarificationProgress':
-      return clarifierService.analyzeClarificationProgress(params.requirementId);
+      return clarifierService.analyzeClarificationProgress(typedParams.requirementId);
 
     default:
       throw new Error(`Unknown Clarifier operation: ${operation}`);
@@ -52,26 +102,28 @@ export async function executeClarifierOperation(
  * 执行Generator模块操作
  */
 export async function executeGeneratorOperation(
-  generatorService: unknown,
+  generatorService: any,
   operation: string,
   params: unknown,
 ): Promise<any> {
+  const typedParams = params as GeneratorParams;
+  
   switch (operation) {
     case 'generateCode':
-      return generatorService.generateCode(params.expectationId, params.options);
+      return generatorService.generateCode(typedParams.expectationId, typedParams.options);
 
     case 'generateCodeWithSemanticInput':
       return generatorService.generateCodeWithSemanticInput(
-        params.expectationId,
-        params.semanticAnalysis,
-        params.options,
+        typedParams.expectationId,
+        typedParams.semanticAnalysis,
+        typedParams.options,
       );
 
     case 'getCodeByExpectationId':
-      return generatorService.getCodeByExpectationId(params.expectationId);
+      return generatorService.getCodeByExpectationId(typedParams.expectationId);
 
     case 'getCodeById':
-      return generatorService.getCodeById(params.codeId);
+      return generatorService.getCodeById(typedParams.codeId);
 
     default:
       throw new Error(`Unknown Generator operation: ${operation}`);
@@ -82,29 +134,31 @@ export async function executeGeneratorOperation(
  * 执行Validator模块操作
  */
 export async function executeValidatorOperation(
-  validatorService: unknown,
+  validatorService: any,
   operation: string,
   params: unknown,
 ): Promise<any> {
+  const typedParams = params as ValidatorParams;
+  
   switch (operation) {
     case 'validateCode':
-      return validatorService.validateCode(params.expectationId, params.codeId);
+      return validatorService.validateCode(typedParams.expectationId, typedParams.codeId);
 
     case 'validateCodeWithSemanticInput':
       return validatorService.validateCodeWithSemanticInput(
-        params.expectationId,
-        params.codeId,
-        params.semanticInput,
+        typedParams.expectationId,
+        typedParams.codeId,
+        typedParams.semanticInput,
       );
 
     case 'getValidationsByExpectationId':
-      return validatorService.getValidationsByExpectationId(params.expectationId);
+      return validatorService.getValidationsByExpectationId(typedParams.expectationId);
 
     case 'getValidationsByCodeId':
-      return validatorService.getValidationsByCodeId(params.codeId);
+      return validatorService.getValidationsByCodeId(typedParams.codeId);
 
     case 'getValidationById':
-      return validatorService.getValidationById(params.validationId);
+      return validatorService.getValidationById(typedParams.validationId);
 
     default:
       throw new Error(`Unknown Validator operation: ${operation}`);
@@ -115,25 +169,27 @@ export async function executeValidatorOperation(
  * 执行Memory模块操作
  */
 export async function executeMemoryOperation(
-  memoryService: unknown,
+  memoryService: any,
   operation: string,
   params: unknown,
 ): Promise<any> {
+  const typedParams = params as MemoryParams;
+  
   switch (operation) {
     case 'storeMemory':
-      return memoryService.storeMemory(params.memory);
+      return memoryService.storeMemory(typedParams.memory);
 
     case 'getMemoryById':
-      return memoryService.getMemoryById(params.memoryId);
+      return memoryService.getMemoryById(typedParams.memoryId);
 
     case 'getRelatedMemories':
-      return memoryService.getRelatedMemories(params.query, params.options);
+      return memoryService.getRelatedMemories(typedParams.query, typedParams.options);
 
     case 'updateMemory':
-      return memoryService.updateMemory(params.memoryId, params.updateData);
+      return memoryService.updateMemory(typedParams.memoryId, typedParams.updateData);
 
     case 'deleteMemory':
-      return memoryService.deleteMemory(params.memoryId);
+      return memoryService.deleteMemory(typedParams.memoryId);
 
     default:
       throw new Error(`Unknown Memory operation: ${operation}`);
@@ -144,49 +200,51 @@ export async function executeMemoryOperation(
  * 执行SemanticMediator模块操作
  */
 export async function executeSemanticMediatorOperation(
-  semanticMediatorService: unknown,
+  semanticMediatorService: any,
   operation: string,
   params: unknown,
 ): Promise<any> {
+  const typedParams = params as SemanticMediatorParams;
+  
   switch (operation) {
     case 'translateBetweenModules':
       return semanticMediatorService.translateBetweenModules(
-        params.sourceModule,
-        params.targetModule,
-        params.data,
+        typedParams.sourceModule,
+        typedParams.targetModule,
+        typedParams.data,
       );
 
     case 'enrichWithContext':
       return semanticMediatorService.enrichWithContext(
-        params.module,
-        params.data,
-        params.contextQuery,
+        typedParams.module,
+        typedParams.data,
+        typedParams.contextQuery,
       );
 
     case 'resolveSemanticConflicts':
       return semanticMediatorService.resolveSemanticConflicts(
-        params.moduleA,
-        params.dataA,
-        params.moduleB,
-        params.dataB,
+        typedParams.moduleA,
+        typedParams.dataA,
+        typedParams.moduleB,
+        typedParams.dataB,
       );
 
     case 'extractSemanticInsights':
-      return semanticMediatorService.extractSemanticInsights(params.data, params.query);
+      return semanticMediatorService.extractSemanticInsights(typedParams.data, typedParams.query);
 
     case 'trackSemanticTransformation':
       return semanticMediatorService.trackSemanticTransformation(
-        params.sourceModule,
-        params.targetModule,
-        params.sourceData,
-        params.transformedData,
+        typedParams.sourceModule,
+        typedParams.targetModule,
+        typedParams.sourceData,
+        typedParams.transformedData,
       );
 
     case 'evaluateSemanticTransformation':
       return semanticMediatorService.evaluateSemanticTransformation(
-        params.sourceData,
-        params.transformedData,
-        params.expectedOutcome,
+        typedParams.sourceData,
+        typedParams.transformedData,
+        typedParams.expectedOutcome,
       );
 
     default:

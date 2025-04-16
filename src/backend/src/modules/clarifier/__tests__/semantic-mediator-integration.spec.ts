@@ -12,8 +12,8 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
   let clarifierService: ClarifierService;
   let memoryService: MemoryService;
   let semanticMediatorService: SemanticMediatorService;
-  let mockRequirementModel: unknown;
-  let mockExpectationModel: unknown;
+  let mockRequirementModel: any;
+  let mockExpectationModel: any;
 
   beforeEach(async () => {
     mockRequirementModel = {
@@ -43,11 +43,11 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
     mockExpectationModel.findByIdAndUpdate = jest.fn().mockReturnThis();
     mockExpectationModel.exec = jest.fn().mockResolvedValue([]);
 
-    const _mockLlmRouterService = 
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockResolvedValue('{"result": "test"}'),
     };
 
-    const _mockMemoryService = 
+    const mockMemoryService = {
       storeRequirement: jest.fn().mockResolvedValue(null),
       updateRequirement: jest.fn().mockResolvedValue(null),
       deleteRequirement: jest.fn().mockResolvedValue(null),
@@ -66,7 +66,7 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
       }),
     };
 
-    const _module: TestingModule = 
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClarifierService,
         {
@@ -134,10 +134,10 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
 
   describe('generateClarificationQuestions', () => {
     it('should use semantic mediator to extract insights from requirement text', async () => {
-      const _extractInsightsSpy = 
+      const extractInsightsSpy = jest.spyOn(semanticMediatorService, 'extractSemanticInsights');
 
-      const _requirementText = 
-      const _result = 
+      const requirementText = 'Create a modern landing page with user authentication.';
+      const result = await clarifierService.generateClarificationQuestions(requirementText);
 
       expect(extractInsightsSpy).toHaveBeenCalled();
       expect(result).toBeDefined();
@@ -148,7 +148,7 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
         .spyOn(semanticMediatorService, 'extractSemanticInsights')
         .mockRejectedValueOnce(new Error('Insight extraction failed'));
 
-      const _requirementText = 
+      const requirementText = 'Create a modern landing page with user authentication.';
 
       await expect(
         clarifierService.generateClarificationQuestions(requirementText),
@@ -158,11 +158,11 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
 
   describe('processClarificationAnswer', () => {
     it('should use semantic mediator to enrich answer with context', async () => {
-      const _enrichWithContextSpy = 
+      const enrichWithContextSpy = jest.spyOn(semanticMediatorService, 'enrichWithContext');
 
-      const _requirementId = 
-      const _questionId = 
-      const _answer = 
+      const requirementId = 'test-req-123';
+      const questionId = 'question-123';
+      const answer = 'The landing page should focus on product features.';
 
       mockRequirementModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
@@ -190,7 +190,7 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
         }),
       });
 
-      const _result = 
+      const result = await clarifierService.processClarificationAnswer(
         requirementId,
         questionId,
         answer,
@@ -203,9 +203,9 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
 
   describe('generateExpectations', () => {
     it('should use semantic mediator to translate requirements to expectations', async () => {
-      const _translateSpy = 
+      const translateSpy = jest.spyOn(semanticMediatorService, 'translateBetweenModules');
 
-      const _requirementId = 
+      const requirementId = 'test-req-123';
 
       mockRequirementModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
@@ -234,7 +234,7 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
         }),
       });
 
-      const _result = 
+      const result = await clarifierService.generateExpectations(requirementId);
 
       expect(translateSpy).toHaveBeenCalled();
       expect(result).toBeDefined();
@@ -243,9 +243,9 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
 
   describe('analyzeMultiRoundDialogue', () => {
     it('should use semantic mediator to resolve semantic conflicts in dialogue', async () => {
-      const _resolveConflictsSpy = 
+      const resolveConflictsSpy = jest.spyOn(semanticMediatorService, 'resolveSemanticConflicts');
 
-      const _requirementId = 
+      const requirementId = 'test-req-123';
 
       mockRequirementModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
@@ -294,7 +294,7 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
         }),
       });
 
-      const _result = 
+      const result = await clarifierService.analyzeMultiRoundDialogue(requirementId);
 
       expect(resolveConflictsSpy).toHaveBeenCalled();
       expect(result).toBeDefined();
@@ -303,12 +303,12 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
 
   describe('generateExpectationSummary', () => {
     it('should use semantic mediator to track semantic transformation for summaries', async () => {
-      const _trackTransformationSpy = 
+      const trackTransformationSpy = jest.spyOn(
         semanticMediatorService,
         'trackSemanticTransformation',
       );
 
-      const _expectationId = 
+      const expectationId = 'test-exp-123';
 
       mockExpectationModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
@@ -326,7 +326,7 @@ describe('ClarifierService - Semantic Mediator Integration', () => {
         }),
       });
 
-      const _result = 
+      const result = await clarifierService.generateExpectationSummary(expectationId);
 
       expect(trackTransformationSpy).toHaveBeenCalled();
       expect(result).toBeDefined();

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { LlmRouterService } from '../../services/llm-router.service';
 import { MemoryService } from '../memory/memory.service';
 import { MemoryType } from '../memory/schemas/memory.schema';
+import { v4 as uuidv4 } from 'uuid';
 
 import { SemanticDescriptor } from './interfaces/semantic-descriptor.interface';
 
@@ -11,6 +12,7 @@ import { IntelligentCacheService } from './components/intelligent-cache/intellig
 import { MonitoringSystemService } from './components/monitoring-system/monitoring-system.service';
 import { HumanInTheLoopService } from './components/human-in-the-loop/human-in-the-loop.service';
 import { ResolverService } from './components/resolver/resolver.service';
+import { SemanticMediatorExtensionService } from './services/semantic-mediator-extension.service';
 
 @Injectable()
 export class SemanticMediatorService {
@@ -25,6 +27,7 @@ export class SemanticMediatorService {
     private readonly monitoringSystem: MonitoringSystemService,
     private readonly humanInTheLoop: HumanInTheLoopService,
     private readonly resolver: ResolverService,
+    private readonly semanticMediatorExtensionService: SemanticMediatorExtensionService,
   ) {}
 
   /**
@@ -38,7 +41,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug(`Translating data from ${sourceModule} to ${targetModule}`);
 
-      const _sourceDescriptor: SemanticDescriptor = 
+      const sourceDescriptor: SemanticDescriptor = {
         entity: sourceModule,
         description: `Data from ${sourceModule} module`,
         attributes: {
@@ -53,7 +56,7 @@ export class SemanticMediatorService {
         },
       };
 
-      const _targetDescriptor: SemanticDescriptor = 
+      const targetDescriptor: SemanticDescriptor = {
         entity: targetModule,
         description: `Data for ${targetModule} module`,
         attributes: {
@@ -67,7 +70,7 @@ export class SemanticMediatorService {
         },
       };
 
-      const _cachedPath = 
+      const cachedPath = await this.intelligentCache.retrieveTransformationPath(
         sourceDescriptor,
         targetDescriptor,
         0.8, // High similarity threshold
@@ -78,12 +81,20 @@ export class SemanticMediatorService {
           `Found cached transformation path from ${sourceModule} to ${targetModule}`,
         );
 
-        const _result = 
+        const result = await this.transformationEngine.executeTransformation(
+          data,
+          cachedPath,
+          {
+            sourceModule,
+            targetModule,
+          }
+        );
+
+        await this.intelligentCache.updateUsageStatistics(cachedPath.id, {
           sourceModule,
           targetModule,
+          timestamp: new Date().toISOString()
         });
-
-        await this.intelligentCache.updateUsageStatistics(cachedPath.id);
 
         await this.monitoringSystem.logTransformationEvent({
           type: 'module_translation',
@@ -100,19 +111,19 @@ export class SemanticMediatorService {
         `Generating new transformation path from ${sourceModule} to ${targetModule}`,
       );
 
-      const _transformationPath = 
+      const transformationPath = await this.transformationEngine.generateTransformationPath(
         sourceDescriptor,
         targetDescriptor,
         { sourceModule, targetModule },
       );
 
-      const _result = 
+      const result = await this.transformationEngine.executeTransformation(
         data,
         transformationPath,
         { sourceModule, targetModule },
       );
 
-      const _validationResult = 
+      const validationResult = await this.transformationEngine.validateTransformation(
         result,
         targetDescriptor,
         { sourceModule, targetModule },
@@ -163,7 +174,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug(`Enriching data from module ${module} with context: ${contextQuery}`);
 
-      const _sourceDescriptor: SemanticDescriptor = 
+      const sourceDescriptor: SemanticDescriptor = {
         entity: module,
         description: `Data from ${module} module`,
         attributes: {
@@ -178,16 +189,22 @@ export class SemanticMediatorService {
         },
       };
 
-      const _relatedMemories = 
+      const relatedMemories = await this.memoryService.searchMemories(contextQuery, 5);
 
       if (!relatedMemories || relatedMemories.length === 0) {
         this.logger.debug(`No related memories found for query: ${contextQuery}`);
         return data;
       }
-      const _originalData = 
-        ...data,
-        _relatedMemories: relatedMemories.map((m) => m.content),
-      };
+      
+      const originalData = typeof data === 'object' && data !== null 
+        ? { 
+            ...data as Record<string, unknown>, 
+            _relatedMemories: relatedMemories.map((m) => m.content) 
+          }
+        : { 
+            data, 
+            _relatedMemories: relatedMemories.map((m) => m.content) 
+          };
 
       await this.monitoringSystem.logTransformationEvent({
         type: 'context_enrichment',
@@ -197,13 +214,13 @@ export class SemanticMediatorService {
         timestamp: new Date().toISOString(),
       });
 
-      const _enrichmentContext = 
+      const enrichmentContext = {
         module,
         contextQuery,
         relatedMemories: relatedMemories.map((m) => m.content),
       };
 
-      const _transformationPath = 
+      const transformationPath = {
         source: sourceDescriptor,
         target: sourceDescriptor, // Enrichment doesn't change entity type
         steps: [
@@ -216,7 +233,7 @@ export class SemanticMediatorService {
         recommendedStrategy: 'llm_enrichment', // Or another appropriate strategy
       };
 
-      const _result = 
+      const result = await this.transformationEngine.executeTransformation(
         originalData,
         transformationPath,
         enrichmentContext,
@@ -255,7 +272,13 @@ export class SemanticMediatorService {
     try {
       this.logger.debug(`Resolving semantic conflicts between ${moduleA} and ${moduleB}`);
 
-      const _result = 
+      const result = await this.resolver.resolveConflicts(
+        moduleA,
+        dataA,
+        moduleB,
+        dataB,
+        options
+      );
 
       await this.trackSemanticTransformation(moduleA, moduleB, dataA, result.resolvedData, {
         trackDifferences: true,
@@ -286,7 +309,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug(`Extracting semantic insights with query: ${query}`);
 
-      const _dataDescriptor: SemanticDescriptor = 
+      const dataDescriptor: SemanticDescriptor = {
         entity: 'data_insights',
         description: `Data for semantic insights extraction`,
         attributes: {
@@ -305,7 +328,7 @@ export class SemanticMediatorService {
         },
       };
 
-      const _transformationPath = 
+      const transformationPath = {
         source: dataDescriptor,
         target: {
           entity: 'insights',
@@ -326,7 +349,7 @@ export class SemanticMediatorService {
         recommendedStrategy: 'llm_insights',
       };
 
-      const _result = 
+      const result = await this.transformationEngine.executeTransformation(
         data,
         transformationPath,
         { query },
@@ -367,7 +390,7 @@ export class SemanticMediatorService {
       saveToMemory?: boolean;
     },
   ): Promise<any> {
-    const _trackOptions = 
+    const trackOptions = {
       trackDifferences: true,
       analyzeTransformation: true,
       saveToMemory: true,
@@ -375,9 +398,9 @@ export class SemanticMediatorService {
     };
 
     try {
-      const _transformationId = 
+      const transformationId = uuidv4();
 
-      const _sourceDescriptor: SemanticDescriptor = 
+      const sourceDescriptor: SemanticDescriptor = {
         entity: sourceModule,
         description: `Data from ${sourceModule} module`,
         attributes: {
@@ -392,7 +415,7 @@ export class SemanticMediatorService {
         },
       };
 
-      const _targetDescriptor: SemanticDescriptor = 
+      const targetDescriptor: SemanticDescriptor = {
         entity: targetModule,
         description: `Data for ${targetModule} module`,
         attributes: {
@@ -407,13 +430,13 @@ export class SemanticMediatorService {
         },
       };
 
-      const _transformationRecord = 
+      const transformationRecord = {
         sourceModule,
         targetModule,
         sourceData,
         transformedData,
         timestamp: new Date(),
-        transformationId, // Keep transformationId from HEAD
+        transformationId,
       };
       await this.monitoringSystem.logTransformationEvent({
         type: 'semantic_transformation_tracking',
@@ -425,7 +448,7 @@ export class SemanticMediatorService {
 
       if (trackOptions.trackDifferences) {
         this.logger.debug('Analyzing semantic differences between source and transformed data');
-        const _diffTransformPath = 
+        const diffTransformPath = {
           source: sourceDescriptor,
           target: targetDescriptor,
           steps: [
@@ -435,21 +458,17 @@ export class SemanticMediatorService {
               targetModule,
             },
           ],
-          recommendedStrategy: 'semantic_diff', // Or another appropriate strategy
+          recommendedStrategy: 'semantic_diff',
         };
 
-        const _differenceAnalysis = 
-          { source: sourceData, target: transformedData }, // Pass both data sources
-          diffTransformPath,
-          { sourceModule, targetModule }, // Context
-        );
+        const differenceAnalysis = await this.analyzeSemanticDifferences(sourceData, transformedData, sourceModule, targetModule);
 
         transformationRecord['differences'] = differenceAnalysis;
       }
 
       if (trackOptions.analyzeTransformation) {
         this.logger.debug('Generating transformation analysis report');
-        const _analysisTransformPath = 
+        const analysisTransformPath = {
           source: sourceDescriptor,
           target: targetDescriptor,
           steps: [
@@ -459,14 +478,10 @@ export class SemanticMediatorService {
               targetModule,
             },
           ],
-          recommendedStrategy: 'transformation_analysis', // Or another appropriate strategy
+          recommendedStrategy: 'transformation_analysis',
         };
 
-        const _transformationAnalysis = 
-          { source: sourceData, target: transformedData }, // Pass both data sources
-          analysisTransformPath,
-          { sourceModule, targetModule }, // Context
-        );
+        const transformationAnalysis = await this.generateTransformationAnalysis(sourceModule, targetModule, sourceData, transformedData);
 
         transformationRecord['analysis'] = transformationAnalysis;
       }
@@ -480,7 +495,6 @@ export class SemanticMediatorService {
           sourceDescriptor,
           targetDescriptor,
           {
-            // Assuming transformationPath was generated earlier if not cached
             sourceModule,
             targetModule,
             transformationId,
@@ -501,14 +515,14 @@ export class SemanticMediatorService {
             timestamp: new Date(),
             hasAnalysis: trackOptions.analyzeTransformation,
             hasDifferences: trackOptions.trackDifferences,
-            transformationId, // Keep transformationId from HEAD
+            transformationId,
           },
           tags: [
             'semantic_transformation',
             sourceModule,
             targetModule,
             `${sourceModule}_to_${targetModule}`,
-            transformationId, // Keep transformationId from HEAD
+            transformationId,
           ],
         });
       }
@@ -542,31 +556,28 @@ export class SemanticMediatorService {
     targetModule: string,
   ): Promise<any> {
     try {
-      const _differencePrompt = 
-        分析以下两组数据之间的语义差异：
-        
-        源模块 (${sourceModule}) 数据：
-        ${JSON.stringify(sourceData, null, 2)}
-        
-        目标模块 (${targetModule}) 数据：
-        ${JSON.stringify(transformedData, null, 2)}
-        
-        请详细分析：
-        1. 语义保留情况：哪些关键语义被保留，哪些被改变或丢失
-        2. 结构变化：数据结构如何变化，以及这些变化的目的
-        3. 信息增减：哪些信息被添加或删除，为什么
-        4. 潜在问题：转换过程中可能存在的问题或风险
-        
-        以JSON格式返回分析结果，包含以下字段：
-        - semanticPreservation: 对象，包含保留的关键语义和变化/丢失的语义
-        - structuralChanges: 数组，每个元素描述一个结构变化及其目的
-        - informationChanges: 对象，包含添加的信息和删除的信息及原因
-        - potentialIssues: 数组，每个元素描述一个潜在问题或风险
-        - overallAssessment: 字符串，总体评估
+      const differencePrompt = `分析以下两组数据之间的语义差异：
+      
+      源模块 (${sourceModule}) 数据：
+      ${JSON.stringify(sourceData, null, 2)}
+      
+      目标模块 (${targetModule}) 数据：
+      ${JSON.stringify(transformedData, null, 2)}
+      
+      请详细分析：
+      1. 语义保留情况：哪些关键语义被保留，哪些被改变或丢失
+      2. 结构变化：数据结构如何变化，以及这些变化的目的
+      3. 信息增减：哪些信息被添加或删除，为什么
+      4. 潜在问题：转换过程中可能存在的问题或风险
+      
+      以JSON格式返回分析结果，包含以下字段：
+      - semanticPreservation: 对象，包含保留的关键语义和变化/丢失的语义
+      - structuralChanges: 数组，每个元素描述一个结构变化及其目的
+      - informationChanges: 对象，包含添加的信息和删除的信息及原因
+      - potentialIssues: 数组，每个元素描述一个潜在问题或风险
+      - overallAssessment: 字符串，总体评估
       `;
-      const _analysisText = 
-        systemPrompt: '你是一个专业的语义分析专家，擅长分析数据转换过程中的语义变化。',
-      });
+      const analysisText = await this.llmRouterService.generateContent(differencePrompt);
 
       return JSON.parse(analysisText);
     } catch (error) {
@@ -589,38 +600,34 @@ export class SemanticMediatorService {
     transformedData: unknown,
   ): Promise<any> {
     try {
-      const _analysisPrompt = 
-        生成以下语义转换的分析报告：
-        
-        源模块：${sourceModule}
-        目标模块：${targetModule}
-        
-        源数据：
-        ${JSON.stringify(sourceData, null, 2)}
-        
-        转换后的数据：
-        ${JSON.stringify(transformedData, null, 2)}
-        
-        请分析：
-        1. 转换的主要目的和意图
-        2. 转换过程中应用的主要语义转换规则
-        3. 转换的完整性和准确性
-        4. 转换后数据对目标模块的适用性
-        5. 转换过程中的创新点或特殊处理
-        
-        以JSON格式返回分析报告，包含以下字段：
-        - purpose: 字符串，转换的主要目的
-        - transformationRules: 数组，应用的主要转换规则
-        - completeness: 数字(0-100)，转换的完整性评分
-        - accuracy: 数字(0-100)，转换的准确性评分
-        - applicability: 数字(0-100)，转换后数据对目标模块的适用性评分
-        - innovations: 数组，转换过程中的创新点
-        - recommendations: 数组，改进建议
+      const analysisPrompt = `生成以下语义转换的分析报告：
+      
+      源模块：${sourceModule}
+      目标模块：${targetModule}
+      
+      源数据：
+      ${JSON.stringify(sourceData, null, 2)}
+      
+      转换后的数据：
+      ${JSON.stringify(transformedData, null, 2)}
+      
+      请分析：
+      1. 转换的主要目的和意图
+      2. 转换过程中应用的主要语义转换规则
+      3. 转换的完整性和准确性
+      4. 转换后数据对目标模块的适用性
+      5. 转换过程中的创新点或特殊处理
+      
+      以JSON格式返回分析报告，包含以下字段：
+      - purpose: 字符串，转换的主要目的
+      - transformationRules: 数组，应用的主要转换规则
+      - completeness: 数字(0-100)，转换的完整性评分
+      - accuracy: 数字(0-100)，转换的准确性评分
+      - applicability: 数字(0-100)，转换后数据对目标模块的适用性评分
+      - innovations: 数组，转换过程中的创新点
+      - recommendations: 数组，改进建议
       `;
-      const _analysisText = 
-        // Use llmRouterService
-        systemPrompt: '你是一个专业的语义转换分析专家，擅长评估模块间数据转换的质量和特点。',
-      });
+      const analysisText = await this.llmRouterService.generateContent(analysisPrompt);
 
       return JSON.parse(analysisText);
     } catch (error) {
@@ -645,7 +652,7 @@ export class SemanticMediatorService {
         `Evaluating semantic transformation with expected outcome: ${expectedOutcome}`,
       );
 
-      const _sourceDescriptor: SemanticDescriptor = 
+      const sourceDescriptor: SemanticDescriptor = {
         entity: 'source_data',
         description: `Source data for transformation evaluation`,
         attributes: {
@@ -660,7 +667,7 @@ export class SemanticMediatorService {
         },
       };
 
-      const _targetDescriptor: SemanticDescriptor = 
+      const targetDescriptor: SemanticDescriptor = {
         entity: 'transformed_data',
         description: `Transformed data for evaluation`,
         attributes: {
@@ -675,7 +682,7 @@ export class SemanticMediatorService {
         },
       };
 
-      const _evaluationTransformPath = 
+      const evaluationTransformPath = {
         source: sourceDescriptor,
         target: targetDescriptor,
         steps: [
@@ -687,7 +694,7 @@ export class SemanticMediatorService {
         recommendedStrategy: 'quality_evaluation',
       };
 
-      const _evaluationResult = 
+      const evaluationResult = await this.transformationEngine.evaluateTransformation(
         { source: sourceData, target: transformedData },
         evaluationTransformPath,
         { expectedOutcome },
@@ -696,7 +703,7 @@ export class SemanticMediatorService {
       await this.monitoringSystem.logTransformationEvent({
         type: 'semantic_transformation_evaluation',
         timestamp: new Date().toISOString(),
-        expectedOutcome: expectedOutcome.substring(0, 100), // 截断过长的描述
+        expectedOutcome: expectedOutcome.substring(0, 100),
         evaluationSummary: {
           semanticPreservation: evaluationResult.semanticPreservation,
           structuralAdaptability: evaluationResult.structuralAdaptability,
@@ -737,20 +744,17 @@ export class SemanticMediatorService {
     );
 
     try {
-      const _debugSessionId = 
-        operation: 'generateValidationContext',
-        expectationId,
-        codeId,
-        timestamp: new Date().toISOString(),
-      });
+      const debugSessionId = uuidv4();
 
-      const _expectationMemories = 
-      const _expectation = 
-        (memory) => memory.content._id.toString() === expectationId,
+      const expectationMemories = await this.memoryService.searchMemories(expectationId, 5);
+      const expectation = expectationMemories.find((memory) => 
+        (memory.content as any)._id?.toString() === expectationId
       )?.content;
 
-      const _codeMemories = 
-      const _code = 
+      const codeMemories = await this.memoryService.searchMemories(codeId, 5);
+      const code = codeMemories.find((memory) => 
+        (memory.content as any)._id?.toString() === codeId
+      )?.content;
 
       if (!expectation || !code) {
         this.logger.error(`Expectation or Code not found for generating validation context`);
@@ -774,7 +778,7 @@ export class SemanticMediatorService {
         },
       });
 
-      const _expectationDescriptor: SemanticDescriptor = 
+      const expectationDescriptor: SemanticDescriptor = {
         entity: 'expectation',
         description: `Expectation for validation context generation`,
         attributes: {
@@ -789,7 +793,7 @@ export class SemanticMediatorService {
         },
       };
 
-      const _codeDescriptor: SemanticDescriptor = 
+      const codeDescriptor: SemanticDescriptor = {
         entity: 'code',
         description: `Code for validation context generation`,
         attributes: {
@@ -804,24 +808,22 @@ export class SemanticMediatorService {
         },
       };
 
-      let _previousValidationsData = 
-      if (previousValidations && previousValidations.length > 0) {
-        const _validationMemories = 
-        previousValidationsData = validationMemories
-          .filter((memory) => previousValidations.includes(memory.content._id.toString()))
-          .map((memory) => memory.content);
-      }
+      let previousValidationsData = previousValidations.map((id) => 
+        codeMemories.find((memory) => 
+          (memory.content as any)._id?.toString() === id
+        )?.content
+      );
       await this.monitoringSystem.logDebugData(debugSessionId, {
         stage: 'previous_validations',
         count: previousValidationsData.length,
         ids: previousValidations,
       });
 
-      const _cacheKey = 
-      const _cachedContext = 
+      const cacheKey = `${expectationId}-${codeId}-${JSON.stringify(options)}`;
+      const cachedContext = await this.intelligentCache.retrieveTransformationPath(
         expectationDescriptor,
         codeDescriptor,
-        0.95, // 高相似度阈值
+        0.95,
       );
 
       if (cachedContext) {
@@ -845,7 +847,7 @@ export class SemanticMediatorService {
         return cachedContext;
       }
 
-      const _transformationPath = 
+      const transformationPath = {
         source: expectationDescriptor,
         target: codeDescriptor,
         steps: [
@@ -867,18 +869,14 @@ export class SemanticMediatorService {
         recommendedStrategy: 'validation_context',
       };
 
-      const _contextData = 
-        { expectation, code, previousValidationsData },
-        transformationPath,
-        {
-          strategy: options.strategy || 'balanced',
-          customWeights: options.customWeights,
-          focusAreas: options.focusAreas,
-        },
-      );
+      const contextData = {
+        expectation,
+        code,
+        previousValidationsData,
+      };
 
-      const _strategy = 
-      let _weights = 
+      let strategy = options.strategy || 'balanced';
+      let weights = this.getStrategyWeights(strategy);
 
       if (options.customWeights) {
         weights = { ...weights, ...options.customWeights };
@@ -888,22 +886,23 @@ export class SemanticMediatorService {
         weights = this.adjustWeightsBasedOnPreviousValidations(weights, previousValidationsData);
       }
 
-      let _focusAreas = 
+      let focusAreas = options.focusAreas || [];
 
       if (focusAreas.length === 0 && previousValidationsData.length > 0) {
         focusAreas = this.suggestFocusAreasFromPreviousValidations(previousValidationsData);
       }
 
-      const _validationContext = 
+      const codeFeatures = await this.extractCodeFeatures(code);
+      const semanticRelationship = await this.analyzeSemanticRelationship(expectation, code);
+
+      const validationContext = {
         strategy,
         weights,
         focusAreas,
         previousValidations,
         semanticContext: {
-          codeFeatures: contextData.codeFeatures || (await this.extractCodeFeatures(code)),
-          semanticRelationship:
-            contextData.semanticRelationship ||
-            (await this.analyzeSemanticRelationship(expectation, code)),
+          codeFeatures,
+          semanticRelationship,
           expectationSummary: this.summarizeExpectation(expectation),
           validationHistory: this.summarizeValidationHistory(previousValidationsData),
         },
@@ -956,28 +955,26 @@ export class SemanticMediatorService {
    */
   private async extractCodeFeatures(code: unknown): Promise<any> {
     try {
-      const _codeContent = 
-        .map((file) => `文件路径: ${file.path}\n内容:\n${file.content}`)
-        .join('\n\n');
+      const codeArray = Array.isArray(code) ? code : [code];
+      const codeContent = codeArray.map((file: any) => 
+        `文件路径: ${file.path || 'unknown'}\n内容:\n${file.content || JSON.stringify(file)}`
+      ).join('\n\n');
 
-      const _featuresPrompt = 
-        分析以下代码，提取其主要特征：
-        
-        ${codeContent}
-        
-        请提取以下特征：
-        1. 代码复杂度
-        2. 主要功能模块
-        3. 使用的设计模式
-        4. 潜在的性能瓶颈
-        5. 安全性考虑
-        6. 可维护性特征
-        
-        以JSON格式返回分析结果。
+      const featuresPrompt = `分析以下代码，提取其主要特征：
+      
+      ${codeContent}
+      
+      请提取以下特征：
+      1. 代码复杂度
+      2. 主要功能模块
+      3. 使用的设计模式
+      4. 潜在的性能瓶颈
+      5. 安全性考虑
+      6. 可维护性特征
+      
+      以JSON格式返回分析结果。
       `;
-      const _featuresText = 
-        systemPrompt: '你是一个专业的代码分析专家，擅长分析代码的结构和特征。',
-      });
+      const featuresText = await this.llmRouterService.generateContent(featuresPrompt);
 
       return JSON.parse(featuresText);
     } catch (error) {
@@ -995,31 +992,33 @@ export class SemanticMediatorService {
    */
   private async analyzeSemanticRelationship(expectation: unknown, code: unknown): Promise<any> {
     try {
-      const _codeContent = 
-        .map((file) => `文件路径: ${file.path}\n内容:\n${file.content}`)
-        .join('\n\n');
+      const codeArray = Array.isArray(code) ? code : [code];
+      const codeContent = codeArray.map((file: any) => 
+        `文件路径: ${file.path || 'unknown'}\n内容:\n${file.content || JSON.stringify(file)}`
+      ).join('\n\n');
 
-      const _relationshipPrompt = 
-        分析以下期望模型和代码之间的语义关系：
-        
-        期望模型：
-        ${JSON.stringify(expectation.model, null, 2)}
-        
-        代码：
-        ${codeContent}
-        
-        请分析：
-        1. 代码与期望的匹配度
-        2. 代码实现了哪些期望的功能
-        3. 代码未实现的期望功能
-        4. 代码超出期望的功能
-        5. 代码与期望在语义上的差异
-        
-        以JSON格式返回分析结果。
+      const expectationModel = typeof expectation === 'object' && expectation !== null && 'model' in expectation 
+        ? (expectation as any).model 
+        : { description: 'No model available' };
+
+      const relationshipPrompt = `分析以下期望模型和代码之间的语义关系：
+      
+      期望模型：
+      ${JSON.stringify(expectationModel, null, 2)}
+      
+      代码：
+      ${codeContent}
+      
+      请分析：
+      1. 代码与期望的匹配度
+      2. 代码实现了哪些期望的功能
+      3. 代码未实现的期望功能
+      4. 代码超出期望的功能
+      5. 代码与期望在语义上的差异
+      
+      以JSON格式返回分析结果。
       `;
-      const _relationshipText = 
-        systemPrompt: '你是一个专业的语义分析专家，擅长分析代码与需求之间的关系。',
-      });
+      const relationshipText = await this.llmRouterService.generateContent(relationshipPrompt);
 
       return JSON.parse(relationshipText);
     } catch (error) {
@@ -1089,16 +1088,16 @@ export class SemanticMediatorService {
     weights: Record<string, number>,
     previousValidations: unknown[],
   ): Record<string, number> {
-    const _adjustedWeights = 
+    const adjustedWeights = { ...weights };
 
     if (!previousValidations || previousValidations.length === 0) {
       return adjustedWeights;
     }
 
-    const _latestValidation = 
+    const latestValidation = previousValidations[previousValidations.length - 1] as Record<string, any>;
 
-    if (latestValidation.details && latestValidation.details.length > 0) {
-      const _failureCount = 
+    if (latestValidation && latestValidation.details && Array.isArray(latestValidation.details) && latestValidation.details.length > 0) {
+      const failureCount = {
         functionality: 0,
         performance: 0,
         security: 0,
@@ -1107,7 +1106,7 @@ export class SemanticMediatorService {
       };
 
       for (const detail of latestValidation.details) {
-        const _message = 
+        const message = detail.message || '';
 
         if (detail.status === 'failed' || detail.status === 'partial') {
           if (message.includes('功能') || message.includes('function')) {
@@ -1143,18 +1142,18 @@ export class SemanticMediatorService {
    * 私有方法，用于支持generateValidationContext
    */
   private suggestFocusAreasFromPreviousValidations(previousValidations: unknown[]): string[] {
-    const _focusAreas = 
+    const focusAreas = [];
 
     if (!previousValidations || previousValidations.length === 0) {
       return focusAreas;
     }
 
-    const _latestValidation = 
+    const latestValidation = previousValidations[previousValidations.length - 1] as Record<string, any>;
 
-    if (latestValidation.details && latestValidation.details.length > 0) {
+    if (latestValidation && latestValidation.details && Array.isArray(latestValidation.details) && latestValidation.details.length > 0) {
       for (const detail of latestValidation.details) {
         if (detail.status === 'failed' || detail.status === 'partial') {
-          const _message = 
+          const message = detail.message || '';
 
           if (message.includes('功能') || message.includes('function')) {
             focusAreas.push('functionality');
@@ -1173,8 +1172,8 @@ export class SemanticMediatorService {
           }
 
           if (detail.semanticInsights) {
-            const _insights = 
-            const _specificAreas = 
+            const insights = detail.semanticInsights;
+            const specificAreas = this.extractSpecificFocusAreas(insights);
             focusAreas.push(...specificAreas);
           }
         }
@@ -1189,69 +1188,39 @@ export class SemanticMediatorService {
    * 私有方法，用于支持suggestFocusAreasFromPreviousValidations
    */
   private extractSpecificFocusAreas(insights: string): string[] {
-    const _specificAreas = 
+    const specificAreas = [];
 
-    const _keywordMap = 
-      错误处理: 'error_handling',
-      'error handling': 'error_handling',
-      异常处理: 'exception_handling',
-      'exception handling': 'exception_handling',
-      输入验证: 'input_validation',
-      'input validation': 'input_validation',
-      并发: 'concurrency',
-      concurrency: 'concurrency',
-      内存泄漏: 'memory_leaks',
-      'memory leak': 'memory_leaks',
-      代码重复: 'code_duplication',
-      'code duplication': 'code_duplication',
-      命名: 'naming',
-      naming: 'naming',
-      注释: 'comments',
-      comments: 'comments',
-      文档: 'documentation',
-      documentation: 'documentation',
-      测试覆盖: 'test_coverage',
-      'test coverage': 'test_coverage',
-      边界条件: 'boundary_conditions',
-      'boundary conditions': 'boundary_conditions',
-      算法效率: 'algorithm_efficiency',
-      'algorithm efficiency': 'algorithm_efficiency',
-      数据结构: 'data_structures',
-      'data structures': 'data_structures',
-      设计模式: 'design_patterns',
-      'design patterns': 'design_patterns',
-      接口设计: 'interface_design',
-      'interface design': 'interface_design',
-      模块化: 'modularity',
-      modularity: 'modularity',
-      可扩展性: 'scalability',
-      scalability: 'scalability',
-      安全漏洞: 'security_vulnerabilities',
-      'security vulnerabilities': 'security_vulnerabilities',
-      认证: 'authentication',
-      authentication: 'authentication',
-      授权: 'authorization',
-      authorization: 'authorization',
-      加密: 'encryption',
-      encryption: 'encryption',
-      日志: 'logging',
-      logging: 'logging',
-      监控: 'monitoring',
-      monitoring: 'monitoring',
-      性能优化: 'performance_optimization',
-      'performance optimization': 'performance_optimization',
-      响应时间: 'response_time',
-      'response time': 'response_time',
-      资源利用: 'resource_utilization',
-      'resource utilization': 'resource_utilization',
-      用户体验: 'user_experience',
-      'user experience': 'user_experience',
-      可访问性: 'accessibility',
-      accessibility: 'accessibility',
-      国际化: 'internationalization',
-      internationalization: 'internationalization',
-      本地化: 'localization',
-      localization: 'localization',
+    const keywordMap = {
+      '错误处理': 'error_handling',
+      '异常处理': 'exception_handling',
+      '输入验证': 'input_validation',
+      '并发': 'concurrency',
+      '内存泄漏': 'memory_leaks',
+      '代码重复': 'code_duplication',
+      '命名': 'naming',
+      '注释': 'comments',
+      '文档': 'documentation',
+      '测试覆盖': 'test_coverage',
+      '边界条件': 'boundary_conditions',
+      '算法效率': 'algorithm_efficiency',
+      '数据结构': 'data_structures',
+      '设计模式': 'design_patterns',
+      '接口设计': 'interface_design',
+      '模块化': 'modularity',
+      '可扩展性': 'scalability',
+      '安全漏洞': 'security_vulnerabilities',
+      '认证': 'authentication',
+      '授权': 'authorization',
+      '加密': 'encryption',
+      '日志': 'logging',
+      '监控': 'monitoring',
+      '性能优化': 'performance_optimization',
+      '响应时间': 'response_time',
+      '资源利用': 'resource_utilization',
+      '用户体验': 'user_experience',
+      '可访问性': 'accessibility',
+      '国际化': 'internationalization',
+      '本地化': 'localization',
     };
 
     for (const [keyword, area] of Object.entries(keywordMap)) {
@@ -1268,14 +1237,15 @@ export class SemanticMediatorService {
    * 私有方法，用于支持generateValidationContext
    */
   private summarizeExpectation(expectation: unknown): unknown {
+    const typedExpectation = expectation as Record<string, any>;
     return {
-      id: expectation._id.toString(),
-      title: expectation.title || '未命名期望',
-      description: expectation.description || '无描述',
-      type: expectation.type || 'unknown',
-      priority: expectation.priority || 'medium',
-      createdAt: expectation.createdAt,
-      modelSummary: this.summarizeExpectationModel(expectation.model),
+      id: typedExpectation?._id?.toString() || 'unknown',
+      title: typedExpectation?.title || '未命名期望',
+      description: typedExpectation?.description || '无描述',
+      type: typedExpectation?.type || 'unknown',
+      priority: typedExpectation?.priority || 'medium',
+      createdAt: typedExpectation?.createdAt,
+      modelSummary: this.summarizeExpectationModel(typedExpectation?.model),
     };
   }
 
@@ -1288,11 +1258,12 @@ export class SemanticMediatorService {
       return { summary: '无模型数据' };
     }
 
+    const typedModel = model as Record<string, any>;
     return {
-      mainFeatures: model.features || model.mainFeatures || [],
-      constraints: model.constraints || [],
-      dependencies: model.dependencies || [],
-      technicalRequirements: model.technicalRequirements || model.technical || [],
+      mainFeatures: typedModel?.features || typedModel?.mainFeatures || [],
+      constraints: typedModel?.constraints || [],
+      dependencies: typedModel?.dependencies || [],
+      technicalRequirements: typedModel?.technicalRequirements || typedModel?.technical || [],
     };
   }
 
@@ -1305,12 +1276,11 @@ export class SemanticMediatorService {
       return { summary: '无验证历史' };
     }
 
-    const _scores = 
-    const _trend = 
+    const scores = validations.map((v) => (v as any)?.score || 0);
+    const trend = this.calculateTrend(scores);
 
-    const _commonIssues = 
-
-    const _improvementAreas = 
+    const commonIssues = this.extractCommonIssues(validations);
+    const improvementAreas = this.extractImprovementAreas(validations);
 
     return {
       validationCount: validations.length,
@@ -1318,7 +1288,7 @@ export class SemanticMediatorService {
       scoreTrend: trend,
       commonIssues,
       improvementAreas,
-      validationDates: validations.map((v) => v.createdAt),
+      validationDates: validations.map((v) => (v as any)?.createdAt),
     };
   }
 
@@ -1331,9 +1301,9 @@ export class SemanticMediatorService {
       return 'stable';
     }
 
-    const _firstScore = 
-    const _lastScore = 
-    const _diff = 
+    const firstScore = scores[0];
+    const lastScore = scores[scores.length - 1];
+    const diff = lastScore - firstScore;
 
     if (diff > 5) {
       return 'improving';
@@ -1349,13 +1319,14 @@ export class SemanticMediatorService {
    * 私有方法，用于支持summarizeValidationHistory
    */
   private extractCommonIssues(validations: unknown[]): string[] {
-    const _issueCount = 
+    const issueCount: Record<string, number> = {};
 
     for (const validation of validations) {
-      if (validation.details && validation.details.length > 0) {
-        for (const detail of validation.details) {
+      const typedValidation = validation as Record<string, any>;
+      if (typedValidation && typedValidation.details && Array.isArray(typedValidation.details) && typedValidation.details.length > 0) {
+        for (const detail of typedValidation.details) {
           if (detail.status === 'failed' || detail.status === 'partial') {
-            const _message = 
+            const message = detail.message || '';
 
             if (issueCount[message]) {
               issueCount[message]++;
@@ -1367,8 +1338,8 @@ export class SemanticMediatorService {
       }
     }
 
-    const _sortedIssues = 
-      .sort((a: [string, any], b: [string, any]) => b[1] - a[1])
+    const sortedIssues = Object.entries(issueCount)
+      .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
       .map(([issue]) => issue);
 
     return sortedIssues.slice(0, 5);
@@ -1379,12 +1350,13 @@ export class SemanticMediatorService {
    * 私有方法，用于支持summarizeValidationHistory
    */
   private extractImprovementAreas(validations: unknown[]): string[] {
-    const _recentValidations = 
-    const _areas = 
+    const recentValidations = validations.slice(-5);
+    const areas = new Set<string>();
 
     for (const validation of recentValidations) {
-      if (validation.details && validation.details.length > 0) {
-        for (const detail of validation.details) {
+      const typedValidation = validation as Record<string, any>;
+      if (typedValidation && typedValidation.details && Array.isArray(typedValidation.details) && typedValidation.details.length > 0) {
+        for (const detail of typedValidation.details) {
           if (detail.status === 'failed' || detail.status === 'partial') {
             if (detail.improvement) {
               areas.add(detail.improvement);
@@ -1412,11 +1384,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug(`Registering data source for module: ${moduleId}`);
 
-      const _sourceId = 
-        moduleId,
-        descriptor,
-        accessMethod,
-      );
+      const sourceId = await this.registerDataSourceInternal(moduleId, descriptor, accessMethod);
 
       await this.monitoringSystem.logTransformationEvent({
         type: 'data_source_registration',
@@ -1449,7 +1417,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug(`Finding potential data sources for intent with threshold: ${threshold}`);
 
-      const _sources = 
+      const sources = await this.findPotentialDataSourcesInternal(intent, threshold);
 
       await this.monitoringSystem.logTransformationEvent({
         type: 'data_source_search',
@@ -1490,7 +1458,7 @@ export class SemanticMediatorService {
         `Transforming data from ${sourceDescriptor.entity} to ${targetDescriptor.entity}`,
       );
 
-      const _cachedPath = 
+      const cachedPath = await this.intelligentCache.retrieveTransformationPath(
         sourceDescriptor,
         targetDescriptor,
         0.8, // 高相似度阈值
@@ -1510,7 +1478,7 @@ export class SemanticMediatorService {
       } else {
         this.logger.debug('Generating new transformation path');
 
-        const _transformationPath = 
+        const transformationPath = await this.transformationEngine.generateTransformationPath(
           sourceDescriptor,
           targetDescriptor,
           { sourceDescriptor, targetDescriptor },
@@ -1522,7 +1490,7 @@ export class SemanticMediatorService {
           { sourceDescriptor, targetDescriptor },
         );
 
-        const _validationResult = 
+        const validationResult = await this.transformationEngine.validateTransformation(
           result,
           targetDescriptor,
           { sourceDescriptor, targetDescriptor },
@@ -1572,7 +1540,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug('Analyzing cache usage patterns');
 
-      const _patterns = 
+      const patterns = await this.analyzeCacheUsagePatternsInternal();
 
       await this.monitoringSystem.logTransformationEvent({
         type: 'cache_analysis',
@@ -1603,7 +1571,7 @@ export class SemanticMediatorService {
         `Clearing transformation cache${olderThan ? ` older than ${olderThan.toISOString()}` : ''}`,
       );
 
-      const _clearedCount = 
+      const clearedCount = await this.clearTransformationCacheInternal(olderThan);
 
       await this.monitoringSystem.logTransformationEvent({
         type: 'cache_clear',
@@ -1635,7 +1603,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug('Getting performance report');
 
-      const _report = 
+      const report = await this.getPerformanceReportInternal(timeRange);
 
       return report;
     } catch (error) {
@@ -1660,7 +1628,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug('Creating debug session');
 
-      const _sessionId = 
+      const sessionId = uuidv4();
 
       return sessionId;
     } catch (error) {
@@ -1685,7 +1653,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug(`Logging debug data for session: ${sessionId}`);
 
-      const _result = 
+      const result = await this.logDebugDataInternal(sessionId, data);
 
       return result;
     } catch (error) {
@@ -1710,7 +1678,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug(`Getting debug session data for session: ${sessionId}`);
 
-      const _sessionData = 
+      const sessionData = await this.getDebugSessionDataInternal(sessionId);
 
       return sessionData;
     } catch (error) {
@@ -1737,7 +1705,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug('Requesting human review');
 
-      const _reviewId = 
+      const reviewId = uuidv4();
 
       await this.monitoringSystem.logTransformationEvent({
         type: 'human_review_request',
@@ -1773,7 +1741,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug(`Submitting human feedback for review: ${reviewId}`);
 
-      const _result = 
+      const result = await this.submitHumanFeedbackInternal(reviewId, feedback, metadata);
 
       await this.monitoringSystem.logTransformationEvent({
         type: 'human_feedback_submission',
@@ -1803,7 +1771,7 @@ export class SemanticMediatorService {
     try {
       this.logger.debug('Analyzing feedback patterns');
 
-      const _patterns = 
+      const patterns = await this.analyzeFeedbackPatternsInternal();
 
       await this.monitoringSystem.logTransformationEvent({
         type: 'feedback_pattern_analysis',
@@ -1833,29 +1801,8 @@ export class SemanticMediatorService {
     this.logger.log('Translating data to target schema');
 
     try {
-      const _sourceData = 
-      const _schemaData = 
-
-      const _translationPrompt = 
-        将以下数据转换为目标模式：
-        
-        源数据：
-        ${sourceData}
-        
-        目标模式：
-        ${schemaData}
-        
-        请确保转换后的数据符合目标模式的结构和语义要求。
-        返回转换后的JSON数据。
-      `;
-
-      const _translatedText = 
-        // Use llmRouterService
-        systemPrompt:
-          '你是一个专业的数据转换专家，擅长将数据从一种模式转换为另一种模式，同时保持语义一致性。',
-      });
-
-      const _transformedData = 
+      // 使用Extension服务进行实际的数据转换
+      const transformedData = await this.semanticMediatorExtensionService.storeWithSemanticTransformation(data, targetSchema);
 
       await this.trackSemanticTransformation('generic', 'schema_based', data, transformedData, {
         trackDifferences: true,
@@ -1889,36 +1836,93 @@ export class SemanticMediatorService {
     this.logger.log(`Registering semantic data source: ${sourceName} (${sourceId})`);
 
     try {
-      const _dataSourceRecord = 
-        id: sourceId,
-        name: sourceName,
-        type: sourceType,
-        semanticDescription,
-        schema,
-        registrationTime: new Date(),
-        status: 'active',
-      };
-
-      await this.memoryService.storeMemory({
-        type: MemoryType.SYSTEM,
-        content: dataSourceRecord,
-        metadata: {
-          title: `Semantic Data Source: ${sourceName}`,
-          sourceId,
-          sourceType,
-          registrationTime: new Date(),
-        },
-        tags: ['semantic_data_source', sourceType, sourceId],
-        semanticMetadata: {
-          description: `Semantic data source: ${sourceName}. ${semanticDescription}`,
-          relevanceScore: 1.0,
-        },
-      });
-
+      // 使用Extension服务进行实际的数据源注册
+      await this.semanticMediatorExtensionService.registerAsDataSource(
+        sourceType as MemoryType, 
+        semanticDescription
+      );
+      
       this.logger.debug(`Semantic data source registered successfully: ${sourceId}`);
     } catch (error) {
       this.logger.error(`Error registering semantic data source: ${error.message}`, error.stack);
       throw new Error(`Failed to register semantic data source: ${error.message}`);
     }
+  }
+
+  /**
+   * 注册数据源内部实现
+   */
+  private async registerDataSourceInternal(
+    moduleId: string,
+    descriptor: SemanticDescriptor,
+    accessMethod: (params?: unknown) => Promise<unknown>,
+  ): Promise<string> {
+    return this.semanticRegistry.registerDataSource(moduleId, descriptor, accessMethod);
+  }
+
+  /**
+   * 查找潜在数据源内部实现
+   */
+  private async findPotentialDataSourcesInternal(
+    intent: unknown, 
+    threshold = 0.7
+  ): Promise<string[]> {
+    return this.semanticRegistry.findPotentialSources(intent, threshold);
+  }
+
+  /**
+   * 分析缓存使用模式内部实现
+   */
+  private async analyzeCacheUsagePatternsInternal(): Promise<unknown> {
+    return this.intelligentCache.analyzeUsagePatterns();
+  }
+
+  /**
+   * 清除转换缓存内部实现
+   */
+  private async clearTransformationCacheInternal(olderThan?: Date): Promise<number> {
+    return this.intelligentCache.clearCache(olderThan);
+  }
+
+  /**
+   * 获取性能报告内部实现
+   */
+  private async getPerformanceReportInternal(
+    timeRange?: { start: Date; end: Date }
+  ): Promise<unknown> {
+    return this.monitoringSystem.getPerformanceReport(timeRange);
+  }
+
+  /**
+   * 记录调试数据内部实现
+   */
+  private async logDebugDataInternal(sessionId: string, data: unknown): Promise<boolean> {
+    await this.monitoringSystem.logDebugData(sessionId, data);
+    return true;
+  }
+
+  /**
+   * 获取调试会话数据内部实现
+   */
+  private async getDebugSessionDataInternal(sessionId: string): Promise<unknown> {
+    return this.monitoringSystem.getDebugSessionData(sessionId);
+  }
+
+  /**
+   * 提交人类反馈内部实现
+   */
+  private async submitHumanFeedbackInternal(
+    reviewId: string,
+    feedback: unknown,
+    metadata?: unknown,
+  ): Promise<boolean> {
+    return this.humanInTheLoop.submitHumanFeedback(reviewId, feedback, metadata);
+  }
+
+  /**
+   * 分析反馈模式内部实现
+   */
+  private async analyzeFeedbackPatternsInternal(): Promise<unknown> {
+    return this.humanInTheLoop.analyzeFeedbackPatterns();
   }
 }

@@ -12,7 +12,7 @@ describe('Clarifier Frontend-Backend Integration (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      const _moduleFixture: TestingModule = 
+      const moduleFixture: TestingModule = await Test.createTestingModule({
         imports: [AppModule],
       }).compile();
 
@@ -22,9 +22,7 @@ describe('Clarifier Frontend-Backend Integration (e2e)', () => {
       clarifierService = moduleFixture.get<ClarifierService>(ClarifierService);
     } catch (error) {
       /* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-console.error(
+      console.error(
         'Failed to initialize Nest application for e2e tests. This might be due to the known circular dependency issue.',
         error,
       );
@@ -40,17 +38,22 @@ console.error(
   });
 
   it('should accept a new requirement and initiate clarification', async () => {
-    const _requirementDto = 
+    const requirementDto = {
+      title: "新的测试需求",
+      text: "作为一个用户，我想要一个响应式网站，有用户登录和数据可视化功能。",
+      priority: "high",
+      domain: "web"
+    };
 
-    const _createResponse = 
+    const createResponse = await request(app.getHttpServer())
       .post('/clarifier/requirements') // Correct endpoint
       .send(requirementDto)
       .expect(201); // Expecting resource created status
 
-    const _requirementId = 
+    const requirementId = createResponse.body._id;
     expect(requirementId).toBeDefined();
 
-    const _statusResponse = 
+    const statusResponse = await request(app.getHttpServer())
       .get(`/clarifier/requirements/${requirementId}`)
       .expect(200);
 
@@ -59,32 +62,40 @@ console.error(
 
   it.skip('should process a user clarification message', async () => {
     // Skipping due to complex setup needed
-    const _requirementId = 
-    const _questionId = 
-    const _clarificationDto = 
+    const requirementId = "test-requirement-id";
+    const questionId = "test-question-id";
+    const clarificationDto = {
+      requirementId,
+      questionId,
+      answer: "我需要用户能够登录并查看他们的数据统计"
+    };
 
-    const _clarifyResponse = 
+    const clarifyResponse = await request(app.getHttpServer())
       .post(`/clarifier/answer`) // Correct endpoint
       .send(clarificationDto)
       .expect(200); // Expecting OK status
 
-    const _updatedStatusResponse = 
+    const updatedStatusResponse = await request(app.getHttpServer())
       .get(`/clarifier/requirements/${requirementId}`) // Correct endpoint
       .expect(200);
   });
 
   it.skip('should transition requirement status when clarification is sufficient', async () => {
     // Skipping due to complex setup needed
-    const _requirementId = 
+    const requirementId = "test-requirement-id";
 
-    const _finalQuestionId = 
-    const _finalMessageDto = 
+    const finalQuestionId = "final-question-id";
+    const finalMessageDto = {
+      requirementId,
+      questionId: finalQuestionId,
+      answer: "确认完成了所有需求澄清，可以生成期望模型了"
+    };
     await request(app.getHttpServer())
       .post(`/clarifier/answer`) // Correct endpoint
       .send(finalMessageDto)
       .expect(200);
 
-    const _finalStatusResponse = 
+    const finalStatusResponse = await request(app.getHttpServer())
       .get(`/clarifier/requirements/${requirementId}`) // Correct endpoint
       .expect(200);
 

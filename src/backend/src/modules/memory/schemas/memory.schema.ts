@@ -11,6 +11,8 @@ export enum MemoryType {
   SEMANTIC_TRANSFORMATION = 'semantic_transformation',
   SEMANTIC_FEEDBACK = 'semantic_feedback',
   SEMANTIC_CACHE = 'semantic_cache',
+  HUMAN_REVIEW_REQUEST = 'human_review_request',
+  HUMAN_REVIEW_FEEDBACK = 'human_review_feedback',
 }
 
 @Schema()

@@ -1,14 +1,35 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CacheEntry, CacheConfig } from '../interfaces/semantic-memory.interfaces';
 
 /**
- * 语义缓存服务
- * 提供智能缓存功能，基于语义相关性和使用模式优化缓存
+ * 缓存条目接口
+ */
+export interface CacheEntry<T> {
+  data: T;
+  timestamp: Date;
+  expiresAt: Date;
+  accessCount: number;
+  lastAccessed: Date;
+  semanticRelevance: number;
+}
+
+/**
+ * 缓存配置接口
+ */
+export interface CacheConfig {
+  defaultTTL: number; // 默认过期时间（毫秒）
+  maxEntries: number; // 最大缓存条目数
+  minSemanticRelevance: number; // 最小语义相关性阈值
+  adaptiveCache: boolean; // 是否启用自适应缓存
+}
+
+/**
+ * 缓存访问服务
+ * 提供通用缓存功能，处理缓存操作
  */
 @Injectable()
-export class SemanticCacheService {
-  private readonly logger = new Logger(SemanticCacheService.name);
-  private cache: Map<string, CacheEntry> = new Map();
+export class CacheAccessService {
+  private readonly logger = new Logger(CacheAccessService.name);
+  private cache: Map<string, CacheEntry<any>> = new Map();
   private config: CacheConfig = {
     defaultTTL: 30 * 60 * 1000, // 30分钟
     maxEntries: 1000,
@@ -17,7 +38,7 @@ export class SemanticCacheService {
   };
 
   constructor() {
-    this.logger.log('Semantic cache service initialized');
+    this.logger.log('Cache access service initialized');
     setInterval(() => this.cleanExpiredCache(), 5 * 60 * 1000); // 每5分钟清理一次
   }
 
@@ -28,6 +49,14 @@ export class SemanticCacheService {
   setConfig(config: Partial<CacheConfig>): void {
     this.config = { ...this.config, ...config };
     this.logger.log(`Cache config updated: ${JSON.stringify(this.config)}`);
+  }
+
+  /**
+   * 获取缓存配置
+   * @returns 当前缓存配置
+   */
+  getConfig(): CacheConfig {
+    return { ...this.config };
   }
 
   /**
@@ -77,7 +106,7 @@ export class SemanticCacheService {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + (ttl || this.config.defaultTTL));
 
-    const entry: CacheEntry = {
+    const entry: CacheEntry<T> = {
       data,
       timestamp: now,
       expiresAt,
@@ -117,13 +146,27 @@ export class SemanticCacheService {
     const activeEntries = entries.filter(([_, entry]) => entry.expiresAt > now);
     const expiredEntries = entries.filter(([_, entry]) => entry.expiresAt <= now);
 
+    if (activeEntries.length === 0) {
+      return {
+        totalEntries: this.cache.size,
+        activeEntries: 0,
+        expiredEntries: expiredEntries.length,
+        avgRelevance: 0,
+        avgAccessCount: 0,
+        oldestEntry: null,
+        newestEntry: null,
+      };
+    }
+
     const avgRelevance =
       activeEntries.reduce((sum, [_, entry]) => sum + entry.semanticRelevance, 0) /
-      (activeEntries.length || 1);
+      activeEntries.length;
 
     const avgAccessCount =
       activeEntries.reduce((sum, [_, entry]) => sum + entry.accessCount, 0) /
-      (activeEntries.length || 1);
+      activeEntries.length;
+
+    const entryTimestamps = activeEntries.map(([_, e]) => e.timestamp.getTime());
 
     return {
       totalEntries: this.cache.size,
@@ -131,9 +174,29 @@ export class SemanticCacheService {
       expiredEntries: expiredEntries.length,
       avgRelevance,
       avgAccessCount,
-      oldestEntry: Math.min(...activeEntries.map(([_, e]) => e.timestamp.getTime())),
-      newestEntry: Math.max(...activeEntries.map(([_, e]) => e.timestamp.getTime())),
+      oldestEntry: Math.min(...entryTimestamps),
+      newestEntry: Math.max(...entryTimestamps),
     };
+  }
+
+  /**
+   * 检查键是否存在于缓存中
+   * @param key 缓存键
+   * @returns 是否存在
+   */
+  has(key: string): boolean {
+    const entry = this.cache.get(key);
+    
+    if (!entry) {
+      return false;
+    }
+    
+    if (entry.expiresAt < new Date()) {
+      this.cache.delete(key);
+      return false;
+    }
+    
+    return true;
   }
 
   /**
@@ -179,4 +242,4 @@ export class SemanticCacheService {
       this.logger.debug(`Evicted least valuable cache entry: ${leastValuableKey}`);
     }
   }
-}
+} 

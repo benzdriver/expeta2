@@ -15,7 +15,7 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
   let llmRouterService: LlmRouterService;
   let codeModel: Model<Code>;
 
-  const _mockExpectation = 
+  const mockExpectation = {
     _id: 'test-expectation-id',
     content: {
       _id: 'test-expectation-id',
@@ -28,16 +28,13 @@ describe('GeneratorService - Semantic Mediator Integration', () => {
     },
   };
 
-  const _mockCode = 
+  const mockCode = {
     _id: 'test-code-id',
     expectationId: 'test-expectation-id',
     files: [
       {
         path: 'test.ts',
-        content: '/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-console.log("test")',
+        content: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")',
         language: 'typescript',
       },
     ],
@@ -56,7 +53,7 @@ console.log("test")',
   };
 
   beforeEach(async () => {
-    const _mockCodeModel = 
+    const mockCodeModel = function () {
       this.save = jest.fn().mockImplementation(function () {
         return Promise.resolve({
           ...this,
@@ -83,16 +80,13 @@ console.log("test")',
     mockCodeModel.sort = jest.fn().mockReturnThis();
     mockCodeModel.exec = jest.fn().mockResolvedValue([mockCode]);
 
-    const _mockLlmRouterService = 
+    const mockLlmRouterService = {
       generateContent: jest.fn().mockResolvedValue(
         JSON.stringify({
           files: [
             {
               path: 'test.ts',
-              content: '/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-console.log("test")',
+              content: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")',
               language: 'typescript',
             },
           ],
@@ -100,12 +94,18 @@ console.log("test")',
       ),
     };
 
-    const _mockMemoryService = 
+    const mockMemoryService = {
       getMemoryByType: jest.fn().mockImplementation((type) => {
         if (type === MemoryType.EXPECTATION) {
           return Promise.resolve([mockExpectation]);
         }
         return Promise.resolve([]);
+      }),
+      getMemoryById: jest.fn().mockImplementation((id) => {
+        if (id === 'test-expectation-id') {
+          return Promise.resolve(mockExpectation);
+        }
+        return Promise.resolve(null);
       }),
       storeMemory: jest.fn().mockResolvedValue({
         _id: 'test-memory-id',
@@ -114,7 +114,7 @@ console.log("test")',
       }),
     };
 
-    const _mockSemanticMediatorService = 
+    const mockSemanticMediatorService = {
       enrichWithContext: jest.fn().mockImplementation((source, data, context) => {
         return Promise.resolve({
           ...data,
@@ -178,7 +178,7 @@ console.log("test")',
         }),
     };
 
-    const _module: TestingModule = 
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         GeneratorService,
         {
@@ -209,13 +209,13 @@ console.log("test")',
 
   describe('generateCodeWithSemanticInput', () => {
     it('should enrich semantic analysis with context', async () => {
-      const _expectationId = 
-      const _semanticAnalysis = 
+      const expectationId = 'test-expectation-id';
+      const semanticAnalysis = {
         key: 'value',
         summary: 'Semantic analysis summary',
       };
 
-      const _result = 
+      const result = await generatorService.generateCodeWithSemanticInput(
         expectationId,
         semanticAnalysis,
       );
@@ -229,13 +229,13 @@ console.log("test")',
     });
 
     it('should translate expectation to generator-friendly format', async () => {
-      const _expectationId = 
-      const _semanticAnalysis = 
+      const expectationId = 'test-expectation-id';
+      const semanticAnalysis = {
         key: 'value',
         summary: 'Semantic analysis summary',
       };
 
-      const _result = 
+      const result = await generatorService.generateCodeWithSemanticInput(
         expectationId,
         semanticAnalysis,
       );
@@ -249,13 +249,13 @@ console.log("test")',
     });
 
     it('should track semantic transformation between expectation and code', async () => {
-      const _expectationId = 
-      const _semanticAnalysis = 
+      const expectationId = 'test-expectation-id';
+      const semanticAnalysis = {
         key: 'value',
         summary: 'Semantic analysis summary',
       };
 
-      const _result = 
+      const result = await generatorService.generateCodeWithSemanticInput(
         expectationId,
         semanticAnalysis,
       );
@@ -273,13 +273,13 @@ console.log("test")',
 
   describe('optimizeCode', () => {
     it('should extract semantic insights from feedback', async () => {
-      const _codeId = 
-      const _semanticFeedback = 
+      const codeId = 'test-code-id';
+      const semanticFeedback = {
         suggestions: ['Improve performance', 'Enhance readability'],
         priority: 'high',
       };
 
-      const _result = 
+      const result = await generatorService.optimizeCode(codeId, semanticFeedback);
 
       expect(result).toBeDefined();
       expect(semanticMediatorService.extractSemanticInsights).toHaveBeenCalledWith(
@@ -289,13 +289,13 @@ console.log("test")',
     });
 
     it('should resolve semantic conflicts between expectation and code', async () => {
-      const _codeId = 
-      const _semanticFeedback = 
+      const codeId = 'test-code-id';
+      const semanticFeedback = {
         suggestions: ['Improve performance', 'Enhance readability'],
         priority: 'high',
       };
 
-      const _result = 
+      const result = await generatorService.optimizeCode(codeId, semanticFeedback);
 
       expect(result).toBeDefined();
       expect(semanticMediatorService.resolveSemanticConflicts).toHaveBeenCalledWith(
@@ -309,9 +309,9 @@ console.log("test")',
 
   describe('validateCodeSemantics', () => {
     it('should validate code against semantic expectations', async () => {
-      const _codeId = 
+      const codeId = 'test-code-id';
 
-      const _result = 
+      const result = await generatorService.validateCodeSemantics(codeId);
 
       expect(result).toBeDefined();
       expect(result.validationContext).toBeDefined();
@@ -323,7 +323,7 @@ console.log("test")',
     });
 
     it('should throw an error if code is not found', async () => {
-      const _codeId = 
+      const codeId = 'non-existent-code-id';
 
       await expect(generatorService.validateCodeSemantics(codeId)).rejects.toThrow(
         `Code with id ${codeId} not found`,

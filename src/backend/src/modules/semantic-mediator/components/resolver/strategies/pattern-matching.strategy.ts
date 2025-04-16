@@ -30,7 +30,7 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
     context?: unknown,
   ): Promise<boolean> {
     try {
-      const _similarPatterns = 
+      const similarPatterns = await this.findSimilarPatterns(sourceDescriptor, targetDescriptor);
       return similarPatterns.length > 0;
     } catch (error) {
       this.logger.error(
@@ -57,10 +57,10 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     context?: unknown,
   ): Promise<ResolutionResult> {
-    const _startTime = 
+    const startTime = Date.now();
 
     try {
-      const _similarPatterns = 
+      const similarPatterns = await this.findSimilarPatterns(sourceDescriptor, targetDescriptor);
 
       if (similarPatterns.length === 0) {
         return {
@@ -83,9 +83,9 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
 
       similarPatterns.sort((a, b) => b.similarity - a.similarity);
 
-      const _bestPattern = 
+      const bestPattern = similarPatterns[0];
 
-      const _resolvedData = 
+      const resolvedData = await this.applyPatternTransformation(
         sourceData,
         targetData,
         bestPattern.transformationPath,
@@ -147,7 +147,7 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
     sourceDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
   ): Promise<Array<{ id: string; similarity: number; transformationPath: unknown }>> {
-    const _transformationPath = 
+    const transformationPath = await this.intelligentCache.retrieveTransformationPath(
       sourceDescriptor,
       targetDescriptor,
       0.7, // Minimum similarity threshold
@@ -178,9 +178,19 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
     targetData: unknown,
     transformationPath: unknown,
   ): Promise<any> {
-    const _steps = 
+    // Extract steps from the transformation path
+    // This is a simplification - in a real implementation,
+    // you would need to properly extract the transformation steps
+    const steps = Array.isArray(transformationPath) 
+      ? transformationPath 
+      : (transformationPath as any)?.steps || [];
 
-    let _result = 
+    // Initialize result with sourceData, ensuring it's an object
+    const sourceDataObj = typeof sourceData === 'object' && sourceData !== null 
+      ? sourceData 
+      : {};
+    
+    let result = { ...sourceDataObj } as any;
 
     for (const step of steps) {
       if (step.type === 'field_mapping') {
@@ -204,10 +214,10 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
    * @returns Transformed data
    */
   private applyFieldMapping(data: unknown, mapping: Record<string, string>): unknown {
-    const _result = 
+    const result = { ...(data as any) };
 
     for (const [targetField, sourceField] of Object.entries(mapping)) {
-      result[targetField] = data[sourceField];
+      result[targetField] = (data as any)[sourceField];
     }
 
     return result;
@@ -220,7 +230,10 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
    * @returns Transformed data
    */
   private applyStructureTransformation(data: unknown, transformation: unknown): unknown {
-    return transformation(data);
+    if (typeof transformation === 'function') {
+      return transformation(data);
+    }
+    return data; // If transformation is not a function, return data unchanged
   }
 
   /**
@@ -231,6 +244,11 @@ export class PatternMatchingStrategy implements ResolutionStrategy {
    * @returns Resolved data
    */
   private applyConflictResolution(sourceData: unknown, targetData: unknown, resolution: unknown): unknown {
-    return { ...sourceData, ...targetData, ...resolution };
+    // Ensure all data is object type before spreading
+    const sourceObj = typeof sourceData === 'object' && sourceData !== null ? sourceData : {};
+    const targetObj = typeof targetData === 'object' && targetData !== null ? targetData : {};
+    const resolutionObj = typeof resolution === 'object' && resolution !== null ? resolution : {};
+    
+    return { ...sourceObj, ...targetObj, ...resolutionObj };
   }
 }

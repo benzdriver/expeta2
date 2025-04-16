@@ -127,7 +127,7 @@ export class SemanticMediatorController {
   async translateBetweenModules(@Body() dto: TranslateDto) {
     this.logger.debug(`Translating data from ${dto.sourceModule} to ${dto.targetModule}`);
     const { sourceModule, targetModule, data } = dto;
-    const _result = 
+    const result = await this.semanticMediatorService.translateBetweenModules(
       sourceModule,
       targetModule,
       data,
@@ -177,7 +177,7 @@ export class SemanticMediatorController {
     );
     const { sourceModule, targetModule, sourceData, transformedData, options } = dto;
 
-    const _result = 
+    const result = await this.semanticMediatorService.trackSemanticTransformation(
       sourceModule,
       targetModule,
       sourceData,
@@ -225,9 +225,9 @@ export class SemanticMediatorController {
     this.logger.debug(`Registering data source for module: ${dto.moduleId}`);
     const { moduleId, semanticDescriptor, accessMethod } = dto;
 
-    const _accessMethodFn = 
+    const accessMethodFn = new Function(`return ${accessMethod}`)();
 
-    const _sourceId = 
+    const sourceId = await this.semanticRegistry.registerDataSource(
       moduleId,
       semanticDescriptor,
       accessMethodFn,
@@ -261,7 +261,7 @@ export class SemanticMediatorController {
       accessMethodFn = new Function(`return ${dto.accessMethod}`)();
     }
 
-    const _success = 
+    const success = await this.semanticRegistry.updateDataSource(
       sourceId,
       dto.semanticDescriptor,
       accessMethodFn,
@@ -276,7 +276,7 @@ export class SemanticMediatorController {
   @Delete('registry/data-sources/:sourceId')
   async removeDataSource(@Param('sourceId') sourceId: string) {
     this.logger.debug(`Removing data source: ${sourceId}`);
-    const _success = 
+    const success = await this.semanticRegistry.removeDataSource(sourceId);
 
     return {
       success,
@@ -288,7 +288,7 @@ export class SemanticMediatorController {
   async findPotentialSources(@Body() dto: FindSourcesDto) {
     this.logger.debug(`Finding potential sources for intent`);
     const { intent, threshold } = dto;
-    const _sources = 
+    const sources = await this.semanticRegistry.findPotentialSources(intent, threshold);
 
     return {
       success: true,
@@ -300,7 +300,7 @@ export class SemanticMediatorController {
   @Get('transformation/strategies')
   async getTransformationStrategies() {
     this.logger.debug(`Getting available transformation strategies`);
-    const _strategies = 
+    const strategies = await this.transformationEngine.getAvailableTransformationStrategies();
 
     return {
       success: true,
@@ -311,9 +311,9 @@ export class SemanticMediatorController {
   @Post('transformation/generate-path')
   async generateTransformationPath(@Body() dto: unknown) {
     this.logger.debug(`Generating transformation path`);
-    const { sourceDescriptor, targetDescriptor, context } = dto;
+    const { sourceDescriptor, targetDescriptor, context } = dto as any;
 
-    const _path = 
+    const path = await this.transformationEngine.generateTransformationPath(
       sourceDescriptor,
       targetDescriptor,
       context,
@@ -328,9 +328,9 @@ export class SemanticMediatorController {
   @Post('transformation/execute')
   async executeTransformation(@Body() dto: unknown) {
     this.logger.debug(`Executing transformation`);
-    const { data, transformationPath, context } = dto;
+    const { data, transformationPath, context } = dto as any;
 
-    const _result = 
+    const result = await this.transformationEngine.executeTransformation(
       data,
       transformationPath,
       context,
@@ -345,9 +345,9 @@ export class SemanticMediatorController {
   @Post('transformation/validate')
   async validateTransformation(@Body() dto: unknown) {
     this.logger.debug(`Validating transformation`);
-    const { result, targetDescriptor, context } = dto;
+    const { result, targetDescriptor, context } = dto as any;
 
-    const _validationResult = 
+    const validationResult = await this.transformationEngine.validateTransformation(
       result,
       targetDescriptor,
       context,
@@ -364,7 +364,7 @@ export class SemanticMediatorController {
     this.logger.debug(`Storing transformation path to cache`);
     const { sourceDescriptor, targetDescriptor, transformationPath, metadata } = dto;
 
-    const _pathId = 
+    const pathId = await this.intelligentCache.storeTransformationPath(
       sourceDescriptor,
       targetDescriptor,
       transformationPath,
@@ -382,7 +382,7 @@ export class SemanticMediatorController {
     this.logger.debug(`Retrieving transformation path from cache`);
     const { sourceDescriptor, targetDescriptor, similarityThreshold } = dto;
 
-    const _path = 
+    const path = await this.intelligentCache.retrieveTransformationPath(
       sourceDescriptor,
       targetDescriptor,
       similarityThreshold,
@@ -397,7 +397,7 @@ export class SemanticMediatorController {
   @Get('cache/most-used')
   async getMostUsedPaths(@Query('limit') limit?: string) {
     this.logger.debug(`Getting most used transformation paths`);
-    const _paths = 
+    const paths = await this.intelligentCache.getMostUsedPaths(limit ? parseInt(limit, 10) : undefined);
 
     return {
       success: true,
@@ -409,8 +409,8 @@ export class SemanticMediatorController {
   @Get('cache/recently-used')
   async getRecentlyUsedPaths(@Query('limit') limit?: string) {
     this.logger.debug(`Getting recently used transformation paths`);
-    const _paths = 
-      limit ? parseInt(limit) : undefined,
+    const paths = await this.intelligentCache.getRecentlyUsedPaths(
+      limit ? parseInt(limit, 10) : undefined,
     );
 
     return {
@@ -423,9 +423,9 @@ export class SemanticMediatorController {
   @Post('cache/clear')
   async clearCache(@Body() dto: { olderThan?: string }) {
     this.logger.debug(`Clearing cache`);
-    const _olderThan = 
+    const olderThan = dto.olderThan ? new Date(dto.olderThan) : undefined;
 
-    const _count = 
+    const count = await this.intelligentCache.clearCache(olderThan);
 
     return {
       success: true,
@@ -436,7 +436,7 @@ export class SemanticMediatorController {
   @Get('cache/patterns')
   async analyzeUsagePatterns() {
     this.logger.debug(`Analyzing cache usage patterns`);
-    const _patterns = 
+    const patterns = await this.intelligentCache.analyzeUsagePatterns();
 
     return {
       success: true,
@@ -447,7 +447,7 @@ export class SemanticMediatorController {
   @Post('monitoring/events')
   async logTransformationEvent(@Body() dto: LogTransformationEventDto) {
     this.logger.debug(`Logging transformation event`);
-    const _eventId = 
+    const eventId = await this.monitoringSystem.logTransformationEvent(dto.event);
 
     return {
       success: true,
@@ -460,7 +460,7 @@ export class SemanticMediatorController {
     this.logger.debug(`Logging error`);
     const { error, context } = dto;
 
-    const _errorId = 
+    const errorId = await this.monitoringSystem.logError(error, context);
 
     return {
       success: true,
@@ -474,11 +474,11 @@ export class SemanticMediatorController {
     @Query('limit') limit?: string,
   ) {
     this.logger.debug(`Getting transformation history`);
-    const _parsedFilters = 
+    const parsedFilters = filters ? JSON.parse(filters) : undefined;
 
-    const _history = 
+    const history = await this.monitoringSystem.getTransformationHistory(
       parsedFilters,
-      limit ? parseInt(limit) : undefined,
+      limit ? parseInt(limit, 10) : undefined,
     );
 
     return {
@@ -491,11 +491,11 @@ export class SemanticMediatorController {
   @Get('monitoring/error-history')
   async getErrorHistory(@Query('filters') filters?: string, @Query('limit') limit?: string) {
     this.logger.debug(`Getting error history`);
-    const _parsedFilters = 
+    const parsedFilters = filters ? JSON.parse(filters) : undefined;
 
-    const _history = 
+    const history = await this.monitoringSystem.getErrorHistory(
       parsedFilters,
-      limit ? parseInt(limit) : undefined,
+      limit ? parseInt(limit, 10) : undefined,
     );
 
     return {
@@ -516,7 +516,7 @@ export class SemanticMediatorController {
           }
         : undefined;
 
-    const _report = 
+    const report = await this.monitoringSystem.getPerformanceReport(timeRange);
 
     return {
       success: true,
@@ -529,7 +529,7 @@ export class SemanticMediatorController {
     this.logger.debug(`Requesting human review`);
     const { data, context, timeout } = dto;
 
-    const _reviewId = 
+    const reviewId = await this.humanInTheLoop.requestHumanReview(data, context, timeout);
 
     return {
       success: true,
@@ -542,7 +542,7 @@ export class SemanticMediatorController {
     this.logger.debug(`Submitting human feedback`);
     const { reviewId, feedback, metadata } = dto;
 
-    const _success = 
+    const success = await this.humanInTheLoop.submitHumanFeedback(reviewId, feedback, metadata);
 
     return {
       success,
@@ -553,7 +553,7 @@ export class SemanticMediatorController {
   @Get('human-in-the-loop/reviews/:reviewId')
   async getReviewStatus(@Param('reviewId') reviewId: string) {
     this.logger.debug(`Getting review status: ${reviewId}`);
-    const _status = 
+    const status = await this.humanInTheLoop.getReviewStatus(reviewId);
 
     return {
       success: true,
@@ -564,11 +564,11 @@ export class SemanticMediatorController {
   @Get('human-in-the-loop/pending-reviews')
   async getPendingReviews(@Query('filters') filters?: string, @Query('limit') limit?: string) {
     this.logger.debug(`Getting pending reviews`);
-    const _parsedFilters = 
+    const parsedFilters = filters ? JSON.parse(filters) : undefined;
 
-    const _reviews = 
+    const reviews = await this.humanInTheLoop.getPendingReviews(
       parsedFilters,
-      limit ? parseInt(limit) : undefined,
+      limit ? parseInt(limit, 10) : undefined,
     );
 
     return {
@@ -581,11 +581,11 @@ export class SemanticMediatorController {
   @Get('human-in-the-loop/feedback-history')
   async getFeedbackHistory(@Query('filters') filters?: string, @Query('limit') limit?: string) {
     this.logger.debug(`Getting feedback history`);
-    const _parsedFilters = 
+    const parsedFilters = filters ? JSON.parse(filters) : undefined;
 
-    const _history = 
+    const history = await this.humanInTheLoop.getFeedbackHistory(
       parsedFilters,
-      limit ? parseInt(limit) : undefined,
+      limit ? parseInt(limit, 10) : undefined,
     );
 
     return {
@@ -598,7 +598,7 @@ export class SemanticMediatorController {
   @Get('human-in-the-loop/feedback-patterns')
   async analyzeFeedbackPatterns() {
     this.logger.debug(`Analyzing feedback patterns`);
-    const _patterns = 
+    const patterns = await this.humanInTheLoop.analyzeFeedbackPatterns();
 
     return {
       success: true,

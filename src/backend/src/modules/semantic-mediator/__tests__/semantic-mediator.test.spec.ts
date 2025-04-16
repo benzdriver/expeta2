@@ -8,6 +8,7 @@ import { TransformationEngineService } from '../components/transformation-engine
 import { IntelligentCacheService } from '../components/intelligent-cache/intelligent-cache.service';
 import { MonitoringSystemService } from '../components/monitoring-system/monitoring-system.service';
 import { HumanInTheLoopService } from '../components/human-in-the-loop/human-in-the-loop.service';
+import { SemanticMediatorExtensionService } from '../services/semantic-mediator-extension.service';
 
 describe('SemanticMediatorService Tests', () => {
   let service: SemanticMediatorService;
@@ -20,7 +21,7 @@ describe('SemanticMediatorService Tests', () => {
   let humanInTheLoop: HumanInTheLoopService;
 
   beforeEach(async () => {
-    const _mockLlmRouterService = 
+    const mockLlmRouterService = {
       translateBetweenModules: jest
         .fn()
         .mockResolvedValue({ translated: true, data: 'translated data' }),
@@ -63,7 +64,7 @@ describe('SemanticMediatorService Tests', () => {
       }),
     };
 
-    const _memoryServiceMock = 
+    const memoryServiceMock = {
       getRelatedMemories: jest.fn().mockResolvedValue([
         { content: 'memory1', type: MemoryType.EXPECTATION },
         { content: 'memory2', type: MemoryType.CODE },
@@ -77,10 +78,10 @@ describe('SemanticMediatorService Tests', () => {
             {
               content: {
                 _id: 'code-456',
-                files: [{ path: 'test.js', content: '/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-console.log("test")' }],
+                files: [{ 
+                  path: 'test.js', 
+                  content: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")' 
+                }],
               },
             },
           ]);
@@ -89,7 +90,8 @@ console.log("test")' }],
         }
       }),
     };
-    const _semanticRegistryMock = 
+    
+    const semanticRegistryMock = {
       registerDataSource: jest.fn().mockResolvedValue('source-id-1'),
       updateDataSource: jest.fn().mockResolvedValue(true),
       removeDataSource: jest.fn().mockResolvedValue(true),
@@ -101,7 +103,7 @@ console.log("test")' }],
       calculateSemanticSimilarity: jest.fn().mockResolvedValue(0.85),
     };
 
-    const _transformationEngineMock = 
+    const transformationEngineMock = {
       generateTransformationPath: jest.fn().mockResolvedValue({
         steps: [{ type: 'transform', operation: 'rename' }],
       }),
@@ -117,7 +119,7 @@ console.log("test")' }],
       registerTransformationStrategy: jest.fn().mockResolvedValue(true),
     };
 
-    const _intelligentCacheMock = 
+    const intelligentCacheMock = {
       storeTransformationPath: jest.fn().mockResolvedValue('path-id-1'),
       retrieveTransformationPath: jest.fn().mockResolvedValue(null),
       updateUsageStatistics: jest.fn().mockResolvedValue(true),
@@ -129,7 +131,7 @@ console.log("test")' }],
       analyzeUsagePatterns: jest.fn().mockResolvedValue({ patterns: ['pattern1'] }),
     };
 
-    const _monitoringSystemMock = 
+    const monitoringSystemMock = {
       logTransformationEvent: jest.fn().mockResolvedValue('event-id-1'),
       logError: jest.fn().mockResolvedValue('error-id-1'),
       recordPerformanceMetrics: jest.fn().mockResolvedValue(true),
@@ -142,7 +144,7 @@ console.log("test")' }],
       getDebugSessionData: jest.fn().mockResolvedValue({ id: 'debug-session-1', events: [] }),
     };
 
-    const _humanInTheLoopMock = 
+    const humanInTheLoopMock = {
       requestHumanReview: jest.fn().mockResolvedValue('review-id-1'),
       submitHumanFeedback: jest.fn().mockResolvedValue(true),
       getReviewStatus: jest.fn().mockResolvedValue({ status: 'pending' }),
@@ -154,7 +156,14 @@ console.log("test")' }],
       analyzeFeedbackPatterns: jest.fn().mockResolvedValue({ patterns: ['pattern1'] }),
     };
 
-    const _module: TestingModule = 
+    const semanticMediatorExtensionMock = {
+      storeWithSemanticTransformation: jest.fn().mockResolvedValue({ transformed: true }),
+      registerAsDataSource: jest.fn().mockResolvedValue(undefined),
+      validateSemanticConsistency: jest.fn().mockResolvedValue({ isValid: true, score: 100 }),
+      recordTransformationFeedback: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         SemanticMediatorService,
         { provide: LlmRouterService, useValue: mockLlmRouterService },
@@ -164,6 +173,7 @@ console.log("test")' }],
         { provide: IntelligentCacheService, useValue: intelligentCacheMock },
         { provide: MonitoringSystemService, useValue: monitoringSystemMock },
         { provide: HumanInTheLoopService, useValue: humanInTheLoopMock },
+        { provide: SemanticMediatorExtensionService, useValue: semanticMediatorExtensionMock },
       ],
     }).compile();
 
@@ -182,31 +192,31 @@ console.log("test")' }],
   });
 
   it('should translate between modules', async () => {
-    const _result = 
+    const result = await service.translateBetweenModules('moduleA', 'moduleB', {
       key: 'value',
     });
     expect(result).toBeDefined();
   });
 
   it('should enrich with context', async () => {
-    const _result = 
+    const result = await service.enrichWithContext('moduleA', { data: 'test' }, 'context query');
     expect(result).toBeDefined();
   });
 
   it('should resolve semantic conflicts', async () => {
-    const _result = 
+    const result = await service.resolveSemanticConflicts('moduleA', { source: 'data' }, 'moduleB', {
       key: 'target',
     });
     expect(result).toBeDefined();
   });
 
   it('should extract semantic insights', async () => {
-    const _originalMethod = 
+    const originalMethod = service.extractSemanticInsights;
     service.extractSemanticInsights = jest.fn().mockResolvedValueOnce({
       insights: ['insight1', 'insight2'],
     });
 
-    const _result = 
+    const result = await service.extractSemanticInsights({ data: 'test' }, 'query');
     expect(result).toBeDefined();
     expect(result.insights).toEqual(['insight1', 'insight2']);
 
@@ -214,7 +224,7 @@ console.log("test")' }],
   });
 
   it('should track semantic transformation', async () => {
-    const _result = 
+    const result = await service.trackSemanticTransformation(
       'clarifier',
       'generator',
       { original: { key: 'value' } },
@@ -224,7 +234,7 @@ console.log("test")' }],
   });
 
   it('should generate validation context', async () => {
-    const _originalMethod = 
+    const originalMethod = service.generateValidationContext;
     service.generateValidationContext = jest.fn().mockResolvedValueOnce({
       validationContext: {
         semanticExpectations: ['expectation1'],
@@ -233,7 +243,7 @@ console.log("test")' }],
       },
     });
 
-    const _result = 
+    const result = await service.generateValidationContext('exp-1', 'code-1', [], {
       strategy: 'balanced',
     });
     expect(result).toBeDefined();
@@ -243,7 +253,7 @@ console.log("test")' }],
   });
 
   it('should evaluate semantic transformation', async () => {
-    const _result = 
+    const result = await service.evaluateSemanticTransformation(
       { source: 'data' },
       { transformed: 'data' },
       'Expected outcome description',

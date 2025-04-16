@@ -1,3 +1,5 @@
+import { SemanticAnalysisInput } from '../interfaces/generator.interfaces';
+
 /**
  * 使用语义输入生成代码的DTO
  */
@@ -10,7 +12,7 @@ export class GenerateCodeWithSemanticInputDto {
   /**
    * 语义分析结果
    */
-  semanticAnalysis: unknown;
+  semanticAnalysis: SemanticAnalysisInput;
 
   /**
    * 生成选项

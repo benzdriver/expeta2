@@ -19,7 +19,7 @@ describe('OrchestratorService', () => {
   let semanticMediatorService: SemanticMediatorService;
 
   beforeEach(async () => {
-    const _mockClarifierService = 
+    const mockClarifierService = {
       getRequirementById: jest.fn().mockResolvedValue({
         _id: 'req-123',
         title: 'Test Requirement',
@@ -48,44 +48,48 @@ describe('OrchestratorService', () => {
       }),
     };
 
-    const _mockGeneratorService = 
+    const mockGeneratorService = {
       getCodeByExpectationId: jest.fn().mockResolvedValue([
         {
           _id: 'code-789',
           expectationId: 'exp-456',
-          files: [{ path: 'test.js', content: '/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-console.log("test")' }],
+          files: [{ 
+            path: 'test.js', 
+            content: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")', 
+            language: 'javascript' 
+          }],
         },
       ]),
       generateCode: jest.fn().mockResolvedValue({
         _id: 'code-789',
         expectationId: 'exp-456',
-        files: [{ path: 'test.js', content: '/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-console.log("test")' }],
+        files: [{ 
+          path: 'test.js', 
+          content: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")', 
+          language: 'javascript' 
+        }],
       }),
       getCodeById: jest.fn().mockResolvedValue({
         _id: 'code-789',
         expectationId: 'exp-456',
-        files: [{ path: 'test.js', content: '/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-console.log("test")' }],
+        files: [{ 
+          path: 'test.js', 
+          content: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")', 
+          language: 'javascript' 
+        }],
       }),
       generateCodeWithSemanticInput: jest.fn().mockResolvedValue({
         _id: 'code-790',
         expectationId: 'exp-456',
-        files: [{ path: 'test.js', content: '/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-console.log("improved")' }],
+        files: [{ 
+          path: 'test.js', 
+          content: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("improved")', 
+          language: 'javascript' 
+        }],
       }),
     };
 
-    const _mockValidatorService = 
+    const mockValidatorService = {
       getValidationsByCodeId: jest.fn().mockResolvedValue([
         {
           _id: 'val-123',
@@ -143,7 +147,7 @@ console.log("improved")' }],
       }),
     };
 
-    const _mockMemoryService = 
+    const mockMemoryService = {
       storeMemory: jest.fn().mockResolvedValue({
         _id: 'memory-id',
         type: MemoryType.SYSTEM,
@@ -163,7 +167,7 @@ console.log("improved")' }],
       ]),
     };
 
-    const _mockSemanticMediatorService = 
+    const mockSemanticMediatorService = {
       translateBetweenModules: jest.fn().mockResolvedValue({
         translated: true,
         data: { key: 'translated-value' },
@@ -187,7 +191,7 @@ console.log("improved")' }],
       }),
     };
 
-    const _module: TestingModule = 
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrchestratorService,
         { provide: ClarifierService, useValue: mockClarifierService },
@@ -212,9 +216,9 @@ console.log("improved")' }],
 
   describe('processRequirement', () => {
     it('should process a requirement in clarifying status', async () => {
-      const _requirementId = 
+      const requirementId = 'req-123';
 
-      const _result = 
+      const result = await service.processRequirement(requirementId);
 
       expect(result).toBeDefined();
       expect(result.status).toBe('ready_for_expectations');
@@ -225,7 +229,7 @@ console.log("improved")' }],
     it('should throw an error if requirement is not found', async () => {
       jest.spyOn(clarifierService, 'getRequirementById').mockResolvedValueOnce(null);
 
-      const _requirementId = 
+      const requirementId = 'nonexistent-req-id';
 
       await expect(service.processRequirement(requirementId)).rejects.toThrow(
         'Requirement not found',
@@ -235,9 +239,9 @@ console.log("improved")' }],
 
   describe('getProcessStatus', () => {
     it('should return the status of the process', async () => {
-      const _requirementId = 
+      const requirementId = 'req-123';
 
-      const _result = 
+      const result = await service.getProcessStatus(requirementId);
 
       expect(result).toBeDefined();
       expect(result.requirement).toBeDefined();
@@ -253,10 +257,12 @@ console.log("improved")' }],
 
   describe('executeWorkflow', () => {
     it('should execute a full process workflow', async () => {
-      const _workflowId = 
-      const _params = 
+      const workflowId = WorkflowType.FULL_PROCESS;
+      const params = {
+        requirementId: 'req-123'
+      };
 
-      const _result = 
+      const result = await service.executeWorkflow(workflowId, params);
 
       expect(result).toBeDefined();
       expect(result.executionId).toBeDefined();
@@ -274,10 +280,12 @@ console.log("improved")' }],
     });
 
     it('should execute a regenerate code workflow', async () => {
-      const _workflowId = 
-      const _params = 
+      const workflowId = WorkflowType.REGENERATE_CODE;
+      const params = {
+        expectationId: 'exp-456'
+      };
 
-      const _result = 
+      const result = await service.executeWorkflow(workflowId, params);
 
       expect(result).toBeDefined();
       expect(result.executionId).toBeDefined();
@@ -287,10 +295,13 @@ console.log("improved")' }],
     });
 
     it('should execute a semantic validation workflow', async () => {
-      const _workflowId = 
-      const _params = 
+      const workflowId = WorkflowType.SEMANTIC_VALIDATION;
+      const params = {
+        expectationId: 'exp-456',
+        codeId: 'code-789'
+      };
 
-      const _result = 
+      const result = await service.executeWorkflow(workflowId, params);
 
       expect(result).toBeDefined();
       expect(result.executionId).toBeDefined();
@@ -304,10 +315,14 @@ console.log("improved")' }],
     });
 
     it('should execute a semantic enrichment workflow', async () => {
-      const _workflowId = 
-      const _params = 
+      const workflowId = WorkflowType.SEMANTIC_ENRICHMENT;
+      const params = {
+        moduleType: 'expectations',
+        dataId: 'exp-456',
+        contextQuery: 'test-query'
+      };
 
-      const _result = 
+      const result = await service.executeWorkflow(workflowId, params);
 
       expect(result).toBeDefined();
       expect(result.executionId).toBeDefined();
@@ -320,10 +335,13 @@ console.log("improved")' }],
     });
 
     it('should execute an iterative refinement workflow', async () => {
-      const _workflowId = 
-      const _params = 
+      const workflowId = WorkflowType.ITERATIVE_REFINEMENT;
+      const params = {
+        expectationId: 'exp-456',
+        codeId: 'code-789'
+      };
 
-      const _mockPartialValidation = 
+      const mockPartialValidation = jest.spyOn(validatorService, 'validateCode').mockResolvedValueOnce({
         _id: 'val-123',
         codeId: 'code-789',
         expectationId: 'exp-456',
@@ -340,20 +358,9 @@ console.log("improved")' }],
           createdAt: new Date(),
           updatedAt: new Date(),
           metadata: {},
-        } as unknown)
-        .mockResolvedValueOnce({
-          _id: 'val-124',
-          codeId: 'code-790',
-          expectationId: 'exp-456',
-          score: 0.95,
-          status: 'passed',
-          details: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          metadata: {},
-        } as unknown);
+      });
 
-      const _result = 
+      const result = await service.executeWorkflow(workflowId, params);
 
       expect(result).toBeDefined();
       expect(result.executionId).toBeDefined();
@@ -370,10 +377,13 @@ console.log("improved")' }],
     });
 
     it('should execute a parallel validation workflow', async () => {
-      const _workflowId = 
-      const _params = 
+      const workflowId = WorkflowType.PARALLEL_VALIDATION;
+      const params = {
+        expectationId: 'exp-456',
+        codeIds: ['code-789', 'code-790']
+      };
 
-      const _result = 
+      const result = await service.executeWorkflow(workflowId, params);
 
       expect(result).toBeDefined();
       expect(result.executionId).toBeDefined();
@@ -384,15 +394,15 @@ console.log("improved")' }],
     });
 
     it('should execute an adaptive validation workflow', async () => {
-      const _workflowId = 
-      const _params = 
+      const workflowId = WorkflowType.ADAPTIVE_VALIDATION;
+      const params = {
         expectationId: 'exp-456',
         codeId: 'code-789',
         previousValidationId: 'val-123',
         adaptationStrategy: 'balanced',
       };
 
-      const _result = 
+      const result = await service.executeWorkflow(workflowId, params);
 
       expect(result).toBeDefined();
       expect(result.executionId).toBeDefined();
@@ -409,8 +419,8 @@ console.log("improved")' }],
     });
 
     it('should throw an error for unknown workflow type', async () => {
-      const _workflowId = 
-      const _params = 
+      const workflowId = 'unknown-workflow';
+      const params = {};
 
       await expect(service.executeWorkflow(workflowId, params)).rejects.toThrow(
         `Unknown workflow: ${workflowId}`,
@@ -420,7 +430,7 @@ console.log("improved")' }],
 
   describe('createCustomWorkflow', () => {
     it('should create a custom workflow', async () => {
-      const _customWorkflowDto = 
+      const customWorkflowDto = {
         name: 'Custom Workflow',
         steps: [
           {
@@ -443,9 +453,9 @@ console.log("improved")' }],
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as unknown);
+      });
 
-      const _result = 
+      const result = await service.createCustomWorkflow(customWorkflowDto);
 
       expect(result).toBeDefined();
       expect(result.id).toBeDefined();
@@ -456,7 +466,7 @@ console.log("improved")' }],
 
   describe('getCustomWorkflows', () => {
     it('should return all custom workflows', async () => {
-      const _result = 
+      const result = await service.getCustomWorkflows();
 
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
@@ -465,7 +475,7 @@ console.log("improved")' }],
 
   describe('getWorkflowStatus', () => {
     it('should return the status of a workflow execution', async () => {
-      const _executionId = 
+      const executionId = 'execution-123';
       
       jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
         if (type === MemoryType.SYSTEM) {
@@ -484,7 +494,7 @@ console.log("improved")' }],
         return Promise.resolve([]);
       });
 
-      const _result = 
+      const result = await service.getWorkflowStatus(executionId);
 
       expect(result).toBeDefined();
       expect(result.status).toBe('completed');
@@ -493,7 +503,7 @@ console.log("improved")' }],
 
   describe('cancelWorkflow', () => {
     it('should cancel a workflow execution', async () => {
-      const _executionId = 
+      const executionId = 'execution-123';
       
       jest.spyOn(memoryService, 'getMemoryByType').mockImplementation((type) => {
         if (type === MemoryType.SYSTEM) {
@@ -518,7 +528,7 @@ console.log("improved")' }],
         return Promise.resolve([]);
       });
 
-      const _result = 
+      const result = await service.cancelWorkflow(executionId);
 
       expect(result).toBeDefined();
       expect(result.status).toBe('cancelled');

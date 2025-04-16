@@ -48,10 +48,10 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     context?: unknown,
   ): Promise<ResolutionResult> {
-    const _startTime = 
+    const startTime = Date.now();
 
     try {
-      const _prompt = 
+      const prompt = this.generateResolutionPrompt(
         sourceData,
         targetData,
         sourceDescriptor,
@@ -59,36 +59,38 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
         context,
       );
 
-      const _resolutionText = 
+      const resolutionText = await this.llmService.generateContent(prompt, {
         systemPrompt:
           'You are a semantic conflict resolution expert. Your task is to resolve conflicts between different data representations while preserving semantic meaning.',
+        temperature: 0.3,
+        maxTokens: 3000
       });
 
-      const _resolution = 
+      const resolution = this.parseResolutionResult(resolutionText);
 
-      if (resolution.success === false) {
+      if ((resolution as any).success === false) {
         return {
           success: false,
           resolvedData: null,
           strategyUsed: this.name,
           confidence: 0,
-          unresolvedConflicts: resolution.unresolvedConflicts || [
+          unresolvedConflicts: (resolution as any).unresolvedConflicts || [
             {
               type: 'llm_error',
               description: 'Failed to resolve using LLM',
-              reason: resolution.summary || 'Unknown error',
+              reason: (resolution as any).summary || 'Unknown error',
             },
           ],
           metadata: {
             executionTime: Date.now() - startTime,
             additionalInfo: {
-              resolutionSummary: resolution.summary,
+              resolutionSummary: (resolution as any).summary,
             },
           },
         };
       }
 
-      if (!resolution.resolvedData) {
+      if (!(resolution as any).resolvedData) {
         return {
           success: false,
           resolvedData: null,
@@ -104,27 +106,27 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
           metadata: {
             executionTime: Date.now() - startTime,
             additionalInfo: {
-              resolutionSummary: resolution.summary,
+              resolutionSummary: (resolution as any).summary,
             },
           },
         };
       }
 
-      const _confidence = 
+      const confidence = (resolution as any).confidence || 0.7;
 
       return {
         success: true,
-        resolvedData: resolution.resolvedData,
+        resolvedData: (resolution as any).resolvedData,
         strategyUsed: this.name,
         confidence,
-        resolvedConflicts: resolution.resolvedConflicts || [
+        resolvedConflicts: (resolution as any).resolvedConflicts || [
           {
             type: 'llm_resolution',
             description: 'Resolved using LLM-based semantic analysis',
             resolution: 'Applied LLM-generated transformation',
           },
         ],
-        unresolvedConflicts: resolution.unresolvedConflicts || [],
+        unresolvedConflicts: (resolution as any).unresolvedConflicts || [],
         metadata: {
           executionTime: Date.now() - startTime,
           transformationPath: {
@@ -133,7 +135,7 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
           },
           additionalInfo: {
             llmConfidence: confidence,
-            resolutionSummary: resolution.summary,
+            resolutionSummary: (resolution as any).summary,
           },
         },
       };
@@ -178,8 +180,8 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
     targetDescriptor: SemanticDescriptor | { type: string; components: SemanticDescriptor[] },
     context?: unknown,
   ): string {
-    const _sourceType = 
-    const _targetType = 
+    const sourceType = this.getEntityType(sourceDescriptor);
+    const targetType = this.getEntityType(targetDescriptor);
 
     return `
       解决以下两个模块之间的语义冲突：
@@ -225,9 +227,9 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
         resolutionText.match(/```\n([\s\S]*?)\n```/) ||
         resolutionText.match(/{[\s\S]*}/);
 
-      const _jsonText = 
+      const jsonText = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : resolutionText;
 
-      const _parsed = 
+      const parsed = JSON.parse(jsonText);
 
       if (parsed && typeof parsed === 'object' && !parsed.resolvedData && !parsed.success) {
         return {
@@ -242,7 +244,7 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
       this.logger.error(`Error parsing LLM resolution result: ${error.message}`, error.stack);
 
       try {
-        const _dataMatch = 
+        const dataMatch = resolutionText.match(/{[\s\S]*}/);
         if (dataMatch && dataMatch[1]) {
           return {
             resolvedData: JSON.parse(dataMatch[1]),
@@ -281,6 +283,6 @@ export class LlmResolutionStrategy implements ResolutionStrategy {
     if ('type' in descriptor) {
       return descriptor.type;
     }
-    return descriptor.entity;
+    return (descriptor as any).entity || 'unknown';
   }
 }

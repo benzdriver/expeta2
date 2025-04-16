@@ -19,8 +19,8 @@ export interface DialogueMessage {
   timestamp: Date;
 }
 
-@Schema()
-export class Requirement extends Document {
+@Schema({ timestamps: true })
+export class Requirement {
   @Prop({ required: true })
   title: string;
 
@@ -36,25 +36,11 @@ export class Requirement extends Document {
   @Prop()
   priority?: string;
 
-  @Prop({
-    type: String,
-    enum: ['initial', 'clarifying', 'expectations_generated', 'completed'],
-    default: 'initial',
-  })
+  @Prop({ enum: ['initial', 'clarifying', 'expectations_generated', 'completed'], default: 'initial' })
   status: RequirementStatus;
 
-  @Prop({
-    type: [
-      {
-        questionId: String,
-        answer: String,
-        timestamp: Date,
-        createdAt: Date,
-        updatedAt: Date,
-      },
-    ],
-  })
-  clarifications?: Clarification[];
+  @Prop({ type: [Object], default: [] })
+  clarifications: Clarification[];
 
   @Prop({
     type: [
@@ -69,8 +55,8 @@ export class Requirement extends Document {
   })
   dialogueLog?: DialogueMessage[];
 
-  @Prop({ type: Object })
-  metadata?: Record<string, any>;
+  @Prop({ type: Object, default: {} })
+  metadata: Record<string, any>;
 
   @Prop()
   createdAt: Date;
@@ -82,4 +68,5 @@ export class Requirement extends Document {
   createdBy?: string;
 }
 
-export const _RequirementSchema = 
+export type RequirementDocument = Requirement & Document;
+export const RequirementSchema = SchemaFactory.createForClass(Requirement); 

@@ -8,17 +8,30 @@ import { TransformationEngineService } from '../components/transformation-engine
 import { IntelligentCacheService } from '../components/intelligent-cache/intelligent-cache.service';
 import { MonitoringSystemService } from '../components/monitoring-system/monitoring-system.service';
 import { HumanInTheLoopService } from '../components/human-in-the-loop/human-in-the-loop.service';
+import { SemanticMediatorExtensionService } from '../services/semantic-mediator-extension.service';
+
+// 模拟解析器服务
+class ResolverService {
+  async resolveConflicts(data1: any, data2: any, options?: any) {
+    return {
+      resolvedData: { resolved: true },
+      conflicts: [],
+      resolutionStrategy: 'merge'
+    };
+  }
+}
 
 describe('SemanticMediatorService', () => {
   let service: SemanticMediatorService;
-  let mockLlmRouterService: unknown; // Use 'any' for simplicity in mock
-  let memoryServiceMock: unknown; // Use 'any' for simplicity in mock
+  let mockLlmRouterService: any; // Use 'any' for simplicity in mock
+  let memoryServiceMock: any; // Use 'any' for simplicity in mock
 
-  let semanticRegistryMock: unknown;
-  let transformationEngineMock: unknown;
-  let intelligentCacheMock: unknown;
-  let monitoringSystemMock: unknown;
-  let humanInTheLoopMock: unknown;
+  let semanticRegistryMock: any;
+  let transformationEngineMock: any;
+  let intelligentCacheMock: any;
+  let monitoringSystemMock: any;
+  let humanInTheLoopMock: any;
+  let mockResolverService: any;
 
   beforeEach(async () => {
     mockLlmRouterService = {
@@ -105,10 +118,10 @@ describe('SemanticMediatorService', () => {
               content: {
                 _id: 'code-1',
                 files: [
-                  { path: 'file1.js', content: '/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-console.log("test")' },
+                  { 
+                    path: 'file1.js', 
+                    content: '/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\n/* eslint-disable-next-line no-console */\nconsole.log("test")' 
+                  },
                   { path: 'file2.js', content: 'function test() { return true; }' },
                 ],
               },
@@ -270,16 +283,58 @@ console.log("test")' },
       }),
     };
 
-    const _module: TestingModule = 
+    mockResolverService = {
+      resolveConflicts: jest.fn().mockResolvedValue({
+        resolvedData: { resolved: true },
+        conflicts: [],
+        resolutionStrategy: 'merge'
+      })
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         SemanticMediatorService,
-        { provide: LlmRouterService, useValue: mockLlmRouterService },
-        { provide: MemoryService, useValue: memoryServiceMock },
-        { provide: SemanticRegistryService, useValue: semanticRegistryMock },
-        { provide: TransformationEngineService, useValue: transformationEngineMock },
-        { provide: IntelligentCacheService, useValue: intelligentCacheMock },
-        { provide: MonitoringSystemService, useValue: monitoringSystemMock },
-        { provide: HumanInTheLoopService, useValue: humanInTheLoopMock },
+        {
+          provide: LlmRouterService,
+          useValue: mockLlmRouterService,
+        },
+        {
+          provide: MemoryService,
+          useValue: memoryServiceMock,
+        },
+        {
+          provide: SemanticRegistryService,
+          useValue: semanticRegistryMock,
+        },
+        {
+          provide: TransformationEngineService,
+          useValue: transformationEngineMock,
+        },
+        {
+          provide: IntelligentCacheService,
+          useValue: intelligentCacheMock,
+        },
+        {
+          provide: MonitoringSystemService,
+          useValue: monitoringSystemMock,
+        },
+        {
+          provide: HumanInTheLoopService,
+          useValue: humanInTheLoopMock,
+        },
+        {
+          provide: ResolverService,
+          useValue: mockResolverService,
+        },
+        {
+          provide: SemanticMediatorExtensionService,
+          useValue: {
+            storeWithSemanticTransformation: jest.fn().mockResolvedValue({ transformed: true }),
+            registerAsDataSource: jest.fn().mockResolvedValue(undefined),
+            validateSemanticConsistency: jest.fn().mockResolvedValue({ isValid: true, score: 100 }),
+            recordTransformationFeedback: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
@@ -292,26 +347,24 @@ console.log("test")' },
 
   describe('translateBetweenModules', () => {
     it('should translate data between modules', async () => {
-      const _sourceModule = 
-      const _targetModule = 
-      const _data = 
+      const sourceModule = 'moduleA';
+      const targetModule = 'moduleB';
+      const data = { key: 'value' };
 
-      const _result = 
+      const result = await service.translateBetweenModules(sourceModule, targetModule, data);
 
-      expect(mockLlmRouterService.translateBetweenModules).toHaveBeenCalledWith(
-        sourceModule,
-        targetModule,
-        JSON.stringify(data, null, 2),
-      );
-      expect(result).toEqual({ translated: true, data: 'translated data' });
+      expect(intelligentCacheMock.retrieveTransformationPath).toHaveBeenCalled();
+      expect(transformationEngineMock.generateTransformationPath).toHaveBeenCalled();
+      expect(transformationEngineMock.executeTransformation).toHaveBeenCalled();
+      expect(result).toBeDefined();
     });
 
     it('should handle errors during translation', async () => {
-      const _sourceModule = 
-      const _targetModule = 
-      const _data = 
+      const sourceModule = 'moduleA';
+      const targetModule = 'moduleB';
+      const data = { key: 'value' };
 
-      (mockLlmRouterService.translateBetweenModules as jest.Mock).mockRejectedValueOnce(
+      transformationEngineMock.executeTransformation.mockRejectedValueOnce(
         new Error('Translation error'),
       );
 
@@ -325,25 +378,25 @@ console.log("test")' },
 
   describe('enrichWithContext', () => {
     it('should enrich data with context', async () => {
-      const _module = 
-      const _data = 
-      const _contextQuery = 
+      const module = 'testModule';
+      const data = { key: 'value' };
+      const contextQuery = 'test context';
 
-      const _result = 
+      const result = await service.enrichWithContext(module, data, contextQuery);
 
       expect(memoryServiceMock.getRelatedMemories).toHaveBeenCalledWith(contextQuery);
-      expect(mockLlmRouterService.enrichWithContext).toHaveBeenCalled(); // Assuming LlmRouterService has this method
+      expect(mockLlmRouterService.enrichWithContext).toHaveBeenCalled();
       expect(result).toEqual({ enriched: true, data: 'enriched data' });
     });
 
     it('should return original data if no related memories found', async () => {
-      const _module = 
-      const _data = 
-      const _contextQuery = 
+      const module = 'testModule';
+      const data = { key: 'value' };
+      const contextQuery = 'test context';
 
-      (memoryServiceMock.getRelatedMemories as jest.Mock).mockResolvedValueOnce([]);
+      memoryServiceMock.getRelatedMemories.mockResolvedValueOnce([]);
 
-      const _result = 
+      const result = await service.enrichWithContext(module, data, contextQuery);
 
       expect(memoryServiceMock.getRelatedMemories).toHaveBeenCalledWith(contextQuery);
       expect(mockLlmRouterService.enrichWithContext).not.toHaveBeenCalled();
@@ -351,11 +404,11 @@ console.log("test")' },
     });
 
     it('should handle errors during enrichment', async () => {
-      const _module = 
-      const _data = 
-      const _contextQuery = 
+      const module = 'testModule';
+      const data = { key: 'value' };
+      const contextQuery = 'test context';
 
-      (mockLlmRouterService.enrichWithContext as jest.Mock).mockRejectedValueOnce(
+      mockLlmRouterService.enrichWithContext.mockRejectedValueOnce(
         new Error('Enrichment error'),
       );
 
@@ -367,15 +420,14 @@ console.log("test")' },
 
   describe('resolveSemanticConflicts', () => {
     it('should resolve semantic conflicts between modules', async () => {
-      const _moduleA = 
-      const _dataA = 
-      const _moduleB = 
-      const _dataB = 
+      const moduleA = 'moduleA';
+      const dataA = { key: 'valueA' };
+      const moduleB = 'moduleB';
+      const dataB = { key: 'valueB' };
 
-      const _result = 
+      const result = await service.resolveSemanticConflicts(moduleA, dataA, moduleB, dataB);
 
       expect(mockLlmRouterService.resolveSemanticConflicts).toHaveBeenCalledWith(
-        // Assuming LlmRouterService has this method
         moduleA,
         JSON.stringify(dataA, null, 2),
         moduleB,
@@ -385,12 +437,12 @@ console.log("test")' },
     });
 
     it('should handle errors during conflict resolution', async () => {
-      const _moduleA = 
-      const _dataA = 
-      const _moduleB = 
-      const _dataB = 
+      const moduleA = 'moduleA';
+      const dataA = { key: 'valueA' };
+      const moduleB = 'moduleB';
+      const dataB = { key: 'valueB' };
 
-      (mockLlmRouterService.resolveSemanticConflicts as jest.Mock).mockRejectedValueOnce(
+      mockLlmRouterService.resolveSemanticConflicts.mockRejectedValueOnce(
         new Error('Resolution error'),
       );
 
@@ -404,13 +456,12 @@ console.log("test")' },
 
   describe('extractSemanticInsights', () => {
     it('should extract semantic insights from data', async () => {
-      const _data = 
-      const _query = 
+      const data = { key: 'value' };
+      const query = 'test query';
 
-      const _result = 
+      const result = await service.extractSemanticInsights(data, query);
 
       expect(mockLlmRouterService.extractSemanticInsights).toHaveBeenCalledWith(
-        // Assuming LlmRouterService has this method
         JSON.stringify(data, null, 2),
         query,
       );
@@ -418,10 +469,10 @@ console.log("test")' },
     });
 
     it('should handle errors during insight extraction', async () => {
-      const _data = 
-      const _query = 
+      const data = { key: 'value' };
+      const query = 'test query';
 
-      (mockLlmRouterService.extractSemanticInsights as jest.Mock).mockRejectedValueOnce(
+      mockLlmRouterService.extractSemanticInsights.mockRejectedValueOnce(
         new Error('Extraction error'),
       );
 
@@ -433,12 +484,12 @@ console.log("test")' },
 
   describe('trackSemanticTransformation', () => {
     it('should track semantic transformation with all options enabled', async () => {
-      const _sourceModule = 
-      const _targetModule = 
-      const _sourceData = 
-      const _transformedData = 
+      const sourceModule = 'sourceModule';
+      const targetModule = 'targetModule';
+      const sourceData = { key: 'original' };
+      const transformedData = { key: 'transformed' };
 
-      const _result = 
+      const result = await service.trackSemanticTransformation(
         sourceModule,
         targetModule,
         sourceData,
@@ -456,17 +507,17 @@ console.log("test")' },
     });
 
     it('should track semantic transformation with custom options', async () => {
-      const _sourceModule = 
-      const _targetModule = 
-      const _sourceData = 
-      const _transformedData = 
-      const _options = 
+      const sourceModule = 'sourceModule';
+      const targetModule = 'targetModule';
+      const sourceData = { key: 'original' };
+      const transformedData = { key: 'transformed' };
+      const options = {
         trackDifferences: false,
         analyzeTransformation: true,
         saveToMemory: false,
       };
 
-      const _result = 
+      const result = await service.trackSemanticTransformation(
         sourceModule,
         targetModule,
         sourceData,
@@ -485,12 +536,12 @@ console.log("test")' },
     });
 
     it('should handle errors during transformation tracking', async () => {
-      const _sourceModule = 
-      const _targetModule = 
-      const _sourceData = 
-      const _transformedData = 
+      const sourceModule = 'sourceModule';
+      const targetModule = 'targetModule';
+      const sourceData = { key: 'original' };
+      const transformedData = { key: 'transformed' };
 
-      (mockLlmRouterService.generateContent as jest.Mock).mockRejectedValueOnce(
+      mockLlmRouterService.generateContent.mockRejectedValueOnce(
         new Error('Tracking error'),
       );
 
@@ -507,11 +558,11 @@ console.log("test")' },
 
   describe('evaluateSemanticTransformation', () => {
     it('should evaluate semantic transformation quality', async () => {
-      const _sourceData = 
-      const _transformedData = 
-      const _expectedOutcome = 
+      const sourceData = { key: 'original' };
+      const transformedData = { key: 'transformed' };
+      const expectedOutcome = 'Expected transformation result';
 
-      const _result = 
+      const result = await service.evaluateSemanticTransformation(
         sourceData,
         transformedData,
         expectedOutcome,
@@ -526,11 +577,11 @@ console.log("test")' },
     });
 
     it('should handle errors during transformation evaluation', async () => {
-      const _sourceData = 
-      const _transformedData = 
-      const _expectedOutcome = 
+      const sourceData = { key: 'original' };
+      const transformedData = { key: 'transformed' };
+      const expectedOutcome = 'Expected transformation result';
 
-      (mockLlmRouterService.generateContent as jest.Mock).mockRejectedValueOnce(
+      mockLlmRouterService.generateContent.mockRejectedValueOnce(
         new Error('Evaluation error'),
       );
 
@@ -542,10 +593,10 @@ console.log("test")' },
 
   describe('generateValidationContext', () => {
     it('should generate validation context with default options', async () => {
-      const _expectationId = 
-      const _codeId = 
+      const expectationId = 'exp-1';
+      const codeId = 'code-1';
 
-      const _result = 
+      const result = await service.generateValidationContext(expectationId, codeId);
 
       expect(memoryServiceMock.getMemoryByType).toHaveBeenCalledWith(MemoryType.EXPECTATION);
       expect(memoryServiceMock.getMemoryByType).toHaveBeenCalledWith(MemoryType.CODE);
@@ -557,16 +608,16 @@ console.log("test")' },
     });
 
     it('should generate validation context with custom options', async () => {
-      const _expectationId = 
-      const _codeId = 
-      const _previousValidations = 
-      const _options = 
+      const expectationId = 'exp-1';
+      const codeId = 'code-1';
+      const previousValidations: any[] = [{ id: 'val-1', result: { passed: true } }];
+      const options = {
         focusAreas: ['security', 'performance'],
         strategy: 'strict' as const,
         customWeights: { security: 0.8 },
       };
 
-      const _result = 
+      const result = await service.generateValidationContext(
         expectationId,
         codeId,
         previousValidations,
@@ -585,10 +636,10 @@ console.log("test")' },
     });
 
     it('should handle errors when expectation or code not found', async () => {
-      const _expectationId = 
-      const _codeId = 
+      const expectationId = 'non-existent';
+      const codeId = 'code-1';
 
-      (memoryServiceMock.getMemoryByType as jest.Mock).mockResolvedValueOnce([]);
+      memoryServiceMock.getMemoryByType.mockResolvedValueOnce([]);
 
       await expect(service.generateValidationContext(expectationId, codeId)).rejects.toThrow(
         'Expectation or Code not found',
@@ -596,10 +647,10 @@ console.log("test")' },
     });
 
     it('should handle errors during validation context generation', async () => {
-      const _expectationId = 
-      const _codeId = 
+      const expectationId = 'exp-1';
+      const codeId = 'code-1';
 
-      (mockLlmRouterService.generateContent as jest.Mock).mockRejectedValueOnce(
+      mockLlmRouterService.generateContent.mockRejectedValueOnce(
         new Error('Context generation error'),
       );
 

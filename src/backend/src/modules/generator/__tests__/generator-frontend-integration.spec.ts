@@ -11,7 +11,7 @@ describe('Generator Frontend-Backend Integration (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      const _moduleFixture: TestingModule = 
+      const moduleFixture: TestingModule = await Test.createTestingModule({
         imports: [AppModule],
       }).compile();
 
@@ -21,9 +21,7 @@ describe('Generator Frontend-Backend Integration (e2e)', () => {
       generatorService = moduleFixture.get<GeneratorService>(GeneratorService);
     } catch (error) {
       /* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-/* eslint-disable-next-line no-console */
-console.error(
+      console.error(
         'Failed to initialize Nest application for e2e tests. This might be due to the known circular dependency issue.',
         error,
       );
@@ -39,23 +37,26 @@ console.error(
   });
 
   it.skip('should accept a request to generate code based on expectations', async () => {
-    const _expectationId = 
-    const _generationDto = 
+    const expectationId = 'test-expectation-id';
+    const generationDto = {
+      expectationId,
+      options: { useSemanticAnalysis: true }
+    };
 
-    const _generateResponse = 
+    const generateResponse = await request(app.getHttpServer())
       .post('/generator/generate') // Assuming this is the endpoint
       .send(generationDto)
       .expect(201); // Expecting resource created (new code generation process/result)
 
-    const _codeId = 
+    const codeId = generateResponse.body.codeId;
     expect(codeId).toBeDefined();
     expect(generateResponse.body.status).toEqual('generating'); // Or similar initial status
   });
 
   it.skip('should allow fetching generated code files', async () => {
-    const _codeId = 
+    const codeId = 'test-code-id';
 
-    const _fetchResponse = 
+    const fetchResponse = await request(app.getHttpServer())
       .get(`/generator/code/${codeId}`) // Assuming this is the endpoint
       .expect(200);
 

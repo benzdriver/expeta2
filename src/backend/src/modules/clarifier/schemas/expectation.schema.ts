@@ -5,42 +5,29 @@ export interface ExpectationNode {
   id: string;
   name: string;
   description: string;
-  type: 'functional' | 'non-functional' | 'constraint';
-  priority?: 'high' | 'medium' | 'low';
-  children?: ExpectationNode[];
+  children: ExpectationNode[];
 }
 
-@Schema()
-export class Expectation extends Document {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Requirement', required: true })
+@Schema({ timestamps: true })
+export class Expectation {
+  @Prop({ required: true })
   requirementId: string;
-
-  @Prop({ required: false })
-  title: string;
+  
+  @Prop()
+  title?: string;
 
   @Prop({ type: Object, required: true })
-  model: unknown; // Using 'any' to avoid type conflicts with Document
-
-  @Prop({ type: [String] })
-  criteria?: string[];
-
-  @Prop({ type: [String] })
-  semanticTags?: string[];
-
-  @Prop({ type: [Object] })
-  subExpectations?: unknown[];
-
-  @Prop({ type: Object })
+  model: ExpectationNode;
+  
+  @Prop({ type: Object, default: {} })
   metadata?: Record<string, any>;
-
+  
   @Prop()
   createdAt: Date;
-
+  
   @Prop()
   updatedAt: Date;
-
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
-  createdBy?: string;
 }
 
-export const _ExpectationSchema = 
+export type ExpectationDocument = Expectation & Document;
+export const ExpectationSchema = SchemaFactory.createForClass(Expectation); 

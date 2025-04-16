@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { IMonitoringSystem } from '../../interfaces/monitoring-system.interface';
 import { MemoryService } from '../../../memory/memory.service';
 import { MemoryType } from '../../../memory/schemas/memory.schema';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * 监控系统服务
@@ -22,7 +23,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
   async logTransformationEvent(event: unknown): Promise<string> {
     this.logger.debug('Logging transformation event');
 
-    const _eventId = 
+    const eventId = uuidv4();
 
     await this.memoryService.storeMemory({
       type: MemoryType.SYSTEM,
@@ -48,7 +49,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
   async logError(error: Error, context?: unknown): Promise<string> {
     this.logger.debug('Logging error');
 
-    const _errorId = 
+    const errorId = uuidv4();
 
     await this.memoryService.storeMemory({
       type: MemoryType.SYSTEM,
@@ -78,7 +79,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
   async recordPerformanceMetrics(metrics: unknown): Promise<boolean> {
     this.logger.debug('Recording performance metrics');
 
-    const _metricsId = 
+    const metricsId = uuidv4();
 
     await this.memoryService.storeMemory({
       type: MemoryType.SYSTEM,
@@ -104,15 +105,15 @@ export class MonitoringSystemService implements IMonitoringSystem {
   async getTransformationHistory(filters?: unknown, limit: number = 50): Promise<any[]> {
     this.logger.debug(`Getting transformation history (limit: ${limit})`);
 
-    const _memories = 
+    const memories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM, limit * 2);
 
-    const _filteredMemories = 
+    const filteredMemories = memories.filter((memory) => {
       const hasTags =
         memory.tags &&
         memory.tags.includes('monitoring') &&
         memory.tags.includes('transformation_event');
 
-      let _matchesFilters = 
+      let matchesFilters = true;
       if (filters && Object.keys(filters).length > 0) {
         matchesFilters = Object.entries(filters).every(([key, value]) => {
           return memory.metadata && memory.metadata[key] === value;
@@ -122,7 +123,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
       return hasTags && matchesFilters;
     });
 
-    const _history = 
+    const history = filteredMemories.map((memory) => memory.content).slice(0, limit);
 
     this.logger.debug(`Retrieved ${history.length} transformation events`);
     return history;
@@ -137,13 +138,13 @@ export class MonitoringSystemService implements IMonitoringSystem {
   async getErrorHistory(filters?: unknown, limit: number = 50): Promise<any[]> {
     this.logger.debug(`Getting error history (limit: ${limit})`);
 
-    const _memories = 
+    const memories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM, limit * 2);
 
-    const _filteredMemories = 
+    const filteredMemories = memories.filter((memory) => {
       const hasTags =
         memory.tags && memory.tags.includes('monitoring') && memory.tags.includes('error');
 
-      let _matchesFilters = 
+      let matchesFilters = true;
       if (filters && Object.keys(filters).length > 0) {
         matchesFilters = Object.entries(filters).every(([key, value]) => {
           return memory.metadata && memory.metadata[key] === value;
@@ -153,7 +154,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
       return hasTags && matchesFilters;
     });
 
-    const _history = 
+    const history = filteredMemories.map((memory) => memory.content).slice(0, limit);
 
     this.logger.debug(`Retrieved ${history.length} error events`);
     return history;
@@ -167,26 +168,26 @@ export class MonitoringSystemService implements IMonitoringSystem {
   async getPerformanceReport(timeRange?: { start: Date; end: Date }): Promise<any> {
     this.logger.debug('Generating performance report');
 
-    const _memories = 
+    const memories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM, 1000);
 
-    const _filteredMemories = 
+    const filteredMemories = memories.filter((memory) => {
       const hasTags =
         memory.tags &&
         memory.tags.includes('monitoring') &&
         memory.tags.includes('performance_metrics');
 
-      let _isInTimeRange = 
+      let isInTimeRange = true;
       if (timeRange) {
-        const _createdAt = 
+        const createdAt = memory.createdAt ? new Date(memory.createdAt) : new Date();
         isInTimeRange = createdAt >= timeRange.start && createdAt <= timeRange.end;
       }
 
       return hasTags && isInTimeRange;
     });
 
-    const _metrics = 
+    const metrics = filteredMemories.map((memory) => memory.content.metrics);
 
-    const _aggregatedMetrics = 
+    const aggregatedMetrics = this.aggregateMetrics(metrics);
 
     this.logger.debug('Performance report generated');
     return {
@@ -204,9 +205,9 @@ export class MonitoringSystemService implements IMonitoringSystem {
   async createDebugSession(context?: unknown): Promise<string> {
     this.logger.debug('Creating debug session');
 
-    const _sessionId = 
+    const sessionId = uuidv4();
 
-    const _session = 
+    const session = {
       id: sessionId,
       startTime: new Date().toISOString(),
       status: 'active',
@@ -237,7 +238,7 @@ export class MonitoringSystemService implements IMonitoringSystem {
   async endDebugSession(sessionId: string): Promise<boolean> {
     this.logger.debug(`Ending debug session: ${sessionId}`);
 
-    const _session = 
+    const session = this.debugSessions.get(sessionId);
     if (!session) {
       this.logger.warn(`Debug session not found: ${sessionId}`);
       return false;
@@ -268,13 +269,13 @@ export class MonitoringSystemService implements IMonitoringSystem {
   async logDebugData(sessionId: string, data: unknown): Promise<boolean> {
     this.logger.debug(`Logging debug data for session: ${sessionId}`);
 
-    const _session = 
+    const session = this.debugSessions.get(sessionId);
     if (!session) {
       this.logger.warn(`Debug session not found: ${sessionId}`);
       return false;
     }
 
-    const _debugEntry = 
+    const debugEntry = {
       timestamp: new Date().toISOString(),
       data,
     };
@@ -303,11 +304,11 @@ export class MonitoringSystemService implements IMonitoringSystem {
   async getDebugSessionData(sessionId: string): Promise<any> {
     this.logger.debug(`Getting debug session data: ${sessionId}`);
 
-    const _session = 
+    const session = this.debugSessions.get(sessionId);
     if (!session) {
-      const _allMemories = 
+      const allMemories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM, 1000);
 
-      const _sessionMemories = 
+      const sessionMemories = allMemories.filter(
         (memory) =>
           memory.tags &&
           memory.tags.includes('monitoring') &&
@@ -321,11 +322,11 @@ export class MonitoringSystemService implements IMonitoringSystem {
         return null;
       }
 
-      const _sessionData = 
+      const sessionData = sessionMemories[0].content;
 
-      const _allDataMemories = 
+      const allDataMemories = await this.memoryService.getMemoryByType(MemoryType.SYSTEM, 1000);
 
-      const _dataMemories = 
+      const dataMemories = allDataMemories.filter(
         (memory) =>
           memory.tags &&
           memory.tags.includes('monitoring') &&
@@ -357,15 +358,15 @@ export class MonitoringSystemService implements IMonitoringSystem {
       };
     }
 
-    const _result: unknown = 
+    const result: any = {
       count: metrics.length,
       averages: {},
       min: {},
       max: {},
     };
 
-    const _allKeys = 
-    metrics.forEach((metric) => {
+    const allKeys = new Set<string>();
+    metrics.forEach((metric: any) => {
       Object.keys(metric).forEach((key) => {
         if (typeof metric[key] === 'number') {
           allKeys.add(key);
@@ -374,12 +375,12 @@ export class MonitoringSystemService implements IMonitoringSystem {
     });
 
     allKeys.forEach((key) => {
-      const _values = 
+      const values = (metrics as any[])
         .filter((metric) => typeof metric[key] === 'number')
         .map((metric) => metric[key]);
 
       if (values.length > 0) {
-        const _sum = 
+        const sum = values.reduce((a, b) => a + b, 0);
         result.averages[key] = sum / values.length;
         result.min[key] = Math.min(...values);
         result.max[key] = Math.max(...values);

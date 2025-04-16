@@ -9,7 +9,7 @@ describe('TransformationEngineService - Public Methods', () => {
   let llmRouterService: LlmRouterService;
   let memoryService: MemoryService;
 
-  const _mockLlmRouterService = 
+  const mockLlmRouterService = {
     generateContent: jest.fn().mockImplementation((prompt) => {
       if (prompt.includes('生成转换路径')) {
         return JSON.stringify({
@@ -47,12 +47,12 @@ describe('TransformationEngineService - Public Methods', () => {
     }),
   };
 
-  const _mockMemoryService = 
+  const mockMemoryService = {
     storeMemory: jest.fn().mockResolvedValue({ id: 'memory-id' }),
   };
 
   beforeEach(async () => {
-    const _module: TestingModule = 
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         TransformationEngineService,
         { provide: LlmRouterService, useValue: mockLlmRouterService },
@@ -67,10 +67,16 @@ describe('TransformationEngineService - Public Methods', () => {
 
   describe('generateTransformationPath', () => {
     it('should generate a transformation path between source and target descriptors', async () => {
-      const _sourceDescriptor = 
-      const _targetDescriptor = 
+      const sourceDescriptor: SemanticDescriptor = {
+        entity: 'User',
+        description: 'User information'
+      };
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'Profile',
+        description: 'User profile'
+      };
 
-      const _result = 
+      const result = await service.generateTransformationPath(sourceDescriptor, targetDescriptor);
 
       expect(result).toBeDefined();
       expect(result.mappings).toBeDefined();
@@ -82,11 +88,17 @@ describe('TransformationEngineService - Public Methods', () => {
     });
 
     it('should include context in the transformation path generation if provided', async () => {
-      const _sourceDescriptor = 
-      const _targetDescriptor = 
-      const _context = 
+      const sourceDescriptor: SemanticDescriptor = {
+        entity: 'User',
+        description: 'User information'
+      };
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'Profile',
+        description: 'User profile'
+      };
+      const context = { additionalInfo: 'context data' };
 
-      const _result = 
+      const result = await service.generateTransformationPath(
         sourceDescriptor,
         targetDescriptor,
         context,
@@ -104,8 +116,14 @@ describe('TransformationEngineService - Public Methods', () => {
     });
 
     it('should handle error when LLM service fails', async () => {
-      const _sourceDescriptor = 
-      const _targetDescriptor = 
+      const sourceDescriptor: SemanticDescriptor = {
+        entity: 'User',
+        description: 'User information'
+      };
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'Profile',
+        description: 'User profile'
+      };
 
       llmRouterService.generateContent = jest
         .fn()
@@ -117,8 +135,14 @@ describe('TransformationEngineService - Public Methods', () => {
     });
 
     it('should handle invalid JSON response from LLM', async () => {
-      const _sourceDescriptor = 
-      const _targetDescriptor = 
+      const sourceDescriptor: SemanticDescriptor = {
+        entity: 'User',
+        description: 'User information'
+      };
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'Profile',
+        description: 'User profile'
+      };
 
       llmRouterService.generateContent = jest.fn().mockResolvedValueOnce('invalid json');
 
@@ -130,8 +154,8 @@ describe('TransformationEngineService - Public Methods', () => {
 
   describe('executeTransformation', () => {
     it('should transform data using default strategy', async () => {
-      const _data = 
-      const _transformationPath = 
+      const data = { source: { field: 'value', text: 'test' } };
+      const transformationPath = {
         mappings: { 'target.field': 'source.field' },
         transformations: [
           {
@@ -143,7 +167,7 @@ describe('TransformationEngineService - Public Methods', () => {
         ],
       };
 
-      const _result = 
+      const result = await service.executeTransformation(data, transformationPath);
 
       expect(result).toBeDefined();
       expect(result.target.field).toBe('value');
@@ -151,34 +175,34 @@ describe('TransformationEngineService - Public Methods', () => {
     });
 
     it('should transform data using LLM strategy', async () => {
-      const _data = 
-      const _transformationPath = 
+      const data = { source: { field: 'value' } };
+      const transformationPath = {
         strategy: 'llm',
         mappings: { 'target.field': 'source.field' },
       };
 
-      const _result = 
+      const result = await service.executeTransformation(data, transformationPath);
 
       expect(result).toBeDefined();
       expect(llmRouterService.generateContent).toHaveBeenCalled();
     });
 
     it('should transform data using direct mapping strategy', async () => {
-      const _data = 
-      const _transformationPath = 
+      const data = { source: { field: 'value' } };
+      const transformationPath = {
         strategy: 'directMapping',
         mappings: { 'target.field': 'source.field' },
       };
 
-      const _result = 
+      const result = await service.executeTransformation(data, transformationPath);
 
       expect(result).toBeDefined();
       expect(result.target.field).toBe('value');
     });
 
     it('should fall back to default strategy for non-existent strategy', async () => {
-      const _data = 
-      const _transformationPath = 
+      const data = { source: { field: 'value', text: 'test' } };
+      const transformationPath = {
         strategy: 'nonExistentStrategy',
         mappings: { 'target.field': 'source.field' },
         transformations: [
@@ -191,7 +215,7 @@ describe('TransformationEngineService - Public Methods', () => {
         ],
       };
 
-      const _result = 
+      const result = await service.executeTransformation(data, transformationPath);
 
       expect(result).toBeDefined();
       expect(result.target.field).toBe('value');
@@ -199,46 +223,73 @@ describe('TransformationEngineService - Public Methods', () => {
     });
 
     it('should handle error when no strategies are available', async () => {
-      const _data = 
-      const _transformationPath = 
+      const data = { source: { field: 'value' } };
+      const transformationPath = { mappings: {} };
 
-      const _originalStrategies = 
-      service['transformationStrategies'] = new Map();
+      // 保存原始策略并临时设置空Map
+      const originalStrategies = service['transformationStrategies'];
+      const tempStrategiesMap = new Map();
+      Object.defineProperty(service, 'transformationStrategies', {
+        get: () => tempStrategiesMap,
+        configurable: true
+      });
 
       await expect(service.executeTransformation(data, transformationPath)).rejects.toThrow(
         'No transformation strategies available',
       );
 
-      service['transformationStrategies'] = originalStrategies;
+      // 恢复原始策略
+      Object.defineProperty(service, 'transformationStrategies', {
+        get: () => originalStrategies,
+        configurable: true
+      });
     });
 
     it('should handle error when strategy execution fails', async () => {
-      const _data = 
-      const _transformationPath = 
+      const data = { source: { field: 'value' } };
+      const transformationPath = { mappings: {} };
 
-      const _originalStrategy = 
-      service['defaultTransformationStrategy'] = jest
-        .fn()
-        .mockRejectedValueOnce(new Error('Strategy execution error'));
+      // 保存原始策略并临时设置模拟函数
+      const originalStrategy = service['defaultTransformationStrategy'];
+      const mockStrategyFn = jest.fn().mockRejectedValueOnce(new Error('Strategy execution error'));
+      
+      // 临时替换默认策略
+      Object.defineProperty(service, 'defaultTransformationStrategy', {
+        value: mockStrategyFn,
+        configurable: true
+      });
 
       await expect(service.executeTransformation(data, transformationPath)).rejects.toThrow(
         'Failed to execute transformation',
       );
 
-      service['defaultTransformationStrategy'] = originalStrategy;
+      // 恢复原始策略
+      Object.defineProperty(service, 'defaultTransformationStrategy', {
+        value: originalStrategy,
+        configurable: true
+      });
     });
   });
 
   describe('validateTransformation', () => {
     it('should validate transformation result against target descriptor', async () => {
-      const _result = 
-      const _targetDescriptor = 
+      const result = { transformed: 'data' };
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'Profile',
+        description: 'User profile'
+      };
 
-      const _validationResult = 
+      // 覆盖生成内容返回值以匹配实际接口期望
+      llmRouterService.generateContent = jest.fn().mockResolvedValueOnce(
+        JSON.stringify({ valid: true, score: 95, feedback: 'Good transformation' })
+      );
+
+      const validationResult = await service.validateTransformation(result, targetDescriptor);
 
       expect(validationResult).toBeDefined();
       expect(validationResult.valid).toBe(true);
-      expect(validationResult.score).toBe(95);
+      // 使用类型断言访问非标准属性
+      expect((validationResult as any).score).toBe(95);
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
         expect.stringContaining('验证转换结果'),
         expect.any(Object),
@@ -246,11 +297,14 @@ describe('TransformationEngineService - Public Methods', () => {
     });
 
     it('should include context in validation if provided', async () => {
-      const _result = 
-      const _targetDescriptor = 
-      const _context = 
+      const result = { transformed: 'data' };
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'Profile',
+        description: 'User profile'
+      };
+      const context = { additionalInfo: 'context data' };
 
-      const _validationResult = 
+      const validationResult = await service.validateTransformation(
         result,
         targetDescriptor,
         context,
@@ -264,8 +318,11 @@ describe('TransformationEngineService - Public Methods', () => {
     });
 
     it('should handle error when LLM service fails', async () => {
-      const _result = 
-      const _targetDescriptor = 
+      const result = { transformed: 'data' };
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'Profile',
+        description: 'User profile'
+      };
 
       llmRouterService.generateContent = jest
         .fn()
@@ -277,8 +334,11 @@ describe('TransformationEngineService - Public Methods', () => {
     });
 
     it('should handle invalid JSON response from LLM', async () => {
-      const _result = 
-      const _targetDescriptor = 
+      const result = { transformed: 'data' };
+      const targetDescriptor: SemanticDescriptor = {
+        entity: 'Profile',
+        description: 'User profile'
+      };
 
       llmRouterService.generateContent = jest.fn().mockResolvedValueOnce('invalid json');
 
@@ -290,7 +350,7 @@ describe('TransformationEngineService - Public Methods', () => {
 
   describe('optimizeTransformationPath', () => {
     it('should optimize transformation path', async () => {
-      const _transformationPath = 
+      const transformationPath = {
         mappings: { 'target.field': 'source.field' },
         transformations: [
           {
@@ -308,7 +368,7 @@ describe('TransformationEngineService - Public Methods', () => {
         ],
       };
 
-      const _optimizedPath = 
+      const optimizedPath = await service.optimizeTransformationPath(transformationPath);
 
       expect(optimizedPath).toBeDefined();
       expect(optimizedPath.mappings).toBeDefined();
@@ -320,7 +380,7 @@ describe('TransformationEngineService - Public Methods', () => {
     });
 
     it('should include metrics in optimization if provided', async () => {
-      const _transformationPath = 
+      const transformationPath = {
         mappings: { 'target.field': 'source.field' },
         transformations: [
           {
@@ -331,9 +391,9 @@ describe('TransformationEngineService - Public Methods', () => {
           },
         ],
       };
-      const _metrics = 
+      const metrics = { executionTime: 100, memoryUsage: 1024 };
 
-      const _optimizedPath = 
+      const optimizedPath = await service.optimizeTransformationPath(transformationPath, metrics);
 
       expect(optimizedPath).toBeDefined();
       expect(llmRouterService.generateContent).toHaveBeenCalledWith(
@@ -343,7 +403,7 @@ describe('TransformationEngineService - Public Methods', () => {
     });
 
     it('should handle error when LLM service fails', async () => {
-      const _transformationPath = 
+      const transformationPath = {
         mappings: { 'target.field': 'source.field' },
       };
 
@@ -357,7 +417,7 @@ describe('TransformationEngineService - Public Methods', () => {
     });
 
     it('should handle invalid JSON response from LLM', async () => {
-      const _transformationPath = 
+      const transformationPath = {
         mappings: { 'target.field': 'source.field' },
       };
 
@@ -371,7 +431,7 @@ describe('TransformationEngineService - Public Methods', () => {
 
   describe('getAvailableTransformationStrategies', () => {
     it('should return list of registered strategies', () => {
-      const _strategies = 
+      const strategies = service.getAvailableTransformationStrategies();
 
       expect(strategies).toBeDefined();
       expect(strategies).toContain('default');
@@ -382,34 +442,34 @@ describe('TransformationEngineService - Public Methods', () => {
 
   describe('registerTransformationStrategy', () => {
     it('should register a new strategy', () => {
-      const _strategyName = 
-      const _strategyFn = 
+      const strategyName = 'customStrategy';
+      const strategyFn = jest.fn();
 
       service.registerTransformationStrategy(strategyName, strategyFn);
 
-      const _strategies = 
+      const strategies = service.getAvailableTransformationStrategies();
       expect(strategies).toContain(strategyName);
     });
 
     it('should overwrite an existing strategy', () => {
-      const _strategyName = 
-      const _originalStrategy = 
-      const _newStrategyFn = 
+      const strategyName = 'default';
+      const originalStrategy = service['transformationStrategies'].get('default');
+      const newStrategyFn = jest.fn();
 
       service.registerTransformationStrategy(strategyName, newStrategyFn);
 
-      const _currentStrategy = 
+      const currentStrategy = service['transformationStrategies'].get('default');
       expect(currentStrategy).not.toBe(originalStrategy);
 
       service.registerTransformationStrategy(strategyName, originalStrategy);
     });
 
     it('should throw error for invalid strategy function', () => {
-      const _strategyName = 
-      const _invalidStrategyFn = 
+      const strategyName = 'invalidStrategy';
+      const invalidStrategyFn = 'not a function';
 
       expect(() =>
-        service.registerTransformationStrategy(strategyName, invalidStrategyFn as unknown),
+        service.registerTransformationStrategy(strategyName, invalidStrategyFn as unknown as any),
       ).toThrow('Strategy must be a function');
     });
   });

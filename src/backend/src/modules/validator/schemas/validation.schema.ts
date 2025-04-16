@@ -51,4 +51,4 @@ export class Validation extends Document {
   updatedAt: Date;
 }
 
-export const _ValidationSchema = 
+export const ValidationSchema = SchemaFactory.createForClass(Validation); 

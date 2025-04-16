@@ -61,8 +61,9 @@ export class LlmRouterService {
   private defaultAnthropicMaxTokens: number = 4096; // Max tokens for Anthropic (Claude 3 Opus limit)
   private cache: Map<string, { result: string; timestamp: number }> = new Map();
   private cacheTTL: number = 3600000; // 1 hour in milliseconds
+  private readonly defaultModel: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     this.openaiApiKey = this.configService.get<string>('OPENAI_API_KEY');
     this.anthropicApiKey = this.configService.get<string>('ANTHROPIC_API_KEY'); // Load Anthropic key
 
@@ -89,23 +90,24 @@ export class LlmRouterService {
     this.defaultTemperature = 0.7;
     this.defaultMaxTokens = 4000; // For OpenAI
     this.defaultAnthropicMaxTokens = 4096; // Max output tokens for Claude 3.5 Sonnet
+    this.defaultModel = this.configService.get<string>('llm.defaultModel') || 'gpt-4';
   }
 
   async generateContent(prompt: string, options: LlmRequestOptions = {}): Promise<string> {
-    const _cacheKey = 
-    const _cachedResult = 
+    const _cacheKey = this.generateCacheKey(prompt, options);
+    const cachedResult = this.getFromCache(_cacheKey);
 
     if (cachedResult) {
       this.logger.debug('Using cached LLM result');
       return cachedResult;
     }
 
-    let _providerToUse: 'anthropic' | 'openai' | null = 
+    let _providerToUse: 'anthropic' | 'openai' | null = null;
     if (options.provider && (options.provider === 'anthropic' || options.provider === 'openai')) {
       if (options.provider === 'anthropic' && this.anthropicApiKey) {
-        providerToUse = 'anthropic';
+        _providerToUse = 'anthropic';
       } else if (options.provider === 'openai' && this.openaiApiKey) {
-        providerToUse = 'openai';
+        _providerToUse = 'openai';
       } else {
         this.logger.warn(
           `Requested provider ${options.provider} is not available (missing API key). Falling back to default logic.`,
@@ -113,59 +115,37 @@ export class LlmRouterService {
       }
     }
 
-    const _effectiveProvider = 
-    const model =
-      options.model ||
-      (effectiveProvider === 'anthropic' ? this.defaultAnthropicModel : this.defaultOpenaiModel);
-    const _temperature = 
-    const maxTokens =
-      options.maxTokens ||
-      (effectiveProvider === 'anthropic' ? this.defaultAnthropicMaxTokens : this.defaultMaxTokens);
-    const _systemPrompt = 
+    const _effectiveProvider = _providerToUse || this.primaryProvider;
+    const model = options.model || (_effectiveProvider === 'anthropic' ? this.defaultAnthropicModel : this.defaultOpenaiModel);
+    const _temperature = options.temperature || this.defaultTemperature;
+    const maxTokens = options.maxTokens || (_effectiveProvider === 'anthropic' ? this.defaultAnthropicMaxTokens : this.defaultMaxTokens);
+    const _systemPrompt = options.systemPrompt || 'You are a helpful assistant.';
 
-    if (providerToUse) {
-      this.logger.debug(`Attempting LLM call with specified provider: ${providerToUse}`);
+    if (_providerToUse) {
+      this.logger.debug(`Attempting LLM call with specified provider: ${_providerToUse}`);
       try {
-        const _result = 
-          providerToUse,
-          prompt,
-          systemPrompt,
-          model,
-          temperature,
-          maxTokens,
-        );
-        this.addToCache(cacheKey, result); // Use the potentially provider-specific cache key
-        return result;
+        const _result = await this.callProvider(_providerToUse, prompt, _systemPrompt, model, _temperature, maxTokens);
+        this.addToCache(_cacheKey, _result);
+        return _result;
       } catch (error) {
-        this.logger.error(`Specified provider (${providerToUse}) failed: ${error.message}`);
-        throw new Error(
-          `LLM generation failed with specified provider (${providerToUse}): ${error.message}`,
-        );
+        this.logger.error(`Specified provider (${_providerToUse}) failed: ${error.message}`);
+        throw new Error(`LLM generation failed with specified provider (${_providerToUse}): ${error.message}`);
       }
     }
 
     this.logger.debug(`Attempting LLM call with primary provider: ${this.primaryProvider}`);
     try {
       if (
-        (this.primaryProvider === 'anthropic' && !this.anthropicApiKey) ||
-        (this.primaryProvider === 'openai' && !this.openaiApiKey)
+        (_effectiveProvider === 'anthropic' && !this.anthropicApiKey) ||
+        (_effectiveProvider === 'openai' && !this.openaiApiKey)
       ) {
-        throw new Error(
-          `Primary provider (${this.primaryProvider}) is configured but API key is missing.`,
-        );
+        throw new Error(`Primary provider (${_effectiveProvider}) is configured but API key is missing.`);
       }
 
-      const _result = 
-        this.primaryProvider,
-        prompt,
-        systemPrompt,
-        model, // Use model determined based on primary provider
-        temperature,
-        maxTokens, // Use maxTokens determined based on primary provider
-      );
-      const _primaryCacheKey = 
-      this.addToCache(primaryCacheKey, result);
-      return result;
+      const _result = await this.callProvider(this.primaryProvider, prompt, _systemPrompt, model, _temperature, maxTokens);
+      const _primaryCacheKey = this.generateCacheKey(prompt, { ...options, provider: this.primaryProvider });
+      this.addToCache(_primaryCacheKey, _result);
+      return _result;
     } catch (primaryError) {
       this.logger.warn(
         `Primary provider (${this.primaryProvider}) failed: ${primaryError.message}. Attempting fallback.`,
@@ -174,47 +154,24 @@ export class LlmRouterService {
       if (this.fallbackProvider && this.fallbackProvider !== this.primaryProvider) {
         try {
           this.logger.debug(`Attempting LLM call with fallback provider: ${this.fallbackProvider}`);
-          const fallbackModel =
-            options.model ||
-            (this.fallbackProvider === 'anthropic'
-              ? this.defaultAnthropicModel
-              : this.defaultOpenaiModel);
-          const fallbackMaxTokens =
-            options.maxTokens ||
-            (this.fallbackProvider === 'anthropic'
-              ? this.defaultAnthropicMaxTokens
-              : this.defaultMaxTokens);
+          const fallbackModel = options.model || this.defaultAnthropicModel;
+          const fallbackMaxTokens = options.maxTokens || this.defaultAnthropicMaxTokens;
 
-          const _fallbackResult = 
-            this.fallbackProvider,
-            prompt,
-            systemPrompt,
-            fallbackModel,
-            temperature,
-            fallbackMaxTokens,
-          );
-          const _fallbackCacheKey = 
-            prompt,
-            { ...options, model: fallbackModel },
-            this.fallbackProvider,
-          );
-          this.addToCache(fallbackCacheKey, fallbackResult); // Cache the successful fallback result
-          return fallbackResult;
+          const _fallbackResult = await this.callProvider(this.fallbackProvider, prompt, _systemPrompt, fallbackModel, _temperature, fallbackMaxTokens);
+          const _fallbackCacheKey = this.generateCacheKey(prompt, { ...options, model: fallbackModel, provider: this.fallbackProvider });
+          this.addToCache(_fallbackCacheKey, _fallbackResult);
+          return _fallbackResult;
         } catch (fallbackError) {
           this.logger.error(
             `Fallback provider (${this.fallbackProvider}) also failed: ${fallbackError.message}`,
           );
-          throw new Error(
-            `LLM generation failed with both primary (${this.primaryProvider}) and fallback (${this.fallbackProvider}) providers. Primary Error: ${primaryError.message}, Fallback Error: ${fallbackError.message}`,
-          );
+          throw new Error(`LLM generation failed with both primary (${this.primaryProvider}) and fallback (${this.fallbackProvider}) providers. Primary Error: ${primaryError.message}, Fallback Error: ${fallbackError.message}`);
         }
       } else {
         this.logger.error(
           `Primary provider (${this.primaryProvider}) failed and no fallback configured or fallback is same as primary.`,
         );
-        throw new Error(
-          `LLM generation failed with primary provider (${this.primaryProvider}): ${primaryError.message}`,
-        );
+        throw new Error(`LLM generation failed with primary provider (${this.primaryProvider}): ${primaryError.message}`);
       }
     }
   }
@@ -252,11 +209,11 @@ export class LlmRouterService {
       `Calling Anthropic API: model=${model}, temp=${temperature}, max_tokens=${maxTokens}`,
     );
     try {
-      const _response = 
+      const _response = await axios.post(
         this.anthropicApiUrl,
         {
           model: model,
-          system: systemPrompt, // Use 'system' field for system prompt
+          system: systemPrompt,
           messages: [{ role: 'user', content: prompt }],
           temperature: temperature,
           max_tokens: maxTokens,
@@ -264,26 +221,26 @@ export class LlmRouterService {
         {
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': this.anthropicApiKey, // Anthropic uses 'x-api-key' header
-            'anthropic-version': '2023-06-01', // Required version header
+            'x-api-key': this.anthropicApiKey,
+            'anthropic-version': '2023-06-01',
           },
-          timeout: 60000, // Add a timeout (e.g., 60 seconds)
+          timeout: 60000,
         },
       );
 
       if (
-        response.data.content &&
-        response.data.content.length > 0 &&
-        response.data.content[0].type === 'text'
+        _response.data.content &&
+        _response.data.content.length > 0 &&
+        _response.data.content[0].type === 'text'
       ) {
-        const _result = 
+        const _result = _response.data.content[0].text;
         this.logger.debug(
-          `Anthropic API call successful. Output tokens: ${response.data.usage?.output_tokens}`,
+          `Anthropic API call successful. Output tokens: ${_response.data.usage?.output_tokens}`,
         );
-        return result;
+        return _result;
       } else {
         this.logger.error(
-          `Anthropic API returned unexpected response format or empty content. Response: ${JSON.stringify(response.data)}`,
+          `Anthropic API returned unexpected response format or empty content. Response: ${JSON.stringify(_response.data)}`,
         );
         throw new Error('Anthropic API returned unexpected response format or empty content.');
       }
@@ -293,9 +250,7 @@ export class LlmRouterService {
         this.logger.error(
           `Anthropic API response: Status=${error.response.status}, Data=${JSON.stringify(error.response.data)}`,
         );
-        throw new Error(
-          `Anthropic API request failed with status ${error.response.status}: ${error.message}`,
-        );
+        throw new Error(`Anthropic API request failed with status ${error.response.status}: ${error.message}`);
       } else if (error.request) {
         this.logger.error('Anthropic API request made but no response received (e.g., timeout).');
         throw new Error('Anthropic API request failed: No response received.');
@@ -321,7 +276,7 @@ export class LlmRouterService {
       `Calling OpenAI API: model=${model}, temp=${temperature}, max_tokens=${maxTokens}`,
     );
     try {
-      const _response = 
+      const _response = await axios.post(
         this.openaiApiUrl,
         {
           model: model,
@@ -337,23 +292,23 @@ export class LlmRouterService {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${this.openaiApiKey}`,
           },
-          timeout: 60000, // Add a timeout (e.g., 60 seconds)
+          timeout: 60000,
         },
       );
 
       if (
-        response.data.choices &&
-        response.data.choices.length > 0 &&
-        response.data.choices[0].message
+        _response.data.choices &&
+        _response.data.choices.length > 0 &&
+        _response.data.choices[0].message
       ) {
-        const _result = 
+        const _result = _response.data.choices[0].message.content;
         this.logger.debug(
-          `OpenAI API call successful. Output tokens: ${response.data.usage?.completion_tokens}`,
+          `OpenAI API call successful. Output tokens: ${_response.data.usage?.completion_tokens}`,
         );
-        return result;
+        return _result;
       } else {
         this.logger.error(
-          `OpenAI API returned unexpected response format or empty content. Response: ${JSON.stringify(response.data)}`,
+          `OpenAI API returned unexpected response format or empty content. Response: ${JSON.stringify(_response.data)}`,
         );
         throw new Error('OpenAI API returned unexpected response format or empty content.');
       }
@@ -363,9 +318,7 @@ export class LlmRouterService {
         this.logger.error(
           `OpenAI API response: Status=${error.response.status}, Data=${JSON.stringify(error.response.data)}`,
         );
-        throw new Error(
-          `OpenAI API request failed with status ${error.response.status}: ${error.message}`,
-        );
+        throw new Error(`OpenAI API request failed with status ${error.response.status}: ${error.message}`);
       } else if (error.request) {
         this.logger.error('OpenAI API request made but no response received (e.g., timeout).');
         throw new Error('OpenAI API request failed: No response received.');
@@ -381,15 +334,13 @@ export class LlmRouterService {
     options: LlmRequestOptions,
     providerOverride?: 'anthropic' | 'openai',
   ): string {
-    const _provider = 
-    const modelKey =
-      options.model ||
-      (provider === 'anthropic' ? this.defaultAnthropicModel : this.defaultOpenaiModel);
-    return `${provider}:${modelKey}:${options.temperature || this.defaultTemperature}:${prompt}`;
+    const _provider = providerOverride || options.provider || this.primaryProvider;
+    const modelKey = options.model || (_provider === 'anthropic' ? this.defaultAnthropicModel : this.defaultOpenaiModel);
+    return `${_provider}:${modelKey}:${options.temperature || this.defaultTemperature}:${prompt}`;
   }
 
   private getFromCache(key: string): string | null {
-    const _cached = 
+    const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < this.cacheTTL) {
       return cached.result;
     }
@@ -400,7 +351,7 @@ export class LlmRouterService {
     this.cache.set(key, { result, timestamp: Date.now() });
 
     if (this.cache.size > 100) {
-      const _now = 
+      const now = Date.now();
       for (const [k, v] of this.cache.entries()) {
         if (now - v.timestamp > this.cacheTTL) {
           this.cache.delete(k);
@@ -410,12 +361,17 @@ export class LlmRouterService {
   }
 
   async analyzeRequirement(requirementText: string): Promise<any> {
-    const _prompt = 
-      '{requirementText}',
-      requirementText,
-    );
+    const prompt = `分析以下需求文本，提取关键功能点、约束条件和可能的实现难点：
 
-    const _analysisText = 
+${requirementText}
+
+请以JSON格式返回分析结果，包含以下字段：
+- 功能点：主要功能点列表
+- 约束条件：需求中提到的限制或要求
+- 难点：可能的实现难点或挑战
+- 建议：针对这些难点的建议解决方案`;
+
+    const analysisText = await this.generateContent(prompt, {
       systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
     });
 
@@ -432,12 +388,18 @@ export class LlmRouterService {
     requirementText: string,
     existingClarifications: string,
   ): Promise<any> {
-    const _prompt = 
-      '{requirementText}',
-      requirementText,
-    ).replace('{existingClarifications}', existingClarifications);
+    const prompt = `基于以下需求文本，生成需要澄清的问题：
 
-    const _questionsText = 
+需求文本：
+${requirementText}
+
+已有的澄清信息：
+${existingClarifications}
+
+请生成5个关键问题，这些问题的澄清将帮助更好地理解和实现需求。
+以JSON格式返回，包含questions数组，每个问题包含id、question和importance字段。`;
+
+    const questionsText = await this.generateContent(prompt, {
       systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
     });
 
@@ -453,12 +415,22 @@ export class LlmRouterService {
     requirementText: string,
     clarificationHistory: string,
   ): Promise<any> {
-    const _prompt = 
-      '{requirementText}',
-      requirementText,
-    ).replace('{clarificationHistory}', clarificationHistory);
+    const prompt = `分析以下需求澄清过程的进展情况：
 
-    const _analysisText = 
+需求文本：
+${requirementText}
+
+澄清历史：
+${clarificationHistory}
+
+请评估当前澄清进度，并确定是否已收集足够信息来实现需求。
+以JSON格式返回，包含以下字段：
+- 完成度：表示澄清过程的完成百分比（0-100）
+- 未解决问题：列出尚未完全澄清的关键问题
+- 建议：下一步应该关注的澄清方向
+- 是否可以开始实现：布尔值，表示是否已有足够信息开始实现`;
+
+    const analysisText = await this.generateContent(prompt, {
       systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
     });
 
@@ -470,19 +442,29 @@ export class LlmRouterService {
     }
   }
 
-  async generateExpectationModel(requirement: unknown, clarifications: unknown[]): Promise<any> {
-    const _clarificationInfo = 
-      .map((c) => `问题: ${c.questionId}, 答案: ${c.answer}`)
-      .join('\n');
+  async generateExpectationModel(requirement: any, clarifications: any[]): Promise<any> {
+    const clarificationInfo = clarifications.map((c) => `问题: ${c.questionId}, 答案: ${c.answer}`).join('\n');
 
-    const _prompt = 
-      '{requirementText}',
-      requirement.text,
-    ).replace('{clarificationInfo}', clarificationInfo);
+    const prompt = `基于以下需求和澄清信息，生成详细的期望模型：
 
-    const _expectationsText = 
+需求文本：
+${requirement.text}
+
+澄清信息：
+${clarificationInfo}
+
+请生成详细的期望模型，包含以下内容：
+- 功能列表：详细的功能描述和优先级
+- 数据模型：主要实体及其关系
+- 接口定义：API或服务接口定义
+- 非功能需求：性能、安全、可靠性等需求
+- 验收标准：验证实现是否满足需求的标准
+
+以JSON格式返回。`;
+
+    const expectationsText = await this.generateContent(prompt, {
       systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
-      maxTokens: 8000, // Expectations can be complex and require more tokens
+      maxTokens: 8000,
     });
 
     try {
@@ -499,14 +481,23 @@ export class LlmRouterService {
     framework: string,
     codeStyle: string,
   ): Promise<any> {
-    const _prompt = 
-      .replace('{language}', language)
-      .replace('{framework}', framework)
-      .replace('{codeStyle}', codeStyle);
+    const prompt = `基于以下期望模型，生成${language}代码，使用${framework}框架，遵循${codeStyle}代码风格：
 
-    const _codeText = 
+期望模型：
+${expectationModel}
+
+请生成完整的实现代码，包括：
+- 主要功能实现
+- 数据模型定义
+- 接口实现
+- 错误处理
+- 基本测试
+
+以JSON格式返回，包含files数组，每个文件包含path、content和language字段。`;
+
+    const codeText = await this.generateContent(prompt, {
       systemPrompt: templates.GENERATOR_SYSTEM_PROMPT,
-      maxTokens: 8000, // Code generation requires more tokens
+      maxTokens: 8000,
     });
 
     try {
@@ -518,12 +509,24 @@ export class LlmRouterService {
   }
 
   async optimizeCode(originalCode: string, expectationModel: string): Promise<any> {
-    const _prompt = 
-      '{expectationModel}',
-      expectationModel,
-    );
+    const prompt = `优化以下代码，确保它满足期望模型中的需求：
 
-    const _optimizedCodeText = 
+原始代码：
+${originalCode}
+
+期望模型：
+${expectationModel}
+
+请优化代码，关注以下方面：
+- 性能优化
+- 代码可读性
+- 最佳实践
+- 错误处理
+- 安全性
+
+以JSON格式返回优化结果，包含files数组，每个文件包含path、content和optimizations字段（描述所做的优化）。`;
+
+    const optimizedCodeText = await this.generateContent(prompt, {
       systemPrompt: templates.GENERATOR_SYSTEM_PROMPT,
       maxTokens: 8000,
     });
@@ -537,10 +540,20 @@ export class LlmRouterService {
   }
 
   async generateDocumentation(code: string, expectationModel: string): Promise<string> {
-    const _prompt = 
-      '{expectationModel}',
-      expectationModel,
-    );
+    const prompt = `为以下代码生成详细文档，基于期望模型中的需求：
+
+代码：
+${code}
+
+期望模型：
+${expectationModel}
+
+请生成包含以下内容的文档：
+- 概述和架构说明
+- 安装和配置指南
+- API参考文档
+- 使用示例
+- 常见问题解答`;
 
     return this.generateContent(prompt, {
       systemPrompt: templates.GENERATOR_SYSTEM_PROMPT,
@@ -549,12 +562,23 @@ export class LlmRouterService {
   }
 
   async validateCode(expectationModel: string, codeImplementation: string): Promise<any> {
-    const _prompt = 
-      '{expectationModel}',
-      expectationModel,
-    ).replace('{codeImplementation}', codeImplementation);
+    const prompt = `验证以下代码实现是否满足期望模型中的需求：
 
-    const _validationText = 
+期望模型：
+${expectationModel}
+
+代码实现：
+${codeImplementation}
+
+请全面验证代码，关注以下方面：
+- 功能完整性：是否实现了所有需求
+- 代码质量：结构、可读性、最佳实践
+- 潜在问题：错误处理、边界情况、安全问题
+- 性能考虑：是否有明显的性能问题
+
+以JSON格式返回验证结果，包含验证通过的项目、发现的问题及改进建议。`;
+
+    const validationText = await this.generateContent(prompt, {
       systemPrompt: templates.VALIDATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -568,12 +592,24 @@ export class LlmRouterService {
   }
 
   async generateTestCases(expectationModel: string, codeImplementation: string): Promise<any> {
-    const _prompt = 
-      '{expectationModel}',
-      expectationModel,
-    ).replace('{codeImplementation}', codeImplementation);
+    const prompt = `基于以下期望模型和代码实现，生成全面的测试用例：
 
-    const _testCasesText = 
+期望模型：
+${expectationModel}
+
+代码实现：
+${codeImplementation}
+
+请生成全面的测试用例，涵盖：
+- 单元测试
+- 集成测试
+- 边界条件测试
+- 异常情况测试
+- 性能测试建议
+
+以JSON格式返回测试用例，每个测试用例包含testName、type、description、input、expectedOutput和testCode字段。`;
+
+    const testCasesText = await this.generateContent(prompt, {
       systemPrompt: templates.VALIDATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -591,14 +627,25 @@ export class LlmRouterService {
     expectationModel: string,
     codeImplementation: string,
   ): Promise<any> {
-    const _prompt = 
-      '{validationResults}',
-      validationResults,
-    )
-      .replace('{expectationModel}', expectationModel)
-      .replace('{codeImplementation}', codeImplementation);
+    const prompt = `分析以下验证结果，并提供改进建议：
 
-    const _analysisText = 
+验证结果：
+${validationResults}
+
+期望模型：
+${expectationModel}
+
+代码实现：
+${codeImplementation}
+
+请分析验证结果，并提供具体的改进建议。
+以JSON格式返回分析结果，包含以下字段：
+- 主要问题：按严重程度排序的问题列表
+- 改进建议：针对每个问题的具体改进建议
+- 优先级：建议的修复优先级
+- 预期结果：完成改进后的预期效果`;
+
+    const analysisText = await this.generateContent(prompt, {
       systemPrompt: templates.VALIDATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -616,14 +663,15 @@ export class LlmRouterService {
     targetModule: string,
     sourceData: string,
   ): Promise<any> {
-    const _prompt = 
-      /{sourceModule}/g,
-      sourceModule,
-    )
-      .replace(/{targetModule}/g, targetModule)
-      .replace('{sourceData}', sourceData);
+    const prompt = `将以下来自${sourceModule}模块的数据转换为${targetModule}模块可以理解的格式：
 
-    const _translationText = 
+源数据 (${sourceModule}):
+${sourceData}
+
+请将数据转换为${targetModule}模块需要的格式和语义，保持核心信息不变。
+以JSON格式返回转换结果。`;
+
+    const translationText = await this.generateContent(prompt, {
       systemPrompt: templates.SEMANTIC_MEDIATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -641,11 +689,19 @@ export class LlmRouterService {
     originalData: string,
     contextQuery: string,
   ): Promise<any> {
-    const _prompt = 
-      .replace('{originalData}', originalData)
-      .replace('{contextQuery}', contextQuery);
+    const prompt = `使用以下上下文信息丰富原始数据：
 
-    const _enrichedText = 
+原始数据：
+${originalData}
+
+上下文查询：
+${contextQuery}
+
+请使用上下文信息丰富原始数据，使其更全面、更有用。
+保持原始数据的核心信息不变，只添加相关的上下文信息。
+以JSON格式返回丰富后的数据。`;
+
+    const enrichedText = await this.generateContent(prompt, {
       systemPrompt: templates.SEMANTIC_MEDIATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -664,12 +720,18 @@ export class LlmRouterService {
     moduleB: string,
     dataB: string,
   ): Promise<any> {
-    const _prompt = 
-      .replace('{dataA}', dataA)
-      .replace('{moduleB}', moduleB)
-      .replace('{dataB}', dataB);
+    const prompt = `解决以下两个模块之间的语义冲突：
 
-    const _resolutionText = 
+${moduleA}模块数据：
+${dataA}
+
+${moduleB}模块数据：
+${dataB}
+
+请解决这两个模块之间的语义冲突，创建一个统一的视图。
+以JSON格式返回解决结果，包含合并后的数据和解决冲突的说明。`;
+
+    const resolutionText = await this.generateContent(prompt, {
       systemPrompt: templates.SEMANTIC_MEDIATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -683,12 +745,18 @@ export class LlmRouterService {
   }
 
   async extractSemanticInsights(data: string, query: string): Promise<any> {
-    const _prompt = 
-      '{query}',
-      query,
-    );
+    const prompt = `基于以下查询，从数据中提取语义见解：
 
-    const _insightsText = 
+数据：
+${data}
+
+查询：
+${query}
+
+请提取与查询相关的语义见解和关键信息。
+以JSON格式返回提取的见解，包含insights数组和relevance评分。`;
+
+    const insightsText = await this.generateContent(prompt, {
       systemPrompt: templates.SEMANTIC_MEDIATOR_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -701,10 +769,6 @@ export class LlmRouterService {
     }
   }
 
-  /**
-   * 使用语义分析结果生成代码
-   * 这个方法使用语义分析结果来增强代码生成过程
-   */
   async generateCodeWithSemanticInput(
     expectation: unknown,
     semanticAnalysis: unknown,
@@ -712,33 +776,31 @@ export class LlmRouterService {
   ): Promise<any> {
     this.logger.log('Generating code with semantic input');
 
-    const _prompt = 
-      ? templates.GENERATE_CODE_WITH_SEMANTIC_INPUT_PROMPT.replace(
-          '{expectationModel}',
-          JSON.stringify(expectation, null, 2),
-        )
-          .replace('{semanticAnalysis}', JSON.stringify(semanticAnalysis, null, 2))
-          .replace('{options}', JSON.stringify(options || {}, null, 2))
-      : `
-        基于以下期望模型和语义分析结果，生成相应的代码实现：
-        
-        期望模型：${JSON.stringify(expectation, null, 2)}
-        
-        语义分析结果：${JSON.stringify(semanticAnalysis, null, 2)}
-        
-        生成选项：${JSON.stringify(options || {}, null, 2)}
-        
-        请生成以下文件的代码：
-        1. 主要功能实现文件
-        2. 接口定义文件
-        3. 测试文件
-        
-        返回JSON格式，包含files数组，每个文件包含path、content和language字段。
-      `;
+    const promptTemplate = templates.GENERATE_CODE_WITH_SEMANTIC_INPUT_PROMPT || `
+      基于以下期望模型和语义分析结果，生成相应的代码实现：
+      
+      期望模型：${JSON.stringify(expectation, null, 2)}
+      
+      语义分析结果：${JSON.stringify(semanticAnalysis, null, 2)}
+      
+      生成选项：${JSON.stringify(options || {}, null, 2)}
+      
+      请生成以下文件的代码：
+      1. 主要功能实现文件
+      2. 接口定义文件
+      3. 测试文件
+      
+      返回JSON格式，包含files数组，每个文件包含path、content和language字段。
+    `;
 
-    const _codeText = 
+    const prompt = promptTemplate
+      .replace('{expectationModel}', JSON.stringify(expectation, null, 2))
+      .replace('{semanticAnalysis}', JSON.stringify(semanticAnalysis, null, 2))
+      .replace('{options}', JSON.stringify(options || {}, null, 2));
+
+    const codeText = await this.generateContent(prompt, {
       systemPrompt: templates.GENERATOR_SYSTEM_PROMPT,
-      maxTokens: 8000, // Code generation requires more tokens
+      maxTokens: 8000,
     });
 
     try {
@@ -749,19 +811,26 @@ export class LlmRouterService {
     }
   }
 
-  /**
-   * 分析多轮对话的需求澄清过程
-   * 提供对话流程的深入分析，包括有效性评分、关键信息提取和改进建议
-   */
   async analyzeMultiRoundDialogue(requirementText: string, dialogueHistory: string): Promise<any> {
     this.logger.log('Analyzing multi-round dialogue process');
 
-    const _prompt = 
-      '{requirementText}',
-      requirementText,
-    ).replace('{dialogueHistory}', dialogueHistory);
+    const prompt = `分析以下多轮对话过程，评估需求澄清的质量和进展：
 
-    const _analysisText = 
+需求文本：
+${requirementText}
+
+对话历史：
+${dialogueHistory}
+
+请分析对话过程，评估需求澄清的质量和进展情况。
+以JSON格式返回分析结果，包含以下字段：
+- 关键点：已澄清的关键需求点
+- 遗漏点：尚未澄清的重要需求点
+- 质量评分：对话过程的整体质量（1-10分）
+- 建议：改进对话过程的建议
+- 结论：对需求理解完整性的总体评估`;
+
+    const analysisText = await this.generateContent(prompt, {
       systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
       maxTokens: 6000,
     });
@@ -781,12 +850,21 @@ export class LlmRouterService {
   async generateExpectationSummary(expectationModel: unknown): Promise<any> {
     this.logger.log('Generating expectation model summary');
 
-    const _prompt = 
-      '{expectationModel}',
-      JSON.stringify(expectationModel, null, 2),
-    );
+    const prompt = `基于以下期望模型，生成一个简洁明了的总结，确保用户能理解系统将要实现什么：
 
-    const _summaryText = 
+期望模型：
+${JSON.stringify(expectationModel, null, 2)}
+
+请生成一个全面但简洁的总结，包含以下方面：
+- 核心功能概述
+- 关键特性和价值
+- 主要约束和限制
+- 实现的预期范围
+- 用户体验预期
+
+以JSON格式返回，包含summary字段和keyPoints数组。`;
+
+    const summaryText = await this.generateContent(prompt, {
       systemPrompt: templates.CLARIFIER_SYSTEM_PROMPT,
       maxTokens: 4000,
     });

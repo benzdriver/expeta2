@@ -49,4 +49,9 @@ export class Code extends Document {
   updatedAt: Date;
 }
 
-export const _CodeSchema = 
+export const CodeSchema = SchemaFactory.createForClass(Code);
+
+// Add indexes for better query performance
+CodeSchema.index({ expectationId: 1 }); 
+CodeSchema.index({ 'metadata.status': 1 });
+CodeSchema.index({ createdAt: -1 });
