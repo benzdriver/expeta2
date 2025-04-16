@@ -7,8 +7,8 @@ import { HttpService } from '@nestjs/axios'; /* eslint-disable-line @typescript-
 import { of, throwError } from 'rxjs'; /* eslint-disable-line @typescript-eslint/no-unused-vars */
 import axios from 'axios'; /* eslint-disable-line @typescript-eslint/no-unused-vars */
 import { AxiosResponse, AxiosError } from 'axios';
-import { LlmRouterService } from '../../llm-router.service';
-import { AnthropicMessageResponse, OpenAIChatCompletionResponse } from '../../llm-router.service';
+import { LlmRouterService } from '../llm-router.service';
+import { AnthropicMessageResponse, OpenAIChatCompletionResponse } from '../llm-router.service';
 
 describe('LlmRouterService', () => {
   let service: LlmRouterService;

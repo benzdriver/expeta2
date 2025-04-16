@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ValidatorService } from '../../validator.service';
-import { Validation } from '../../schemas/validation.schema';
-import { LlmRouterService } from '../../../../services/llm-router.service';
-import { MemoryService } from '../../../memory/memory.service';
-import { MemoryType } from '../../../memory/schemas/memory.schema';
-import { SemanticMediatorService } from '../../../semantic-mediator/semantic-mediator.service';
+import { ValidatorService } from '../validator.service';
+import { Validation } from '../schemas/validation.schema';
+import { LlmRouterService } from '../../../services/llm-router.service';
+import { MemoryService } from '../../memory/memory.service';
+import { MemoryType } from '../../memory/schemas/memory.schema';
+import { SemanticMediatorService } from '../../semantic-mediator/semantic-mediator.service';
 
 describe('ValidatorService', () => {
   let service: ValidatorService;
